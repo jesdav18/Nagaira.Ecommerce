@@ -1,0 +1,184 @@
+<div class="admin-products">
+  <div class="page-header">
+    <h1>Gestión de Productos</h1>
+    <button class="btn btn-primary" routerLink="/admin/products/new">+ Nuevo Producto</button>
+  </div>
+
+  <div class="filters">
+    <div class="search-box">
+      <input 
+        type="text" 
+        placeholder="Buscar productos..." 
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)"
+        (keyup.enter)="onSearch()"
+      >
+      <button (click)="onSearch()" class="btn btn-secondary">Buscar</button>
+    </div>
+    
+    <div class="filter-group">
+      <label>Estado:</label>
+      <select [ngModel]="isActiveFilter()" (ngModelChange)="isActiveFilter.set($event); onFilterChange()">
+        <option [value]="null">Todos</option>
+        <option [value]="true">Activos</option>
+        <option [value]="false">Inactivos</option>
+      </select>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">Cargando productos...</div>
+  } @else if (products().length === 0) {
+    <div class="empty-state">
+      <p>No se encontraron productos</p>
+    </div>
+  } @else {
+    <div class="products-table">
+      <table>
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Nombre</th>
+            <th>Categoría</th>
+            <th>Stock</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (product of products(); track product.id) {
+            <tr>
+              <td>{{ product.sku }}</td>
+              <td>
+                <strong>{{ product.name }}</strong>
+                <br>
+                <small>{{ product.description | slice:0:50 }}...</small>
+              </td>
+              <td>{{ product.categoryName }}</td>
+              <td>
+                <span [class.low-stock]="product.availableQuantity <= 10">
+                  {{ product.availableQuantity }}
+                </span>
+              </td>
+              <td>
+                <span [class]="product.isActive ? 'badge active' : 'badge inactive'">
+                  {{ product.isActive ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td>
+                <div class="actions">
+                  <button class="btn btn-sm btn-success" (click)="openMovementModal(product)" title="Agregar Stock">
+                    + Stock
+                  </button>
+                  <button class="btn btn-sm btn-secondary" [routerLink]="['/admin/products', product.id]">
+                    Editar
+                  </button>
+                  <button 
+                    class="btn btn-sm" 
+                    [class.btn-success]="!product.isActive"
+                    [class.btn-warning]="product.isActive"
+                    (click)="toggleProductStatus(product)"
+                  >
+                    {{ product.isActive ? 'Desactivar' : 'Activar' }}
+                  </button>
+                  <button class="btn btn-sm btn-danger" (click)="deleteProduct(product.id)">
+                    Eliminar
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (totalPages() > 1) {
+      <div class="pagination">
+        <button 
+          [disabled]="pageNumber() === 1"
+          (click)="goToPage(pageNumber() - 1)"
+        >
+          Anterior
+        </button>
+        <span>Página {{ pageNumber() }} de {{ totalPages() }}</span>
+        <button 
+          [disabled]="pageNumber() === totalPages()"
+          (click)="goToPage(pageNumber() + 1)"
+        >
+          Siguiente
+        </button>
+      </div>
+    }
+  }
+</div>
+
+@if (showMovementModal()) {
+  <div class="modal-overlay" (click)="closeMovementModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Agregar Stock - {{ selectedProduct()?.name }}</h2>
+        <button class="modal-close" (click)="closeMovementModal()">×</button>
+      </div>
+      
+      <form (ngSubmit)="createMovement()" class="movement-form">
+        <div class="form-group">
+          <label>Tipo de Movimiento *</label>
+          <select [(ngModel)]="movementForm.movementType" name="movementType" required>
+            @for (type of movementTypes(); track type.value) {
+              <option [value]="type.value">{{ type.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Cantidad *</label>
+          <input 
+            type="number" 
+            [(ngModel)]="movementForm.quantity" 
+            name="quantity" 
+            min="1"
+            required>
+        </div>
+
+        <div class="form-group">
+          <label>Número de Referencia</label>
+          <input 
+            type="text" 
+            [(ngModel)]="movementForm.referenceNumber" 
+            name="referenceNumber"
+            placeholder="Ej: FACT-001, OC-123">
+        </div>
+
+        <div class="form-group">
+          <label>Costo por Unidad</label>
+          <input 
+            type="number" 
+            [(ngModel)]="movementForm.costPerUnit" 
+            name="costPerUnit"
+            step="0.01"
+            min="0"
+            placeholder="0.00">
+        </div>
+
+        <div class="form-group">
+          <label>Notas</label>
+          <textarea 
+            [(ngModel)]="movementForm.notes" 
+            name="notes"
+            rows="3"
+            placeholder="Observaciones adicionales..."></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeMovementModal()" [disabled]="saving()">
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="saving()">
+            {{ saving() ? 'Guardando...' : 'Registrar Ingreso' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+

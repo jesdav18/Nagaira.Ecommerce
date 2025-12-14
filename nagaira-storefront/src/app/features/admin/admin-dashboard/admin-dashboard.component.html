@@ -1,0 +1,132 @@
+<div class="admin-dashboard">
+  <div class="dashboard-header">
+    <h1>Panel de Administración</h1>
+    <p>Bienvenido al backoffice de Nagaira Ecommerce</p>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">Cargando estadísticas...</div>
+  } @else if (stats()) {
+    <div class="stats-grid">
+      <!-- Estadísticas principales -->
+      <div class="stat-card">
+        <div class="stat-icon">📦</div>
+        <div class="stat-content">
+          <h3>{{ stats()?.totalProducts || 0 }}</h3>
+          <p>Total Productos</p>
+          <span class="stat-sub">{{ stats()?.activeProducts || 0 }} activos</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">🛒</div>
+        <div class="stat-content">
+          <h3>{{ stats()?.totalOrders || 0 }}</h3>
+          <p>Total Órdenes</p>
+          <span class="stat-sub">{{ stats()?.pendingOrders || 0 }} pendientes</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-content">
+          <h3>{{ stats()?.totalRevenue | currency }}</h3>
+          <p>Ingresos Totales</p>
+          <span class="stat-sub">{{ stats()?.monthlyRevenue | currency }} este mes</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <div class="stat-content">
+          <h3>{{ stats()?.totalCustomers || 0 }}</h3>
+          <p>Total Clientes</p>
+          <span class="stat-sub">{{ stats()?.newCustomersThisMonth || 0 }} nuevos este mes</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-content">
+          <h3>{{ stats()?.averageOrderValue | currency }}</h3>
+          <p>Valor Promedio</p>
+          <span class="stat-sub">Por orden</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">⚠️</div>
+        <div class="stat-content">
+          <h3>{{ stats()?.lowStockProducts || 0 }}</h3>
+          <p>Stock Bajo</p>
+          <span class="stat-sub">Productos con stock ≤ 10</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ingresos por período -->
+    <div class="revenue-section">
+      <h2>Ingresos por Período</h2>
+      <div class="revenue-grid">
+        <div class="revenue-card">
+          <h4>Hoy</h4>
+          <p class="revenue-amount">{{ stats()?.dailyRevenue | currency }}</p>
+          <span class="revenue-orders">{{ stats()?.ordersToday || 0 }} órdenes</span>
+        </div>
+        <div class="revenue-card">
+          <h4>Esta Semana</h4>
+          <p class="revenue-amount">{{ stats()?.weeklyRevenue | currency }}</p>
+        </div>
+        <div class="revenue-card">
+          <h4>Este Mes</h4>
+          <p class="revenue-amount">{{ stats()?.monthlyRevenue | currency }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Órdenes por estado -->
+    <div class="orders-section">
+      <h2>Órdenes por Estado</h2>
+      <div class="orders-grid">
+        <div class="order-status-card pending">
+          <h4>Pendientes</h4>
+          <p>{{ stats()?.pendingOrders || 0 }}</p>
+        </div>
+        <div class="order-status-card processing">
+          <h4>En Proceso</h4>
+          <p>{{ stats()?.processingOrders || 0 }}</p>
+        </div>
+        <div class="order-status-card shipped">
+          <h4>Enviadas</h4>
+          <p>{{ stats()?.shippedOrders || 0 }}</p>
+        </div>
+        <div class="order-status-card delivered">
+          <h4>Entregadas</h4>
+          <p>{{ stats()?.deliveredOrders || 0 }}</p>
+        </div>
+        <div class="order-status-card cancelled">
+          <h4>Canceladas</h4>
+          <p>{{ stats()?.cancelledOrders || 0 }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top productos -->
+    @if (stats()?.topSellingProducts && stats()?.topSellingProducts.length > 0) {
+      <div class="top-products-section">
+        <h2>Top 10 Productos Más Vendidos</h2>
+        <div class="top-products-list">
+          @for (product of stats()?.topSellingProducts; track product.productId) {
+            <div class="top-product-item">
+              <span class="product-name">{{ product.productName }}</span>
+              <span class="product-sold">{{ product.totalSold }} unidades</span>
+              <span class="product-revenue">{{ product.revenue | currency }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+  }
+</div>
+

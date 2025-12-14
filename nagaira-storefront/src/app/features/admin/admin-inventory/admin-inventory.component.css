@@ -1,0 +1,291 @@
+.admin-inventory {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.page-header {
+  margin-bottom: 2rem;
+}
+
+.page-header h1 {
+  margin: 0 0 0.5rem 0;
+  color: #1a1a1a;
+}
+
+.subtitle {
+  margin: 0;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.dashboard-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.metric-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: #f9f9f9;
+  border-radius: 12px;
+  border-left: 4px solid;
+  transition: all 0.2s;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.metric-card.primary {
+  border-left-color: #8b4513;
+  background: linear-gradient(135deg, #fff5f0 0%, #f9f9f9 100%);
+}
+
+.metric-card.success {
+  border-left-color: #4caf50;
+  background: linear-gradient(135deg, #f0f9f0 0%, #f9f9f9 100%);
+}
+
+.metric-card.warning {
+  border-left-color: #ff9800;
+  background: linear-gradient(135deg, #fff3e0 0%, #f9f9f9 100%);
+}
+
+.metric-card.danger {
+  border-left-color: #f44336;
+  background: linear-gradient(135deg, #ffebee 0%, #f9f9f9 100%);
+}
+
+.metric-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.metric-content h3 {
+  margin: 0 0 0.25rem 0;
+  color: #1a1a1a;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.metric-content p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.metric-sub {
+  display: block;
+  margin-top: 0.25rem;
+  color: #999;
+  font-size: 0.85rem;
+}
+
+.alerts-section,
+.top-products-section {
+  background: #f9f9f9;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.section-header h2 {
+  margin: 0;
+  color: #1a1a1a;
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.filter-tab {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.filter-tab:hover {
+  background: #f5f5f5;
+}
+
+.filter-tab.active {
+  background: #8b4513;
+  color: white;
+  border-color: #8b4513;
+}
+
+.alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.alert-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem;
+  background: white;
+  border-radius: 8px;
+  border-left: 4px solid #ff9800;
+  transition: all 0.2s;
+}
+
+.alert-card.low {
+  border-left-color: #ff9800;
+  background: #fff3e0;
+}
+
+.alert-card.out {
+  border-left-color: #f44336;
+  background: #ffebee;
+}
+
+.alert-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.alert-info h4 {
+  margin: 0 0 0.25rem 0;
+  color: #1a1a1a;
+}
+
+.alert-sku {
+  margin: 0 0 0.75rem 0;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.alert-details {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.stock-badge,
+.value-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.stock-badge {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.stock-badge.warning {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.stock-badge.danger {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.value-badge {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.top-products-table {
+  overflow-x: auto;
+}
+
+.top-products-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.top-products-table th {
+  background: #f5f5f5;
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #1a1a1a;
+  border-bottom: 2px solid #ddd;
+}
+
+.top-products-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.top-products-table tr:hover {
+  background: #f9f9f9;
+}
+
+.low-stock {
+  color: #ff9800;
+  font-weight: 600;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: #8b4513;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #6b3410;
+}
+
+.btn-secondary {
+  background: #666;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #555;
+}
+
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.loading,
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+}
+

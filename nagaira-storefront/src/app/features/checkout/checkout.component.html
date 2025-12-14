@@ -1,0 +1,156 @@
+<div class="checkout-page">
+  <div class="container">
+    @if (success()) {
+      <div class="success-card">
+        <div class="success-icon">🎉</div>
+        <h1>¡Orden Confirmada!</h1>
+        <p>Tu pedido ha sido recibido exitosamente.</p>
+        <div class="order-id">Orden #{{ createdOrderId() }}</div>
+        <p class="success-message">Te hemos enviado un correo de confirmación.</p>
+        <a routerLink="/" class="btn btn-primary">Volver a la Tienda</a>
+      </div>
+    } @else {
+      <h1 class="page-title">Finalizar Compra</h1>
+
+      <div class="checkout-grid">
+        <!-- Formulario de Envío -->
+        <div class="checkout-form-section">
+          <h2>Dirección de Envío</h2>
+          <form [formGroup]="shippingForm" class="shipping-form">
+            <div class="form-group">
+              <label>Nombre Completo</label>
+              <input type="text" formControlName="fullName" class="form-input" placeholder="Escriba su nombre completo">
+            </div>
+
+            <div class="form-group">
+              <label>Dirección</label>
+              <input type="text" formControlName="address" class="form-input" placeholder="Escriba su dirección">
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Ciudad</label>
+                <input type="text" formControlName="city" class="form-input" placeholder="Escriba la ciudad de su dirección">
+              </div>
+              <div class="form-group">
+                <label>Código Postal</label>
+                <input type="text" formControlName="zipCode" class="form-input" placeholder="00000">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>País</label>
+              <input type="text" formControlName="country" class="form-input" readonly>
+            </div>
+          </form>
+
+          <div class="payment-section">
+            <h2>Método de Pago</h2>
+            @if (paymentMethods().length === 0) {
+              <div class="payment-method selected">
+                <span class="method-icon">💳</span>
+                <span>Cargando métodos de pago...</span>
+              </div>
+            } @else {
+              @for (method of paymentMethods(); track method.id) {
+                <div
+                  class="payment-method"
+                  [class.selected]="selectedPaymentMethod()?.id === method.id"
+                  (click)="selectPaymentMethod(method)">
+                  <span class="method-icon">{{ method.type === 'BankAccount' ? '🏦' : '📱' }}</span>
+                  <div class="method-info">
+                    <span class="method-name">{{ method.name }}</span>
+                    @if (method.description) {
+                      <small class="method-description">{{ method.description }}</small>
+                    }
+                    @if (method.type === 'BankAccount') {
+                      <small class="method-details">
+                        {{ method.bankName || 'Banco' }} - {{ method.accountNumber }}
+                        @if (method.accountHolderName) {
+                          <br>Titular: {{ method.accountHolderName }}
+                        }
+                      </small>
+                    } @else {
+                      <small class="method-details">
+                        {{ method.walletProvider || 'Billetera' }} - {{ method.walletNumber || method.accountNumber }}
+                      </small>
+                    }
+                  </div>
+                  @if (selectedPaymentMethod()?.id === method.id) {
+                    <span class="check-icon">✓</span>
+                  }
+                </div>
+              }
+              @if (selectedPaymentMethod()) {
+                @if (selectedPaymentMethod()!.qrCodeUrl) {
+                  <div class="qr-code-section">
+                    <p class="qr-label">Escanea el código QR para pagar:</p>
+                    <img [src]="selectedPaymentMethod()!.qrCodeUrl" alt="QR Code" class="qr-code">
+                  </div>
+                }
+                @if (selectedPaymentMethod()!.instructions) {
+                  <div class="payment-instructions">
+                    <strong>Instrucciones:</strong>
+                    <p>{{ selectedPaymentMethod()!.instructions }}</p>
+                  </div>
+                }
+              }
+            }
+          </div>
+        </div>
+
+        <!-- Resumen de Orden -->
+        <div class="order-summary-sidebar">
+          <h2>Tu Pedido</h2>
+
+          <div class="summary-items">
+            @for (item of cartService.cartItems(); track item.product.id) {
+              <div class="summary-item">
+                <div class="item-info">
+                  <span class="item-quantity">{{ item.quantity }}x</span>
+                  <span class="item-name">{{ item.product.name }}</span>
+                </div>
+                <span class="item-price">{{ (getItemPrice(item.product) * item.quantity) | appCurrency:'1.2-2' }}</span>
+              </div>
+            }
+          </div>
+
+          <div class="summary-totals">
+            <div class="summary-row">
+              <span>Subtotal</span>
+              <span>{{ cartService.subtotal() | appCurrency:'1.2-2' }}</span>
+            </div>
+            <div class="summary-row">
+              <span>Envío</span>
+              <span>{{ getShippingFreeLabel() }}</span>
+            </div>
+            <div class="summary-row">
+              <span>{{ getTaxLabel() }}</span>
+              <span>{{ cartService.tax() | appCurrency:'1.2-2' }}</span>
+            </div>
+            <div class="summary-divider"></div>
+            <div class="summary-row total">
+              <span>Total</span>
+              <span>{{ cartService.total() | appCurrency:'1.2-2' }}</span>
+            </div>
+          </div>
+
+          @if (error()) {
+            <div class="error-alert">
+              {{ error() }}
+            </div>
+          }
+
+          <button
+            class="btn btn-primary btn-block place-order-btn"
+            (click)="onSubmit()"
+            [disabled]="loading() || shippingForm.invalid">
+            {{ loading() ? 'Procesando...' : 'Ejecutar Compra' }}
+          </button>
+
+          <p class="secure-text">🔒 Transacción segura encriptada</p>
+        </div>
+      </div>
+    }
+  </div>
+</div>

@@ -1,0 +1,49 @@
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-header">
+      <h1 class="auth-title">Crear Cuenta</h1>
+      <p class="auth-subtitle">Únete a Nagaira hoy mismo</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="auth-form">
+      @if (error()) {
+        <div class="error-message">
+          {{ error() }}
+        </div>
+      }
+
+      <div class="form-group">
+        <label for="firstName" class="form-label">Nombre</label>
+        <input type="text" id="firstName" formControlName="firstName" class="form-input" placeholder="Escriba su primer y segundo nombre">
+      </div>
+
+      <div class="form-group">
+        <label for="lastName" class="form-label">Apellido</label>
+        <input type="text" id="lastName" formControlName="lastName" class="form-input" placeholder="Escriba su primer y segundo apellido">
+      </div>
+
+      <div class="form-group">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" id="email" formControlName="email" class="form-input" placeholder="tu@email.com">
+      </div>
+
+      <div class="form-group">
+        <label for="phoneNumber" class="form-label">Teléfono</label>
+        <input type="tel" id="phoneNumber" formControlName="phoneNumber" class="form-input" placeholder="+504...">
+      </div>
+
+      <div class="form-group">
+        <label for="password" class="form-label">Contraseña</label>
+        <input type="password" id="password" formControlName="password" class="form-input" placeholder="••••••••">
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-auth" [disabled]="loading()">
+        {{ loading() ? 'Creando cuenta...' : 'Registrarse' }}
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      ¿Ya tienes cuenta? <a routerLink="/login" class="auth-link">Inicia sesión aquí</a>
+    </div>
+  </div>
+</div>

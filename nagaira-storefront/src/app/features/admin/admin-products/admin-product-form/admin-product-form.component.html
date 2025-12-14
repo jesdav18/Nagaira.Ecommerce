@@ -1,0 +1,211 @@
+<div class="admin-product-form">
+  <div class="page-header">
+    <h1>{{ productId() ? 'Editar Producto' : 'Nuevo Producto' }}</h1>
+    <button class="btn btn-secondary" routerLink="/admin/products">← Volver</button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">Cargando...</div>
+  } @else {
+    <form (ngSubmit)="save()" class="product-form">
+      <div class="form-section">
+        <h2>Información Básica</h2>
+        
+        <div class="form-group">
+          <label>Nombre del Producto *</label>
+          <input type="text" [(ngModel)]="formData.name" name="name" required>
+        </div>
+
+        <div class="form-group">
+          <label>Descripción *</label>
+          <textarea [(ngModel)]="formData.description" name="description" rows="4" required></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>SKU *</label>
+            <input type="text" [(ngModel)]="formData.sku" name="sku" required>
+          </div>
+
+          <div class="form-group">
+            <label>Categoría *</label>
+            <select [(ngModel)]="formData.categoryId" name="categoryId" required>
+              <option value="">Seleccionar categoría</option>
+              @for (category of categories(); track category.id) {
+                <option [value]="category.id">{{ category.name }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Costo de Adquisición</label>
+            <input type="number" [(ngModel)]="formData.cost" name="cost" step="0.01" min="0" placeholder="0.00" (change)="onCostChange()">
+            <small>Precio de compra del producto para cálculo de márgenes</small>
+          </div>
+
+          <div class="form-group">
+            <label>
+              <input type="checkbox" [(ngModel)]="formData.isActive" name="isActive">
+              Producto activo
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2>Precios</h2>
+        <p class="section-description">Configure los precios para cada nivel de precio. Debe agregar al menos un precio.</p>
+
+        <div class="price-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nivel de Precio</label>
+              <select [(ngModel)]="newPrice.priceLevelId" name="newPriceLevelId" (change)="onPriceLevelChange()">
+                <option value="">Seleccionar nivel</option>
+                @for (level of priceLevels(); track level.id) {
+                  <option [value]="level.id">{{ level.name }} ({{ level.markupPercentage }}% margen)</option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Precio *</label>
+              <input type="number" [(ngModel)]="newPrice.price" name="newPrice" step="0.01" min="0.01" placeholder="0.00">
+              @if (newPrice.priceLevelId && formData.cost && formData.cost > 0) {
+                <small class="suggested-price">
+                  Precio sugerido: ${{ getSuggestedPriceFormatted() }}
+                  (Costo: ${{ getCostFormatted() }} + {{ getCurrentMarkupPercentage() }}%)
+                </small>
+              }
+            </div>
+
+            <div class="form-group">
+              <label>Cantidad Mínima</label>
+              <input type="number" [(ngModel)]="newPrice.minQuantity" name="newMinQuantity" min="1" value="1">
+            </div>
+
+            <div class="form-group">
+              <button type="button" class="btn btn-add" (click)="addPrice()">Agregar Precio</button>
+            </div>
+          </div>
+        </div>
+
+        @if (productPrices().length > 0) {
+          <div class="prices-list">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Nivel de Precio</th>
+                  <th>Precio</th>
+                  <th>Cantidad Mínima</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (price of productPrices(); track price.id) {
+                  <tr>
+                    <td>{{ price.priceLevelName }}</td>
+                    <td>${{ price.price.toFixed(2) }}</td>
+                    <td>{{ price.minQuantity }}</td>
+                    <td>
+                      <span class="badge" [class.active]="price.isActive" [class.inactive]="!price.isActive">
+                        {{ price.isActive ? 'Activo' : 'Inactivo' }}
+                      </span>
+                    </td>
+                    <td>
+                      <button type="button" class="btn-icon" (click)="removePrice(price.id)" title="Eliminar">
+                        🗑️
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="empty-state">
+            <p>No hay precios configurados. Agregue al menos un precio para el producto.</p>
+          </div>
+        }
+      </div>
+
+      <div class="form-section">
+        <h2>Imágenes</h2>
+        <p class="section-description">Agregue imágenes del producto. Puede subir archivos o usar URLs directas.</p>
+
+        <div class="image-form">
+          <div class="form-group">
+            <label>Subir Imagen</label>
+            <input type="file" accept="image/*" (change)="uploadImage($event)" [disabled]="uploadingImage()">
+            @if (uploadingImage()) {
+              <small>Subiendo imagen...</small>
+            }
+          </div>
+
+          <div class="form-group">
+            <label>URL de Imagen</label>
+            <input type="url" [(ngModel)]="newImage.imageUrl" name="newImageUrl" placeholder="https://ejemplo.com/imagen.jpg">
+            <small>O ingrese una URL directa de la imagen</small>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Texto Alternativo</label>
+              <input type="text" [(ngModel)]="newImage.altText" name="newAltText" placeholder="Descripción de la imagen">
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" [(ngModel)]="newImage.isPrimary" name="newIsPrimary">
+                Imagen Principal
+              </label>
+            </div>
+
+            <div class="form-group">
+              <button type="button" class="btn btn-add" (click)="addImage()">Agregar Imagen</button>
+            </div>
+          </div>
+        </div>
+
+        @if (productImages().length > 0) {
+          <div class="images-grid">
+            @for (image of productImages(); track image.id) {
+              <div class="image-card" [class.primary]="image.isPrimary">
+                <img [src]="image.imageUrl" [alt]="image.altText || 'Imagen del producto'">
+                <div class="image-overlay">
+                  @if (image.isPrimary) {
+                    <span class="primary-badge">Principal</span>
+                  }
+                  <div class="image-actions">
+                    @if (!image.isPrimary) {
+                      <button type="button" class="btn-icon" (click)="setPrimaryImage(image.id)" title="Marcar como principal">
+                        ⭐
+                      </button>
+                    }
+                    <button type="button" class="btn-icon" (click)="removeImage(image.id)" title="Eliminar">
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="empty-state">
+            <p>No hay imágenes agregadas. Agregue al menos una imagen para el producto.</p>
+          </div>
+        }
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" routerLink="/admin/products">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">
+          {{ saving() ? 'Guardando...' : 'Guardar Producto' }}
+        </button>
+      </div>
+    </form>
+  }
+</div>

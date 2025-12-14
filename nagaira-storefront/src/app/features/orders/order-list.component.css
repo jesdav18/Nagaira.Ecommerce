@@ -1,0 +1,139 @@
+.orders-page {
+    padding: 2rem 0 4rem;
+    background-color: var(--bg-tertiary);
+    min-height: calc(100vh - 80px);
+}
+
+.page-title {
+    margin-bottom: 2rem;
+    font-size: 2rem;
+    color: var(--text-primary);
+}
+
+.orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.order-card {
+    background: var(--bg-primary);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    transition: var(--transition-fast);
+}
+
+.order-card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.order-meta {
+    display: flex;
+    flex-direction: column;
+}
+
+.order-number {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--primary-color);
+}
+
+.order-date {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.order-status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+/* Status Colors */
+.status-1 {
+    background: #fff7ed;
+    color: #c2410c;
+}
+
+/* Pendiente - Orange */
+.status-2 {
+    background: #ecfccb;
+    color: #4d7c0f;
+}
+
+/* Pagado - Lime */
+.status-3 {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+/* Enviado - Blue */
+.status-4 {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+/* Entregado - Green */
+.status-5 {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+/* Cancelado - Red */
+
+.order-items-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
+}
+
+.order-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+.order-total {
+    font-weight: 700;
+    font-size: 1.25rem;
+}
+
+.btn-details {
+    color: var(--primary-color);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.btn-details:hover {
+    text-decoration: underline;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem;
+    background: var(--bg-primary);
+    border-radius: var(--border-radius);
+}
+
+.empty-icon {
+    font-size: 4rem;
+    display: block;
+    margin-bottom: 1rem;
+}

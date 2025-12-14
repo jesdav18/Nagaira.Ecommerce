@@ -1,0 +1,146 @@
+<div class="products-page">
+  <div class="container">
+    <div class="page-header">
+      <div class="header-text">
+        <h1 class="page-title">{{ currentTitle() }}</h1>
+        <span class="product-count">{{ products().length }} productos encontrados</span>
+      </div>
+      
+      <!-- Opcional: Selector de ordenamiento -->
+      <div class="sort-selector">
+        <select>
+          <option>Más recientes</option>
+          <option>Menor precio</option>
+          <option>Mayor precio</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="products-layout">
+      <!-- Filtros Sidebar -->
+      <aside class="filters-sidebar">
+        <div class="filter-section">
+          <h3 class="filter-title">Categorías</h3>
+          <ul class="category-list">
+            <li>
+              <a 
+                routerLink="/products" 
+                routerLinkActive="active" 
+                [routerLinkActiveOptions]="{exact: true}"
+                class="category-link">
+                Todas
+              </a>
+            </li>
+            @for (cat of categories(); track cat.id) {
+              <li>
+                <div class="category-item-header">
+                  @if (hasSubcategories(cat)) {
+                    <button 
+                      type="button"
+                      (click)="toggleCategory(cat.id, $event)"
+                      class="expand-toggle"
+                      [attr.aria-expanded]="isExpanded(cat.id)">
+                      <svg 
+                        width="16" 
+                        height="16" 
+                        viewBox="0 0 16 16" 
+                        fill="none" 
+                        xmlns="http://www.w3.org/2000/svg"
+                        [class.rotated]="isExpanded(cat.id)">
+                        <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
+                  } @else {
+                    <span class="expand-toggle-placeholder"></span>
+                  }
+                  <a 
+                    [routerLink]="['/products']" 
+                    [queryParams]="{ category: cat.id }"
+                    routerLinkActive="active"
+                    class="category-link">
+                    {{ cat.name }}
+                  </a>
+                </div>
+                @if (cat.subCategories && cat.subCategories.length > 0 && isExpanded(cat.id)) {
+                  <ul class="subcategory-list">
+                    @for (subCat of cat.subCategories; track subCat.id) {
+                      <li>
+                        <div class="category-item-header">
+                          @if (hasSubcategories(subCat)) {
+                            <button 
+                              type="button"
+                              (click)="toggleCategory(subCat.id, $event)"
+                              class="expand-toggle"
+                              [attr.aria-expanded]="isExpanded(subCat.id)">
+                              <svg 
+                                width="16" 
+                                height="16" 
+                                viewBox="0 0 16 16" 
+                                fill="none" 
+                                xmlns="http://www.w3.org/2000/svg"
+                                [class.rotated]="isExpanded(subCat.id)">
+                                <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                              </svg>
+                            </button>
+                          } @else {
+                            <span class="expand-toggle-placeholder"></span>
+                          }
+                          <a 
+                            [routerLink]="['/products']" 
+                            [queryParams]="{ category: subCat.id }"
+                            routerLinkActive="active"
+                            class="subcategory-link">
+                            {{ subCat.name }}
+                          </a>
+                        </div>
+                        @if (subCat.subCategories && subCat.subCategories.length > 0 && isExpanded(subCat.id)) {
+                          <ul class="subcategory-list">
+                            @for (subSubCat of subCat.subCategories; track subSubCat.id) {
+                              <li>
+                                <a 
+                                  [routerLink]="['/products']" 
+                                  [queryParams]="{ category: subSubCat.id }"
+                                  routerLinkActive="active"
+                                  class="subcategory-link">
+                                  {{ subSubCat.name }}
+                                </a>
+                              </li>
+                            }
+                          </ul>
+                        }
+                      </li>
+                    }
+                  </ul>
+                }
+              </li>
+            }
+          </ul>
+        </div>
+      </aside>
+
+      <!-- Grid de Productos -->
+      <main class="products-content">
+        @if (loading()) {
+          <div class="loading-grid">
+            @for (i of [1,2,3,4,5,6]; track i) {
+              <div class="skeleton-card"></div>
+            }
+          </div>
+        } @else if (products().length > 0) {
+          <div class="products-grid">
+            @for (product of products(); track product.id) {
+              <app-product-card [product]="product"></app-product-card>
+            }
+          </div>
+        } @else {
+          <div class="empty-state">
+            <span class="empty-icon">🔍</span>
+            <h2>Sin resultados</h2>
+            <p>No encontramos lo que buscas. Intenta con otros filtros.</p>
+            <a routerLink="/products" class="btn btn-outline">Limpiar Filtros</a>
+          </div>
+        }
+      </main>
+    </div>
+  </div>
+</div>

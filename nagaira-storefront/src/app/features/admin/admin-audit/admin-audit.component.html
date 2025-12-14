@@ -1,0 +1,40 @@
+<div class="admin-audit">
+  <div class="page-header">
+    <h1>Auditoría</h1>
+    <p>Registro de acciones administrativas</p>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">Cargando logs de auditoría...</div>
+  } @else if (auditLogs().length === 0) {
+    <div class="empty-state">
+      <p>No hay registros de auditoría</p>
+    </div>
+  } @else {
+    <div class="audit-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Usuario</th>
+            <th>Acción</th>
+            <th>Entidad</th>
+            <th>ID Entidad</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (log of auditLogs(); track log.id) {
+            <tr>
+              <td>{{ log.createdAt | date:'short' }}</td>
+              <td>{{ log.userName }}</td>
+              <td><span class="badge">{{ log.action }}</span></td>
+              <td>{{ log.entityType }}</td>
+              <td>{{ log.entityId }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+

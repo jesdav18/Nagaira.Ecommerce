@@ -1,0 +1,95 @@
+<div class="admin-categories">
+  <div class="page-header">
+    <h1>Gestión de Categorías</h1>
+    <button class="btn btn-primary" routerLink="/admin/categories/new">+ Nueva Categoría</button>
+  </div>
+
+  <div class="filters">
+    <div class="search-box">
+      <input 
+        type="text" 
+        placeholder="Buscar categorías..." 
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)"
+        (keyup.enter)="onSearch()"
+      >
+      <button (click)="onSearch()" class="btn btn-secondary">Buscar</button>
+    </div>
+    
+    <div class="filter-group">
+      <label>Estado:</label>
+      <select [ngModel]="isActiveFilter()" (ngModelChange)="isActiveFilter.set($event); onFilterChange()">
+        <option [value]="null">Todas</option>
+        <option [value]="true">Activas</option>
+        <option [value]="false">Inactivas</option>
+      </select>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">Cargando categorías...</div>
+  } @else if (filteredCategories().length === 0) {
+    <div class="empty-state">
+      <p>No se encontraron categorías</p>
+    </div>
+  } @else {
+    <div class="categories-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Imagen</th>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Slug</th>
+            <th>Categoría Padre</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (category of filteredCategories(); track category.id) {
+            <tr>
+              <td>
+                @if (category.imageUrl) {
+                  <img [src]="category.imageUrl" [alt]="category.name" class="category-image">
+                } @else {
+                  <span class="no-image">-</span>
+                }
+              </td>
+              <td>
+                <strong>{{ category.name }}</strong>
+              </td>
+              <td>{{ category.description || '-' }}</td>
+              <td>{{ category.slug }}</td>
+              <td>{{ getParentCategoryName(category.parentCategoryId) }}</td>
+              <td>
+                <span [class]="category.isActive ? 'badge active' : 'badge inactive'">
+                  {{ category.isActive ? 'Activa' : 'Inactiva' }}
+                </span>
+              </td>
+              <td>
+                <div class="actions">
+                  <button class="btn btn-sm btn-secondary" [routerLink]="['/admin/categories', category.id]">
+                    Editar
+                  </button>
+                  <button 
+                    class="btn btn-sm" 
+                    [class.btn-success]="!category.isActive"
+                    [class.btn-warning]="category.isActive"
+                    (click)="toggleCategoryStatus(category)"
+                  >
+                    {{ category.isActive ? 'Desactivar' : 'Activar' }}
+                  </button>
+                  <button class="btn btn-sm btn-danger" (click)="deleteCategory(category.id)">
+                    Eliminar
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+

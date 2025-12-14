@@ -1,0 +1,102 @@
+<div class="admin-payment-method-form">
+  <div class="page-header">
+    <h1>{{ paymentMethodId() ? 'Editar Medio de Pago' : 'Nuevo Medio de Pago' }}</h1>
+    <button class="btn btn-secondary" routerLink="/admin/payment-methods">← Volver</button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">Cargando...</div>
+  } @else {
+    <form class="payment-method-form" #paymentMethodForm="ngForm">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nombre *</label>
+          <input type="text" [(ngModel)]="formData.name" name="name" required>
+        </div>
+
+        <div class="form-group">
+          <label>Tipo *</label>
+          <select [(ngModel)]="formData.type" name="type" (ngModelChange)="onTypeChange()" required>
+            @for (type of paymentMethodTypes(); track type.value) {
+              <option [value]="type.value">{{ type.label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Descripción</label>
+        <textarea [(ngModel)]="formData.description" name="description" rows="3"></textarea>
+      </div>
+
+      @if (requiresAccountNumber()) {
+        <div class="form-group">
+          <label>Número de Cuenta *</label>
+          <input type="text" [(ngModel)]="formData.accountNumber" name="accountNumber" required>
+        </div>
+      }
+
+      @if (requiresAccountNumber()) {
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nombre del Banco</label>
+            <input type="text" [(ngModel)]="formData.bankName" name="bankName">
+          </div>
+
+          <div class="form-group">
+            <label>Titular de la Cuenta</label>
+            <input type="text" [(ngModel)]="formData.accountHolderName" name="accountHolderName">
+          </div>
+        </div>
+      } @else if (requiresWalletInfo()) {
+        <div class="form-row">
+          <div class="form-group">
+            <label>Proveedor de Billetera</label>
+            <input type="text" [(ngModel)]="formData.walletProvider" name="walletProvider" placeholder="Ej: PayPal, Venmo, etc.">
+          </div>
+
+          <div class="form-group">
+            <label>Número de Billetera *</label>
+            <input type="text" [(ngModel)]="formData.walletNumber" name="walletNumber" required>
+          </div>
+        </div>
+      } @else if (requiresNoAccountInfo()) {
+        <div class="form-group">
+          <p class="info-text">Este tipo de medio de pago no requiere información adicional de cuenta.</p>
+        </div>
+      }
+
+      <div class="form-group">
+        <label>URL del Código QR</label>
+        <input type="url" [(ngModel)]="formData.qrCodeUrl" name="qrCodeUrl" placeholder="https://...">
+      </div>
+
+      <div class="form-group">
+        <label>Instrucciones</label>
+        <textarea [(ngModel)]="formData.instructions" name="instructions" rows="4" placeholder="Instrucciones para el cliente sobre cómo realizar el pago..."></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Orden de Visualización</label>
+          <input type="number" [(ngModel)]="formData.displayOrder" name="displayOrder" min="0">
+        </div>
+
+        <div class="form-group">
+          <label>
+            <input type="checkbox" [(ngModel)]="formData.isActive" name="isActive">
+            Medio de pago activo
+          </label>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" routerLink="/admin/payment-methods">Cancelar</button>
+        <button type="button" class="btn btn-primary" [disabled]="saving()" (click)="save()">
+          {{ saving() ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+  }
+</div>
+

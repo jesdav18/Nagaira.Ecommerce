@@ -1,0 +1,154 @@
+<div class="admin-inventory">
+  <div class="page-header">
+    <h1>Dashboard de Inventario</h1>
+    <p class="subtitle">Resumen y análisis del inventario</p>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">Cargando información del inventario...</div>
+  } @else if (report()) {
+    <div class="dashboard-content">
+      <div class="metrics-grid">
+        <div class="metric-card primary">
+          <div class="metric-icon">💰</div>
+          <div class="metric-content">
+            <h3>{{ report()?.totalInventoryValue | appCurrency:'1.0-0' }}</h3>
+            <p>Valor Total del Inventario</p>
+          </div>
+        </div>
+
+        <div class="metric-card success">
+          <div class="metric-icon">📦</div>
+          <div class="metric-content">
+            <h3>{{ report()?.totalProducts || 0 }}</h3>
+            <p>Total de Productos</p>
+            <span class="metric-sub">{{ report()?.productsInStock || 0 }} con stock</span>
+          </div>
+        </div>
+
+        <div class="metric-card warning">
+          <div class="metric-icon">⚠️</div>
+          <div class="metric-content">
+            <h3>{{ report()?.productsLowStock || 0 }}</h3>
+            <p>Stock Bajo (≤10)</p>
+            <span class="metric-sub">Requieren atención</span>
+          </div>
+        </div>
+
+        <div class="metric-card danger">
+          <div class="metric-icon">🚫</div>
+          <div class="metric-content">
+            <h3>{{ report()?.productsOutOfStock || 0 }}</h3>
+            <p>Sin Stock</p>
+            <span class="metric-sub">Necesitan reposición</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="alerts-section">
+        <div class="section-header">
+          <h2>Alertas de Inventario</h2>
+          <div class="filter-tabs">
+            <button 
+              class="filter-tab" 
+              [class.active]="alertFilter() === 'all'"
+              (click)="alertFilter.set('all')">
+              Todas
+            </button>
+            <button 
+              class="filter-tab" 
+              [class.active]="alertFilter() === 'low'"
+              (click)="alertFilter.set('low')">
+              Stock Bajo
+            </button>
+            <button 
+              class="filter-tab" 
+              [class.active]="alertFilter() === 'out'"
+              (click)="alertFilter.set('out')">
+              Sin Stock
+            </button>
+          </div>
+        </div>
+
+        @if (getAlertProducts().length === 0) {
+          <div class="empty-state">
+            <p>✅ No hay productos que requieran atención</p>
+          </div>
+        } @else {
+          <div class="alerts-list">
+            @for (item of getAlertProducts(); track item.productId) {
+              <div class="alert-card" [class.low]="item.availableQuantity > 0 && item.availableQuantity <= 10" [class.out]="item.availableQuantity === 0">
+                <div class="alert-info">
+                  <h4>{{ item.productName }}</h4>
+                  <p class="alert-sku">SKU: {{ item.sku }}</p>
+                  <div class="alert-details">
+                    <span class="stock-badge" [class.warning]="item.availableQuantity > 0 && item.availableQuantity <= 10" [class.danger]="item.availableQuantity === 0">
+                      Stock: {{ item.availableQuantity }}
+                    </span>
+                    @if (item.totalValue) {
+                      <span class="value-badge">Valor: {{ item.totalValue | appCurrency:'1.0-0' }}</span>
+                    }
+                  </div>
+                </div>
+                <div class="alert-actions">
+                  <button class="btn btn-sm btn-primary" [routerLink]="['/admin/products', item.productId]">
+                    Gestionar
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="top-products-section">
+        <h2>Productos Más Valiosos en Inventario</h2>
+        @if (getTopValuableProducts().length === 0) {
+          <div class="empty-state">
+            <p>No hay productos con valor calculado</p>
+          </div>
+        } @else {
+          <div class="top-products-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>SKU</th>
+                  <th>Stock</th>
+                  <th>Costo Promedio</th>
+                  <th>Valor Total</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of getTopValuableProducts(); track item.productId) {
+                  <tr>
+                    <td><strong>{{ item.productName }}</strong></td>
+                    <td>{{ item.sku }}</td>
+                    <td>
+                      <span [class.low-stock]="item.availableQuantity <= 10">
+                        {{ item.availableQuantity }}
+                      </span>
+                    </td>
+                    <td>{{ item.averageCost | appCurrency:'1.2-2' }}</td>
+                    <td><strong>{{ item.totalValue | appCurrency:'1.0-0' }}</strong></td>
+                    <td>
+                      <button class="btn btn-sm btn-secondary" [routerLink]="['/admin/products', item.productId]">
+                        Ver
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="empty-state">
+      <p>No se pudo cargar la información del inventario</p>
+    </div>
+  }
+</div>
+

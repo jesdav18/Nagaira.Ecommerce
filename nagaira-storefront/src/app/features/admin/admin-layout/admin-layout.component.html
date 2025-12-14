@@ -1,0 +1,64 @@
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="sidebar-header">
+      <h2>🔧 Backoffice</h2>
+      <p>Nagaira Ecommerce</p>
+    </div>
+    
+    <nav class="sidebar-nav">
+      <a routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">Dashboard</span>
+      </a>
+      
+      <a routerLink="/admin/products" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">📦</span>
+        <span class="nav-label">Productos</span>
+      </a>
+      
+      <a routerLink="/admin/kardex" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">📋</span>
+        <span class="nav-label">Kardex</span>
+      </a>
+      
+      <a routerLink="/admin/offers" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">🎁</span>
+        <span class="nav-label">Ofertas</span>
+      </a>
+      
+      <a routerLink="/admin/categories" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">📁</span>
+        <span class="nav-label">Categorías</span>
+      </a>
+      
+      <a routerLink="/admin/payment-methods" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">💳</span>
+        <span class="nav-label">Medios de Pago</span>
+      </a>
+      
+      <a routerLink="/admin/settings" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Configuración</span>
+      </a>
+      
+      <a routerLink="/admin/reports" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">📈</span>
+        <span class="nav-label">Reportes</span>
+      </a>
+      
+      <a routerLink="/admin/audit" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">📝</span>
+        <span class="nav-label">Auditoría</span>
+      </a>
+    </nav>
+    
+    <div class="sidebar-footer">
+      <a routerLink="/" class="back-link">← Volver al Ecommerce</a>
+    </div>
+  </aside>
+  
+  <main class="admin-content">
+    <router-outlet></router-outlet>
+  </main>
+</div>
+

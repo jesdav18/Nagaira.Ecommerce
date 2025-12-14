@@ -1,0 +1,44 @@
+<div class="orders-page">
+  <div class="container">
+    <h1 class="page-title">Mis Órdenes</h1>
+
+    @if (loading()) {
+      <div class="loading-state">Cargando tus pedidos...</div>
+    } @else if (orders().length > 0) {
+      <div class="orders-list">
+        @for (order of orders(); track order.id) {
+          <div class="order-card">
+            <div class="order-header">
+              <div class="order-meta">
+                <span class="order-number">Orden #{{ order.orderNumber }}</span>
+                <span class="order-date">{{ order.createdAt | date:'mediumDate' }}</span>
+              </div>
+              <span class="order-status status-{{ order.status }}">
+                {{ getStatusLabel(order.status) }}
+              </span>
+            </div>
+
+            <div class="order-items-preview">
+              @for (item of order.items; track item.productId) {
+                <span class="item-preview">
+                  {{ item.quantity }}x {{ item.productName }}
+                </span>
+              }
+            </div>
+
+            <div class="order-footer">
+              <span class="order-total">Total: {{ order.total | appCurrency:'1.2-2' }}</span>
+              <!-- <a [routerLink]="['/orders', order.id]" class="btn-details">Ver Detalles</a> -->
+            </div>
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="empty-state">
+        <span class="empty-icon">📦</span>
+        <h2>No tienes órdenes todavía</h2>
+        <a routerLink="/products" class="btn btn-primary">Ir a comprar</a>
+      </div>
+    }
+  </div>
+</div>

@@ -1,0 +1,68 @@
+<div class="admin-category-form">
+  <div class="page-header">
+    <h1>{{ categoryId() ? 'Editar Categoría' : 'Nueva Categoría' }}</h1>
+    <button class="btn btn-secondary" routerLink="/admin/categories">← Volver</button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">Cargando...</div>
+  } @else {
+    <form (ngSubmit)="save()" class="category-form">
+      <div class="form-group">
+        <label>Nombre *</label>
+        <input type="text" [(ngModel)]="formData.name" name="name" required>
+      </div>
+
+      <div class="form-group">
+        <label>Descripción</label>
+        <textarea [(ngModel)]="formData.description" name="description" rows="4"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Imagen de la Categoría</label>
+        <div class="image-upload-section">
+          @if (formData.imageUrl) {
+            <div class="image-preview">
+              <img [src]="formData.imageUrl" alt="Preview">
+              <button type="button" class="btn-remove-image" (click)="removeImage()">✕</button>
+            </div>
+          } @else {
+            <div class="image-upload-placeholder">
+              <p>No hay imagen seleccionada</p>
+            </div>
+          }
+          <div class="upload-controls">
+            <input type="file" accept="image/*" (change)="uploadImage($event)" [disabled]="uploadingImage()">
+            @if (uploadingImage()) {
+              <span class="upload-status">Subiendo imagen...</span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Categoría Padre</label>
+        <select [(ngModel)]="formData.parentCategoryId" name="parentCategoryId">
+          <option [value]="null">Ninguna (Categoría Principal)</option>
+          @for (cat of categories(); track cat.id) {
+            <option [value]="cat.id">{{ cat.name }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input type="checkbox" [(ngModel)]="formData.isActive" name="isActive">
+          Categoría activa
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" routerLink="/admin/categories">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">
+          {{ saving() ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+  }
+</div>

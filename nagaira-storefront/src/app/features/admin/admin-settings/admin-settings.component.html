@@ -1,0 +1,106 @@
+<div class="admin-settings">
+  <div class="page-header">
+    <h1>⚙️ Configuración General</h1>
+    <p class="subtitle">Gestiona la configuración general de la aplicación</p>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">Cargando configuración...</div>
+  } @else {
+    <div class="filters-section">
+      <div class="filters-row">
+        <div class="filter-group">
+          <label>Buscar:</label>
+          <input 
+            type="text" 
+            placeholder="Buscar por clave, etiqueta o descripción..." 
+            [ngModel]="searchTerm()"
+            (ngModelChange)="searchTerm.set($event); onSearch()"
+          >
+        </div>
+
+        <div class="filter-group">
+          <label>Categoría:</label>
+          <select 
+            [ngModel]="categoryFilter()" 
+            (ngModelChange)="categoryFilter.set($event); onCategoryFilterChange()"
+          >
+            <option value="">Todas</option>
+            @for (category of categories(); track category) {
+              <option [value]="category">{{ getCategoryLabel(category) }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </div>
+
+    @if (groupedSettings().size === 0) {
+      <div class="empty-state">
+        <p>No se encontraron configuraciones</p>
+      </div>
+    } @else {
+      <div class="settings-container">
+        @for (category of getCategoriesArray(); track category) {
+          <div class="settings-category">
+            <h2 class="category-title">{{ getCategoryLabel(category) }}</h2>
+            
+            <div class="settings-list">
+              @for (setting of getSettingsForCategory(category); track setting.id) {
+                <div class="setting-item">
+                  <div class="setting-header">
+                    <div class="setting-info">
+                      <h3>{{ setting.label }}</h3>
+                      @if (setting.description) {
+                        <p class="setting-description">{{ setting.description }}</p>
+                      }
+                      <small class="setting-key">Clave: <code>{{ setting.key }}</code></small>
+                    </div>
+                    <div class="setting-status">
+                      <span [class]="setting.isActive ? 'status-active' : 'status-inactive'">
+                        {{ setting.isActive ? 'Activo' : 'Inactivo' }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="setting-controls">
+                    @if (setting.dataType === 'boolean') {
+                      <label class="checkbox-label">
+                      <input 
+                        type="checkbox" 
+                        [checked]="setting.value === 'true'"
+                        (change)="onBooleanChange(setting, $event)"
+                        [disabled]="saving()"
+                      >
+                        <span>{{ setting.value === 'true' ? 'Habilitado' : 'Deshabilitado' }}</span>
+                      </label>
+                    } @else {
+                      <div class="input-group">
+                        <input 
+                          [type]="getDataTypeInputType(setting.dataType)"
+                          [ngModel]="setting.value"
+                          (ngModelChange)="setting.value = $event"
+                          (blur)="updateSetting(setting)"
+                          [disabled]="saving()"
+                          [step]="setting.dataType === 'decimal' ? '0.01' : undefined"
+                          class="setting-input"
+                        >
+                        <button 
+                          class="btn btn-primary btn-sm"
+                          (click)="updateSetting(setting)"
+                          [disabled]="saving()"
+                        >
+                          {{ saving() ? 'Guardando...' : 'Guardar' }}
+                        </button>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>
+

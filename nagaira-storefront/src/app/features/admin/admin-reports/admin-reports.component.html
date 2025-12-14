@@ -1,0 +1,34 @@
+<div class="admin-reports">
+  <div class="page-header">
+    <h1>Reportes</h1>
+  </div>
+
+  <div class="reports-grid">
+    <div class="report-card">
+      <div class="report-icon">📊</div>
+      <h3>Reporte de Ventas</h3>
+      <p>Exporta un reporte completo de ventas del último mes</p>
+      <button 
+        class="btn btn-primary" 
+        (click)="generateSalesReport()"
+        [disabled]="generating()"
+      >
+        {{ generating() ? 'Generando...' : 'Generar Reporte' }}
+      </button>
+    </div>
+
+    <div class="report-card">
+      <div class="report-icon">📦</div>
+      <h3>Reporte de Inventario</h3>
+      <p>Exporta un reporte completo del estado del inventario</p>
+      <button 
+        class="btn btn-primary" 
+        (click)="generateInventoryReport()"
+        [disabled]="generating()"
+      >
+        {{ generating() ? 'Generando...' : 'Generar Reporte' }}
+      </button>
+    </div>
+  </div>
+</div>
+

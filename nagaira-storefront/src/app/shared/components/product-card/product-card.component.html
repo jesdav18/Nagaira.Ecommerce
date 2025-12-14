@@ -1,0 +1,40 @@
+<a [routerLink]="['/products', product.id]" class="product-card">
+  <div class="product-image-wrapper">
+    <img [src]="primaryImage" [alt]="product.name" class="product-image">
+    
+    @if (hasDiscount) {
+      <div class="discount-badge">-{{ discountPercentage }}%</div>
+    }
+    
+    @if (stock <= 5 && stock > 0) {
+      <div class="stock-badge warning">¡Últimas {{ stock }} unidades!</div>
+    }
+    
+    @if (stock === 0) {
+      <div class="stock-badge error">Agotado</div>
+    }
+  </div>
+
+  <div class="product-info">
+    <p class="product-category">{{ product.categoryName }}</p>
+    <h3 class="product-name">{{ product.name }}</h3>
+    
+    <div class="product-pricing">
+      <span class="price-current">{{ finalPrice | appCurrency:'1.2-2' }}</span>
+    </div>
+
+    <button 
+      class="btn-add-cart" 
+      (click)="addToCart($event)"
+      [disabled]="stock === 0 || addingToCart"
+      [class.adding]="addingToCart">
+      @if (addingToCart) {
+        <span>✓ Agregado</span>
+      } @else if (stock === 0) {
+        <span>No disponible</span>
+      } @else {
+        <span>Agregar al carrito</span>
+      }
+    </button>
+  </div>
+</a>

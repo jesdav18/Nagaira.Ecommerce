@@ -1,0 +1,167 @@
+<div class="admin-kardex-detail">
+  <div class="page-header">
+    <h1>📋 Kardex del Producto</h1>
+    <button class="btn btn-secondary" routerLink="/admin/kardex">← Volver al Kardex</button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">Cargando...</div>
+  } @else {
+    @if (product()) {
+      <div class="product-info-section">
+        <h2>{{ product()?.name }}</h2>
+        <p class="product-sku">SKU: {{ product()?.sku }}</p>
+        <p class="product-description">{{ product()?.description }}</p>
+      </div>
+
+      <div class="balance-section">
+        <h3>Balance Actual</h3>
+        <div class="balance-cards">
+          <div class="balance-card available">
+            <div class="balance-label">Disponible</div>
+            <div class="balance-value">{{ balance()?.availableQuantity || 0 }}</div>
+          </div>
+          <div class="balance-card reserved">
+            <div class="balance-label">Reservado</div>
+            <div class="balance-value">{{ balance()?.reservedQuantity || 0 }}</div>
+          </div>
+          <div class="balance-card total">
+            <div class="balance-label">Total</div>
+            <div class="balance-value">
+              {{ (balance()?.availableQuantity || 0) + (balance()?.reservedQuantity || 0) }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="movements-section">
+        <h3>Historial de Movimientos</h3>
+        @if (movements().length === 0) {
+          <div class="empty-state">
+            <p>No hay movimientos registrados</p>
+          </div>
+        } @else {
+          <div class="movements-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Tipo</th>
+                  <th>Cantidad</th>
+                  <th>Referencia</th>
+                  <th>Costo Unitario</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (movement of movements(); track movement.id) {
+                  <tr [class.positive]="movement.quantity > 0" [class.negative]="movement.quantity < 0">
+                    <td>{{ movement.createdAt | date:'short' }}</td>
+                    <td>
+                      <span class="movement-type">{{ getMovementTypeLabel(movement.movementType) }}</span>
+                    </td>
+                    <td [class.positive]="movement.quantity > 0" [class.negative]="movement.quantity < 0">
+                      {{ movement.quantity > 0 ? '+' : '' }}{{ movement.quantity }}
+                    </td>
+                    <td>{{ movement.referenceNumber || '-' }}</td>
+                    <td>{{ movement.costPerUnit ? (movement.costPerUnit | currency) : '-' }}</td>
+                    <td>
+                      {{ movement.costPerUnit ? (movement.quantity * movement.costPerUnit | currency) : '-' }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+
+      <div class="movement-form-section">
+        <div class="section-header">
+          <h3>Nuevo Movimiento</h3>
+          <button 
+            class="btn btn-secondary" 
+            (click)="toggleMovementForm()"
+            [class.active]="showMovementForm()">
+            {{ showMovementForm() ? 'Cancelar' : 'Agregar Movimiento' }}
+          </button>
+        </div>
+
+        @if (showMovementForm()) {
+          <form (ngSubmit)="createMovement()" class="movement-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Tipo de Movimiento *</label>
+                <select [(ngModel)]="movementForm.movementType" name="movementType" required>
+                  @for (type of movementTypes(); track type.value) {
+                    <option [value]="type.value">{{ type.label }}</option>
+                  }
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Cantidad *</label>
+                <input 
+                  type="number" 
+                  [(ngModel)]="movementForm.quantity" 
+                  name="quantity" 
+                  [min]="movementForm.movementType === 'Adjustment' ? '-999999' : '1'"
+                  required>
+                @if (movementForm.movementType === 'Adjustment') {
+                  <small style="color: #666; margin-top: 0.25rem; font-size: 0.85rem;">
+                    Para ajustes negativos, ingrese un número negativo
+                  </small>
+                }
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Número de Referencia</label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="movementForm.referenceNumber" 
+                  name="referenceNumber"
+                  placeholder="Ej: FACT-001, OC-123">
+              </div>
+
+              <div class="form-group">
+                <label>Costo por Unidad</label>
+                <input 
+                  type="number" 
+                  [(ngModel)]="movementForm.costPerUnit" 
+                  name="costPerUnit"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Notas</label>
+              <textarea 
+                [(ngModel)]="movementForm.notes" 
+                name="notes"
+                rows="3"
+                placeholder="Observaciones adicionales..."></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" (click)="toggleMovementForm()">
+                Cancelar
+              </button>
+              <button type="submit" class="btn btn-primary" [disabled]="saving()">
+                {{ saving() ? 'Guardando...' : 'Crear Movimiento' }}
+              </button>
+            </div>
+          </form>
+        }
+      </div>
+    } @else {
+      <div class="empty-state">
+        <p>Producto no encontrado</p>
+      </div>
+    }
+  }
+</div>
+

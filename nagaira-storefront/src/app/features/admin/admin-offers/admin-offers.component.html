@@ -1,0 +1,41 @@
+<div class="admin-offers">
+  <div class="page-header">
+    <h1>Gestión de Ofertas</h1>
+    <button class="btn btn-primary">+ Nueva Oferta</button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">Cargando ofertas...</div>
+  } @else if (offers().length === 0) {
+    <div class="empty-state">
+      <p>No hay ofertas registradas</p>
+    </div>
+  } @else {
+    <div class="offers-grid">
+      @for (offer of offers(); track offer.id) {
+        <div class="offer-card">
+          <h3>{{ offer.name }}</h3>
+          <p>{{ offer.description }}</p>
+          <div class="offer-details">
+            <span class="badge" [class.active]="offer.isActive">
+              {{ offer.isActive ? 'Activa' : 'Inactiva' }}
+            </span>
+            <span class="offer-type">{{ offer.offerType }}</span>
+          </div>
+          <div class="offer-actions">
+            <button class="btn btn-sm btn-secondary">Editar</button>
+            <button 
+              class="btn btn-sm"
+              [class.btn-success]="!offer.isActive"
+              [class.btn-warning]="offer.isActive"
+              (click)="toggleOfferStatus(offer)"
+            >
+              {{ offer.isActive ? 'Desactivar' : 'Activar' }}
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+

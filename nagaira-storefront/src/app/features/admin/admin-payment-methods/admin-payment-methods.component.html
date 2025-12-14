@@ -1,0 +1,92 @@
+<div class="admin-payment-methods">
+  <div class="page-header">
+    <h1>Gestión de Medios de Pago</h1>
+    <button class="btn btn-primary" routerLink="/admin/payment-methods/new">+ Nuevo Medio de Pago</button>
+  </div>
+
+  <div class="filters">
+    <div class="search-box">
+      <input 
+        type="text" 
+        placeholder="Buscar medios de pago..." 
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)"
+        (keyup.enter)="onSearch()"
+      >
+      <button (click)="onSearch()" class="btn btn-secondary">Buscar</button>
+    </div>
+    
+    <div class="filter-group">
+      <label>Estado:</label>
+      <select [ngModel]="isActiveFilter()" (ngModelChange)="isActiveFilter.set($event); onFilterChange()">
+        <option [value]="null">Todos</option>
+        <option [value]="true">Activos</option>
+        <option [value]="false">Inactivos</option>
+      </select>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">Cargando medios de pago...</div>
+  } @else if (filteredPaymentMethods().length === 0) {
+    <div class="empty-state">
+      <p>No se encontraron medios de pago</p>
+    </div>
+  } @else {
+    <div class="payment-methods-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Tipo</th>
+            <th>Número de Cuenta</th>
+            <th>Banco/Proveedor</th>
+            <th>Orden</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (pm of filteredPaymentMethods(); track pm.id) {
+            <tr>
+              <td>
+                <strong>{{ pm.name }}</strong>
+                @if (pm.description) {
+                  <br><small>{{ pm.description }}</small>
+                }
+              </td>
+              <td>{{ getTypeLabel(pm.type) }}</td>
+              <td>{{ pm.accountNumber }}</td>
+              <td>{{ pm.bankName || pm.walletProvider || '-' }}</td>
+              <td>{{ pm.displayOrder }}</td>
+              <td>
+                <span [class]="pm.isActive ? 'badge active' : 'badge inactive'">
+                  {{ pm.isActive ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td>
+                <div class="actions">
+                  <button class="btn btn-sm btn-secondary" [routerLink]="['/admin/payment-methods', pm.id]">
+                    Editar
+                  </button>
+                  <button 
+                    class="btn btn-sm" 
+                    [class.btn-success]="!pm.isActive"
+                    [class.btn-warning]="pm.isActive"
+                    (click)="togglePaymentMethodStatus(pm)"
+                  >
+                    {{ pm.isActive ? 'Desactivar' : 'Activar' }}
+                  </button>
+                  <button class="btn btn-sm btn-danger" (click)="deletePaymentMethod(pm.id)">
+                    Eliminar
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+

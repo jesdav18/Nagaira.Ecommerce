@@ -1,0 +1,68 @@
+<div class="profile-page">
+  <div class="container">
+    <h1 class="page-title">Mi Perfil</h1>
+
+    <div class="profile-layout">
+      <!-- Panel de Info -->
+      <section class="profile-card info-card">
+        <div class="user-header">
+           <div class="user-avatar">
+             {{ authService.currentUser()?.firstName?.charAt(0) }}
+           </div>
+           <div class="user-details">
+             <h2>{{ authService.currentUser()?.firstName }} {{ authService.currentUser()?.lastName }}</h2>
+             <p class="user-email">{{ authService.currentUser()?.email }}</p>
+             <span class="user-role">{{ authService.currentUser()?.role }}</span>
+           </div>
+        </div>
+        
+        <hr class="divider">
+
+        <div class="info-grid">
+           <div class="info-item">
+             <label>Teléfono</label>
+             <p>{{ authService.currentUser()?.phoneNumber || 'No registrado' }}</p>
+           </div>
+           <!-- <div class="info-item">
+             <label>ID de Usuario</label>
+             <p class="mono">{{ authService.currentUser()?.id }}</p>
+           </div> -->
+        </div>
+      </section>
+
+      <!-- Panel de Cambio de Password -->
+      <section class="profile-card security-card">
+        <h3>Seguridad</h3>
+        <p class="section-desc">Actualiza tu contraseña para mantener tu cuenta segura.</p>
+
+        <form [formGroup]="passwordForm" (ngSubmit)="onSubmitPassword()" class="password-form">
+          
+          @if (message()) {
+            <div class="alert" [class.alert-success]="message()?.type === 'success'" [class.alert-error]="message()?.type === 'error'">
+              {{ message()?.text }}
+            </div>
+          }
+
+          <div class="form-group">
+            <label for="oldPassword">Contraseña Actual</label>
+            <input type="password" id="oldPassword" formControlName="oldPassword" class="form-control" placeholder="••••••••">
+          </div>
+
+          <div class="form-group">
+            <label for="newPassword">Nueva Contraseña</label>
+            <input type="password" id="newPassword" formControlName="newPassword" class="form-control" placeholder="Mínimo 6 caracteres">
+          </div>
+
+          <div class="form-group">
+            <label for="confirmPassword">Confirmar Nueva Contraseña</label>
+            <input type="password" id="confirmPassword" formControlName="confirmPassword" class="form-control" placeholder="••••••••">
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" [disabled]="passwordForm.invalid || loading()">
+            {{ loading() ? 'Actualizando...' : 'Actualizar Contraseña' }}
+          </button>
+        </form>
+      </section>
+    </div>
+  </div>
+</div>

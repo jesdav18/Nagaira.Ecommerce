@@ -1,0 +1,77 @@
+<div class="home">
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <h1 class="hero-title">
+          Descubre lo <span class="gradient-text">Extraordinario</span>
+        </h1>
+        <p class="hero-subtitle">
+          Los mejores productos de tecnología, moda y más. Todo en un solo lugar.
+        </p>
+        <div class="hero-actions">
+          <a routerLink="/products" class="btn btn-primary btn-lg">
+            Explorar Productos
+          </a>
+          <a routerLink="/categories" class="btn btn-secondary btn-lg">
+            Ver Categorías
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="featured-section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Productos Destacados</h2>
+        <a routerLink="/products" class="view-all">
+          Ver todos →
+        </a>
+      </div>
+
+      @if (loading()) {
+        <div class="loading-grid">
+          @for (i of [1,2,3,4,5,6,7,8]; track i) {
+            <div class="skeleton-card"></div>
+          }
+        </div>
+      } @else {
+        <div class="products-grid">
+          @for (product of featuredProducts(); track product.id) {
+            <app-product-card [product]="product" />
+          }
+        </div>
+      }
+    </div>
+  </section>
+
+  <section class="features-section">
+    <div class="container">
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🚚</div>
+          <h3 class="feature-title">Envío Gratis</h3>
+          <p class="feature-text">En compras mayores a $500</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <h3 class="feature-title">Pago Seguro</h3>
+          <p class="feature-text">Protección en todas tus compras</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3 class="feature-title">Entrega Rápida</h3>
+          <p class="feature-text">Recibe en 24-48 horas</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">💬</div>
+          <h3 class="feature-title">Soporte 24/7</h3>
+          <p class="feature-text">Estamos aquí para ayudarte</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

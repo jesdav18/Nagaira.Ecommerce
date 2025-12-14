@@ -1,0 +1,98 @@
+<div class="cart-page">
+  <div class="container">
+    <h1 class="page-title">Tu Carrito</h1>
+
+    @if (cartService.itemCount() > 0) {
+      <div class="cart-grid">
+        <!-- Lista de Items -->
+        <div class="cart-items">
+          @for (item of cartService.cartItems(); track item.product.id) {
+            <div class="cart-item">
+              <div class="item-image">
+                <img 
+                  [src]="item.product.images && item.product.images.length > 0 ? item.product.images[0].imageUrl : '/assets/placeholder.jpg'" 
+                  [alt]="item.product.name"
+                >
+              </div>
+              
+              <div class="item-details">
+                <a [routerLink]="['/products', item.product.id]" class="item-name">
+                  {{ item.product.name }}
+                </a>
+                <span class="item-category">{{ item.product.categoryName }}</span>
+                <div class="item-price">
+                  {{ getItemPrice(item.product) | appCurrency:'1.2-2' }}
+                </div>
+              </div>
+
+              <div class="item-actions">
+                <div class="quantity-control">
+                  <button 
+                    (click)="updateQuantity(item.product.id, item.quantity - 1)"
+                    [disabled]="item.quantity <= 1">
+                    −
+                  </button>
+                  <input type="number" [value]="item.quantity" readonly>
+                  <button 
+                    (click)="updateQuantity(item.product.id, item.quantity + 1)"
+                    [disabled]="item.quantity >= getItemStock(item.product)">
+                    +
+                  </button>
+                </div>
+                
+                <div class="item-subtotal">
+                  {{ (getItemPrice(item.product) * item.quantity) | appCurrency:'1.2-2' }}
+                </div>
+
+                <button class="remove-btn" (click)="removeItem(item.product.id)">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M19 7L18.1327 19.1425C18.0579 20.1891 17.187 21 16.1378 21H7.86224C6.81296 21 5.94208 20.1891 5.86732 19.1425L5 7M10 11V17M14 11V17M15 7V4C15 3.44772 14.5523 3 14 3H10C9.44772 3 9 3.44772 9 4V7M4 7H20" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Resumen de Orden -->
+        <div class="order-summary">
+          <h2 class="summary-title">Resumen de Orden</h2>
+          
+          <div class="summary-row">
+            <span>Subtotal</span>
+            <span>{{ cartService.subtotal() | appCurrency:'1.2-2' }}</span>
+          </div>
+          
+          <div class="summary-row">
+            <span>Impuestos</span>
+            <span>{{ cartService.tax() | appCurrency:'1.2-2' }}</span>
+          </div>
+          
+          <div class="summary-divider"></div>
+          
+          <div class="summary-row total">
+            <span>Total</span>
+            <span>{{ cartService.total() | appCurrency:'1.2-2' }}</span>
+          </div>
+
+          <a routerLink="/checkout" class="btn btn-primary btn-block checkout-btn">
+            Proceder al Pago
+          </a>
+          
+          <div class="secure-checkout">
+            <span>🔒 Checkout Seguro</span>
+          </div>
+        </div>
+      </div>
+    } @else {
+      <div class="empty-cart">
+        <div class="empty-icon">🛒</div>
+        <h2>Tu carrito está vacío</h2>
+        <p>¡Explora nuestros productos y encuentra algo increíble!</p>
+        <a routerLink="/products" class="btn btn-primary">
+          Ir a Comprar
+        </a>
+      </div>
+    }
+  </div>
+</div>

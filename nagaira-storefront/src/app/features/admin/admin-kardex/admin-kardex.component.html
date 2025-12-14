@@ -1,0 +1,114 @@
+<div class="admin-kardex">
+  <div class="page-header">
+    <h1>📋 Kardex - Historial de Movimientos</h1>
+    <p class="subtitle">Registro completo de todos los movimientos de inventario</p>
+  </div>
+
+  <div class="filters-section">
+    <div class="filters-row">
+      <div class="filter-group">
+        <label>Tipo de Movimiento:</label>
+        <select [ngModel]="movementTypeFilter()" (ngModelChange)="movementTypeFilter.set($event); onFilterChange()">
+          <option value="">Todos</option>
+          @for (type of movementTypes(); track type.value) {
+            <option [value]="type.value">{{ type.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="search-group">
+        <input 
+          type="text" 
+          placeholder="Buscar por producto o referencia..." 
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event)"
+          (keyup.enter)="onSearch()"
+        >
+        <button (click)="onSearch()" class="btn btn-secondary">Buscar</button>
+      </div>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">Cargando historial de movimientos...</div>
+  } @else if (getFilteredMovements().length === 0) {
+    <div class="empty-state">
+      <p>No hay movimientos registrados</p>
+    </div>
+  } @else {
+    <div class="kardex-table-wrapper">
+      <table class="kardex-table">
+        <thead>
+          <tr>
+            <th>Fecha/Hora</th>
+            <th>Producto</th>
+            <th>Tipo</th>
+            <th>Cantidad</th>
+            <th>Referencia</th>
+            <th>Costo Unitario</th>
+            <th>Total</th>
+            <th>Usuario</th>
+            <th>Notas</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (movement of getFilteredMovements(); track movement.id) {
+            <tr [class]="getMovementClass(movement.movementType)">
+              <td>{{ movement.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td>
+                <strong>{{ movement.productName }}</strong>
+              </td>
+              <td>
+                <span class="badge" [class]="getMovementClass(movement.movementType)">
+                  {{ getMovementTypeLabel(movement.movementType) }}
+                </span>
+              </td>
+              <td class="quantity" [class.positive]="movement.quantity > 0" [class.negative]="movement.quantity < 0">
+                {{ movement.quantity > 0 ? '+' : '' }}{{ movement.quantity }}
+              </td>
+              <td>{{ movement.referenceNumber || '-' }}</td>
+              <td>{{ movement.costPerUnit | appCurrency:'1.2-2' }}</td>
+              <td>{{ movement.totalCost | appCurrency:'1.2-2' }}</td>
+              <td>
+                <small>{{ movement.createdByName || 'Sistema' }}</small>
+              </td>
+              <td>
+                <small>{{ movement.notes || '-' }}</small>
+              </td>
+              <td>
+                <button class="btn btn-sm btn-secondary" [routerLink]="['/admin/kardex', movement.productId]">
+                  Ver Producto
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (totalPages() > 1) {
+      <div class="pagination">
+        <button 
+          class="btn btn-secondary"
+          [disabled]="pageNumber() === 1"
+          (click)="goToPage(pageNumber() - 1)"
+        >
+          ← Anterior
+        </button>
+        <span class="page-info">
+          Página {{ pageNumber() }} de {{ totalPages() }} 
+          <small>({{ totalCount() }} movimientos)</small>
+        </span>
+        <button 
+          class="btn btn-secondary"
+          [disabled]="pageNumber() === totalPages()"
+          (click)="goToPage(pageNumber() + 1)"
+        >
+          Siguiente →
+        </button>
+      </div>
+    }
+  }
+</div>
+
