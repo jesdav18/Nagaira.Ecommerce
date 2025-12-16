@@ -65,6 +65,7 @@ public class ProductService : IProductService
             Sku = dto.Sku,
             CategoryId = dto.CategoryId,
             Cost = dto.Cost,
+            HasVirtualStock = dto.HasVirtualStock,
             IsActive = true,
             IsDeleted = false,
             CreatedAt = DateTime.UtcNow
@@ -134,6 +135,7 @@ public class ProductService : IProductService
         product.Description = dto.Description;
         product.Cost = dto.Cost;
         product.IsActive = dto.IsActive;
+        product.HasVirtualStock = dto.HasVirtualStock;
         product.UpdatedAt = DateTime.UtcNow;
 
         await _unitOfWork.Products.UpdateAsync(product);
@@ -171,6 +173,7 @@ public class ProductService : IProductService
             product.InventoryBalance?.AvailableQuantity ?? 0,
             product.InventoryBalance?.ReservedQuantity ?? 0,
             product.Cost,
+            product.HasVirtualStock,
             product.Images.Select(i => new ProductImageDto(i.Id, i.ImageUrl, i.AltText, i.IsPrimary, i.DisplayOrder)).ToList(),
             product.Prices.Select(p => new ProductPriceDto(
                 p.Id,

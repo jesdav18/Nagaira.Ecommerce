@@ -52,6 +52,14 @@
             </label>
           </div>
         </div>
+
+        <div class="form-group">
+          <label>
+            <input type="checkbox" [(ngModel)]="formData.hasVirtualStock" name="hasVirtualStock">
+            Stock virtual (Dropshipping)
+          </label>
+          <small>Activa esta opción si el producto tiene stock infinito (modelo dropshipping). No se validará disponibilidad de inventario.</small>
+        </div>
       </div>
 
       <div class="form-section">

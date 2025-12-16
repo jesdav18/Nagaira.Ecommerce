@@ -36,7 +36,8 @@ export class AdminProductFormComponent implements OnInit {
     sku: '',
     categoryId: '',
     cost: null as number | null,
-    isActive: true
+    isActive: true,
+    hasVirtualStock: false
   };
 
   newPrice = {
@@ -100,7 +101,8 @@ export class AdminProductFormComponent implements OnInit {
           sku: product.sku,
           categoryId: product.categoryId,
           cost: product.cost,
-          isActive: product.isActive
+          isActive: product.isActive,
+          hasVirtualStock: product.hasVirtualStock || false
         };
         this.productPrices.set(product.prices || []);
         this.productImages.set(product.images || []);
@@ -310,7 +312,8 @@ export class AdminProductFormComponent implements OnInit {
         name: this.formData.name,
         description: this.formData.description,
         cost: this.formData.cost,
-        isActive: this.formData.isActive
+        isActive: this.formData.isActive,
+        hasVirtualStock: this.formData.hasVirtualStock
       };
     } else {
       productData = {
@@ -319,6 +322,7 @@ export class AdminProductFormComponent implements OnInit {
         sku: this.formData.sku,
         categoryId: this.formData.categoryId,
         cost: this.formData.cost,
+        hasVirtualStock: this.formData.hasVirtualStock,
         prices: newPrices,
         images: newImages
       };

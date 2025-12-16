@@ -60,15 +60,20 @@
           </div>
 
           <div class="product-actions-box">
-            @if (stock > 0) {
+            @if (isVirtual || (stock !== null && stock > 0)) {
               <div class="stock-status in-stock">
-                <span class="dot"></span> Disponible ({{ stock }} unidades)
+                <span class="dot"></span> 
+                @if (isVirtual) {
+                  Disponible
+                } @else {
+                  Disponible ({{ stock }} unidades)
+                }
               </div>
               
               <div class="quantity-selector">
                 <button (click)="decrementQuantity()" [disabled]="quantity() <= 1">−</button>
                 <input type="number" [value]="quantity()" readonly>
-                <button (click)="incrementQuantity()" [disabled]="quantity() >= stock">+</button>
+                <button (click)="incrementQuantity()" [disabled]="!isVirtual && stock !== null && quantity() >= stock">+</button>
               </div>
 
               <button 

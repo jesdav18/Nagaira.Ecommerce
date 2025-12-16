@@ -5,7 +5,7 @@ import { ProductService } from '../../core/services/product.service';
 import { CartService } from '../../core/services/cart.service';
 import { AppCurrencyPipe } from '../../core/pipes/currency.pipe';
 import { Product } from '../../core/models/models';
-import { getProductPrice, getProductStock } from '../../core/utils/product.utils';
+import { getProductPrice, getProductStock, isVirtualStock } from '../../core/utils/product.utils';
 
 @Component({
   selector: 'app-product-detail',
@@ -56,15 +56,24 @@ export class ProductDetailComponent implements OnInit {
     return 0;
   }
 
-  get stock(): number {
+  get stock(): number | null {
     const p = this.product();
-    return p ? getProductStock(p) : 0;
+    return p ? getProductStock(p) : null;
+  }
+
+  get isVirtual(): boolean {
+    const p = this.product();
+    return p ? isVirtualStock(p) : false;
   }
 
   incrementQuantity(): void {
     const p = this.product();
-    if (p && this.quantity() < this.stock) {
-      this.quantity.update(q => q + 1);
+    if (p) {
+      if (this.isVirtual) {
+        this.quantity.update(q => q + 1);
+      } else if (this.stock !== null && this.quantity() < this.stock) {
+        this.quantity.update(q => q + 1);
+      }
     }
   }
 

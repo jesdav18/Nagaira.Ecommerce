@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { Product } from '../../../core/models/models';
 import { CartService } from '../../../core/services/cart.service';
 import { AppCurrencyPipe } from '../../../core/pipes/currency.pipe';
-import { getProductPrice, getProductStock, getPrimaryImage } from '../../../core/utils/product.utils';
+import { getProductPrice, getProductStock, getPrimaryImage, isVirtualStock } from '../../../core/utils/product.utils';
 
 @Component({
   selector: 'app-product-card',
@@ -35,8 +35,12 @@ export class ProductCardComponent {
     return getPrimaryImage(this.product);
   }
 
-  get stock(): number {
+  get stock(): number | null {
     return getProductStock(this.product);
+  }
+
+  get isVirtual(): boolean {
+    return isVirtualStock(this.product);
   }
 
   addToCart(event: Event): void {

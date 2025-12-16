@@ -6,11 +6,11 @@
       <div class="discount-badge">-{{ discountPercentage }}%</div>
     }
     
-    @if (stock <= 5 && stock > 0) {
+    @if (isVirtual) {
+      <div class="stock-badge success">Disponible</div>
+    } @else if (stock !== null && stock <= 5 && stock > 0) {
       <div class="stock-badge warning">¡Últimas {{ stock }} unidades!</div>
-    }
-    
-    @if (stock === 0) {
+    } @else if (stock === 0) {
       <div class="stock-badge error">Agotado</div>
     }
   </div>
@@ -26,11 +26,11 @@
     <button 
       class="btn-add-cart" 
       (click)="addToCart($event)"
-      [disabled]="stock === 0 || addingToCart"
+      [disabled]="(!isVirtual && stock === 0) || addingToCart"
       [class.adding]="addingToCart">
       @if (addingToCart) {
         <span>✓ Agregado</span>
-      } @else if (stock === 0) {
+      } @else if (!isVirtual && stock === 0) {
         <span>No disponible</span>
       } @else {
         <span>Agregar al carrito</span>

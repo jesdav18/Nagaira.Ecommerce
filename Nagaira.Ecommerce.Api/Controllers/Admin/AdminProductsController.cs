@@ -147,7 +147,8 @@ public class AdminProductsController : ControllerBase
                 product.Name,
                 product.Description,
                 product.Cost,
-                true
+                true,
+                product.HasVirtualStock
             );
             await _productService.UpdateProductAsync(updateDto);
             
@@ -180,7 +181,8 @@ public class AdminProductsController : ControllerBase
                 product.Name,
                 product.Description,
                 product.Cost,
-                false
+                false,
+                product.HasVirtualStock
             );
             await _productService.UpdateProductAsync(updateDto);
             

@@ -5,7 +5,7 @@ import { CartService } from '../../core/services/cart.service';
 import { AppSettingsService } from '../../core/services/app-settings.service';
 import { AppCurrencyPipe } from '../../core/pipes/currency.pipe';
 import { Product } from '../../core/models/models';
-import { getProductPrice, getProductStock } from '../../core/utils/product.utils';
+import { getProductPrice, getProductStock, isVirtualStock } from '../../core/utils/product.utils';
 
 @Component({
   selector: 'app-cart',
@@ -35,7 +35,19 @@ export class CartComponent {
     return getProductPrice(product);
   }
 
-  getItemStock(product: Product): number {
+  getItemStock(product: Product): number | null {
     return getProductStock(product);
+  }
+
+  isItemVirtualStock(product: Product): boolean {
+    return isVirtualStock(product);
+  }
+
+  canIncrementQuantity(product: Product, currentQuantity: number): boolean {
+    if (this.isItemVirtualStock(product)) {
+      return true;
+    }
+    const stock = this.getItemStock(product);
+    return stock !== null && currentQuantity < stock;
   }
 }

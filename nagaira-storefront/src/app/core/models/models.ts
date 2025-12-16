@@ -9,6 +9,7 @@ export interface Product {
   cost?: number;
   availableQuantity: number;
   reservedQuantity: number;
+  hasVirtualStock: boolean;
   images: ProductImage[];
   prices: ProductPrice[];
 }

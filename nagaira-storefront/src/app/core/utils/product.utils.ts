@@ -21,12 +21,22 @@ export function getProductPrice(product: Product, priceLevelId?: string): number
   return sortedPrices[0].price;
 }
 
-export function getProductStock(product: Product): number {
+export function getProductStock(product: Product): number | null {
+  if (product.hasVirtualStock) {
+    return null;
+  }
   return product.availableQuantity || 0;
 }
 
 export function hasProductStock(product: Product): boolean {
-  return getProductStock(product) > 0;
+  if (product.hasVirtualStock) {
+    return true;
+  }
+  return getProductStock(product) !== null && (getProductStock(product) ?? 0) > 0;
+}
+
+export function isVirtualStock(product: Product): boolean {
+  return product.hasVirtualStock;
 }
 
 export function getPrimaryImage(product: Product): string {

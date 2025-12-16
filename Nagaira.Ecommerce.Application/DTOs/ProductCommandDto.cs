@@ -20,6 +20,8 @@ public record CreateProductDto(
     [Range(0, double.MaxValue, ErrorMessage = "El costo debe ser mayor o igual a 0")]
     decimal? Cost,
     
+    bool HasVirtualStock,
+    
     List<CreateProductPriceDto>? Prices,
     
     List<CreateProductImageDto>? Images
@@ -39,7 +41,9 @@ public record UpdateProductDto(
     [Range(0, double.MaxValue, ErrorMessage = "El costo debe ser mayor o igual a 0")]
     decimal? Cost,
     
-    bool IsActive
+    bool IsActive,
+    
+    bool HasVirtualStock
 );
 
 public record CreateProductImageDto(

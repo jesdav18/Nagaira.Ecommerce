@@ -14,4 +14,5 @@ public class Product : BaseEntity
     public List<OfferProduct> OfferProducts { get; set; } = new();
     public bool IsActive { get; set; }
     public decimal? Cost { get; set; }
+    public bool HasVirtualStock { get; set; }
 }

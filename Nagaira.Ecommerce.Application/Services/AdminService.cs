@@ -117,6 +117,7 @@ public class AdminService : IAdminService
             p.InventoryBalance?.AvailableQuantity ?? 0,
             p.InventoryBalance?.ReservedQuantity ?? 0,
             p.Cost,
+            p.HasVirtualStock,
             p.Images.Select(i => new ProductImageDto(i.Id, i.ImageUrl, i.AltText, i.IsPrimary, i.DisplayOrder)).ToList(),
             p.Prices.Select(pp => new ProductPriceDto(
                 pp.Id,

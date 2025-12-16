@@ -49,10 +49,13 @@ public class OrderService : IOrderService
                     var product = await _unitOfWork.Products.GetByIdAsync(item.ProductId);
                     if (product == null) throw new Exception($"Product {item.ProductId} not found");
 
-                    var balance = await _unitOfWork.InventoryBalances.GetByProductIdAsync(item.ProductId);
-                    var availableQuantity = balance?.AvailableQuantity ?? 0;
-                    if (availableQuantity < item.Quantity) 
-                        throw new Exception($"Insufficient stock for {product.Name}. Available: {availableQuantity}");
+                    if (!product.HasVirtualStock)
+                    {
+                        var balance = await _unitOfWork.InventoryBalances.GetByProductIdAsync(item.ProductId);
+                        var availableQuantity = balance?.AvailableQuantity ?? 0;
+                        if (availableQuantity < item.Quantity) 
+                            throw new Exception($"Insufficient stock for {product.Name}. Available: {availableQuantity}");
+                    }
 
                     var basePrice = await _unitOfWork.ProductPrices
                         .GetPriceForProductAndLevelAsync(item.ProductId, user.PriceLevelId);
