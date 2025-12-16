@@ -31,8 +31,10 @@ export class HeaderComponent {
 
   onSearch(): void {
     const term = this.searchTerm().trim();
-    if (term) {
-      this.router.navigate(['/products'], { queryParams: { search: term } });
+    if (term && term.length > 0) {
+      this.router.navigate(['/products'], { 
+        queryParams: { search: term }
+      });
       this.menuOpen = false;
       this.searchTerm.set('');
     }

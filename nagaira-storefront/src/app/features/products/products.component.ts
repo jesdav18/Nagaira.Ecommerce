@@ -26,6 +26,7 @@ export class ProductsComponent {
   
   constructor() {
     this.route.queryParams.subscribe(params => {
+      console.log('Query params received:', params);
       this.handleFilters(params);
       if (params['category'] && this.categories().length > 0) {
         this.expandCategoryPath(params['category'], this.categories());
@@ -75,26 +76,49 @@ export class ProductsComponent {
 
     this.loading.set(true);
 
-    if (search) {
-      this.currentTitle.set(`Resultados para "${search}"`);
-      this.productService.search(search).subscribe({
-        next: (data) => this.updateView(data),
-        error: () => this.loading.set(false)
+    if (search && typeof search === 'string' && search.trim().length > 0) {
+      const searchTerm = search.trim();
+      console.log('Executing search for:', searchTerm);
+      this.currentTitle.set(`Resultados para "${searchTerm}"`);
+      this.productService.search(searchTerm).subscribe({
+        next: (data) => {
+          console.log('Search results received:', data.length, 'products');
+          this.updateView(data);
+        },
+        error: (err) => {
+          console.error('Error searching products:', err);
+          this.loading.set(false);
+        }
       });
     } else if (categoryId) {
+      console.log('Filtering by category:', categoryId);
       this.categoryService.getById(categoryId).subscribe({
         next: (category) => {
+          console.log('Category loaded:', category.name);
           this.currentTitle.set(category.name);
           this.productService.getByCategory(categoryId).subscribe({
-            next: (data) => this.updateView(data),
-            error: () => this.loading.set(false)
+            next: (data) => {
+              console.log('Products by category received:', data.length, 'products');
+              this.updateView(data);
+            },
+            error: (err) => {
+              console.error('Error loading products by category:', err);
+              this.loading.set(false);
+            }
           });
         },
-        error: () => {
+        error: (err) => {
+          console.error('Error loading category:', err);
           this.currentTitle.set('Categoría');
           this.productService.getByCategory(categoryId).subscribe({
-            next: (data) => this.updateView(data),
-            error: () => this.loading.set(false)
+            next: (data) => {
+              console.log('Products by category received (fallback):', data.length, 'products');
+              this.updateView(data);
+            },
+            error: (err2) => {
+              console.error('Error loading products by category:', err2);
+              this.loading.set(false);
+            }
           });
         }
       });
@@ -102,7 +126,10 @@ export class ProductsComponent {
       this.currentTitle.set('Todos los Productos');
       this.productService.getAll().subscribe({
         next: (data) => this.updateView(data),
-        error: () => this.loading.set(false)
+        error: (err) => {
+          console.error('Error loading all products:', err);
+          this.loading.set(false);
+        }
       });
     }
   }

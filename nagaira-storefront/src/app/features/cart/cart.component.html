@@ -9,12 +9,12 @@
           @for (item of cartService.cartItems(); track item.product.id) {
             <div class="cart-item">
               <div class="item-image">
-                <img 
-                  [src]="item.product.images && item.product.images.length > 0 ? item.product.images[0].imageUrl : '/assets/placeholder.jpg'" 
+                <img
+                  [src]="item.product.images && item.product.images.length > 0 ? item.product.images[0].imageUrl : '/assets/placeholder.jpg'"
                   [alt]="item.product.name"
                 >
               </div>
-              
+
               <div class="item-details">
                 <a [routerLink]="['/products', item.product.id]" class="item-name">
                   {{ item.product.name }}
@@ -27,19 +27,19 @@
 
               <div class="item-actions">
                 <div class="quantity-control">
-                  <button 
+                  <button
                     (click)="updateQuantity(item.product.id, item.quantity - 1)"
                     [disabled]="item.quantity <= 1">
                     −
                   </button>
                   <input type="number" [value]="item.quantity" readonly>
-                  <button 
+                  <button
                     (click)="updateQuantity(item.product.id, item.quantity + 1)"
                     [disabled]="!canIncrementQuantity(item.product, item.quantity)">
                     +
                   </button>
                 </div>
-                
+
                 <div class="item-subtotal">
                   {{ (getItemPrice(item.product) * item.quantity) | appCurrency:'1.2-2' }}
                 </div>
@@ -57,31 +57,29 @@
         <!-- Resumen de Orden -->
         <div class="order-summary">
           <h2 class="summary-title">Resumen de Orden</h2>
-          
+
           <div class="summary-row">
             <span>Subtotal</span>
             <span>{{ cartService.subtotal() | appCurrency:'1.2-2' }}</span>
           </div>
-          
+
           <div class="summary-row">
             <span>Impuestos</span>
             <span>{{ cartService.tax() | appCurrency:'1.2-2' }}</span>
           </div>
-          
+
           <div class="summary-divider"></div>
-          
+
           <div class="summary-row total">
             <span>Total</span>
             <span>{{ cartService.total() | appCurrency:'1.2-2' }}</span>
           </div>
 
           <a routerLink="/checkout" class="btn btn-primary btn-block checkout-btn">
-            Proceder al Pago
+            Finalizar Compra
           </a>
-          
-          <div class="secure-checkout">
-            <span>🔒 Checkout Seguro</span>
-          </div>
+
+
         </div>
       </div>
     } @else {
