@@ -6,7 +6,7 @@ using Nagaira.Ecommerce.Application.Interfaces;
 namespace Nagaira.Ecommerce.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/admin/price-levels")]
 [Authorize(Roles = "Admin,SuperAdmin")]
 public class PriceLevelsController : ControllerBase
 {
