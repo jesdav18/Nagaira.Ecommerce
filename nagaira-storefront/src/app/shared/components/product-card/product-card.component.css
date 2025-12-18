@@ -8,6 +8,7 @@
     transition: var(--transition);
     text-decoration: none;
     color: inherit;
+    height: 100%;
 }
 
 .product-card:hover {
@@ -103,6 +104,7 @@
     line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    min-height: 3.15rem;
 }
 
 .product-pricing {

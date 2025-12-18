@@ -1,113 +1,116 @@
 <div class="product-detail-page">
   @if (loading()) {
-    <div class="container loading-container">
-      <div class="skeleton-image"></div>
-      <div class="skeleton-info">
-        <div class="line w-75"></div>
-        <div class="line w-50"></div>
-        <div class="line w-100"></div>
-        <div class="line w-100"></div>
-      </div>
+  <div class="container loading-container">
+    <div class="skeleton-image"></div>
+    <div class="skeleton-info">
+      <div class="line w-75"></div>
+      <div class="line w-50"></div>
+      <div class="line w-100"></div>
+      <div class="line w-100"></div>
     </div>
+  </div>
   } @else if (product()) {
-    <div class="container">
-      <div class="breadcrumb">
-        <a routerLink="/">Inicio</a>
-        <span class="separator">/</span>
-        <a routerLink="/products">Productos</a>
-        <span class="separator">/</span>
-        <span class="current">{{ product()?.name }}</span>
+  <div class="container">
+    <div class="breadcrumb">
+      <a routerLink="/">Inicio</a>
+      <span class="separator">/</span>
+      <a routerLink="/products">Productos</a>
+      <span class="separator">/</span>
+      <span class="current">{{ product()?.name }}</span>
+    </div>
+
+    <div class="product-grid">
+      <!-- Galería de Imágenes -->
+      <div class="product-gallery">
+        <div class="main-image-wrapper">
+          <img
+            [src]="product()?.images?.[selectedImageIndex()]?.imageUrl || '/assets/placeholder.jpg'"
+            [alt]="product()?.name"
+            class="main-image fade-in"
+          />
+        </div>
+
+        <div class="thumbnail-list">
+          @for (image of product()?.images; track image.id; let i = $index) {
+          <button
+            class="thumbnail-btn"
+            [class.active]="selectedImageIndex() === i"
+            (click)="selectedImageIndex.set(i)"
+          >
+            <img [src]="image.imageUrl" [alt]="image.altText" />
+          </button>
+          }
+        </div>
       </div>
 
-      <div class="product-grid">
-        <!-- Galería de Imágenes -->
-        <div class="product-gallery">
-          <div class="main-image-wrapper">
-            <img 
-              [src]="product()?.images?.[selectedImageIndex()]?.imageUrl || '/assets/placeholder.jpg'" 
-              [alt]="product()?.name"
-              class="main-image fade-in"
+      <!-- Información del Producto -->
+      <div class="product-info">
+        <div class="product-header">
+          <span class="category-tag">{{ product()?.categoryName }}</span>
+          <h1 class="product-title">{{ product()?.name }}</h1>
+          <div class="sku">SKU: {{ product()?.sku }}</div>
+        </div>
+
+        <div class="product-price">
+          <span class="current-price">{{
+            finalPrice | appCurrency : "1.2-2"
+          }}</span>
+        </div>
+
+        <div class="product-description">
+          <h3>Descripción</h3>
+          <p>{{ product()?.description }}</p>
+        </div>
+
+        <div class="product-actions-box">
+          @if (isVirtual || (stock !== null && stock > 0)) {
+          <div class="stock-status in-stock">
+            <span class="dot"></span>
+            @if (isVirtual) { Disponible } @else { Disponible ({{
+              stock
+            }}
+            unidades) }
+          </div>
+
+          <div class="quantity-selector">
+            <button (click)="decrementQuantity()" [disabled]="quantity() <= 1">
+              −
+            </button>
+            <input type="number" [value]="quantity()" readonly />
+            <button
+              (click)="incrementQuantity()"
+              [disabled]="!isVirtual && stock !== null && quantity() >= stock"
             >
-          </div>
-          
-          <div class="thumbnail-list">
-            @for (image of product()?.images; track image.id; let i = $index) {
-              <button 
-                class="thumbnail-btn" 
-                [class.active]="selectedImageIndex() === i"
-                (click)="selectedImageIndex.set(i)">
-                <img [src]="image.imageUrl" [alt]="image.altText">
-              </button>
-            }
-          </div>
-        </div>
-
-        <!-- Información del Producto -->
-        <div class="product-info">
-          <div class="product-header">
-            <span class="category-tag">{{ product()?.categoryName }}</span>
-            <h1 class="product-title">{{ product()?.name }}</h1>
-            <div class="sku">SKU: {{ product()?.sku }}</div>
+              +
+            </button>
           </div>
 
-          <div class="product-price">
-            <span class="current-price">{{ finalPrice | appCurrency:'1.2-2' }}</span>
+          <button
+            class="btn btn-primary btn-block btn-lg add-cart-btn"
+            [class.success]="addingToCart()"
+            (click)="addToCart()"
+            [disabled]="addingToCart()"
+          >
+            {{
+              addingToCart() ? "¡Agregado al Carrito!" : "Agregar al Carrito"
+            }}
+          </button>
+          } @else {
+          <div class="stock-status out-of-stock">
+            <span class="dot"></span> Agotado
           </div>
-
-          <div class="product-description">
-            <h3>Descripción</h3>
-            <p>{{ product()?.description }}</p>
-          </div>
-
-          <div class="product-actions-box">
-            @if (isVirtual || (stock !== null && stock > 0)) {
-              <div class="stock-status in-stock">
-                <span class="dot"></span> 
-                @if (isVirtual) {
-                  Disponible
-                } @else {
-                  Disponible ({{ stock }} unidades)
-                }
-              </div>
-              
-              <div class="quantity-selector">
-                <button (click)="decrementQuantity()" [disabled]="quantity() <= 1">−</button>
-                <input type="number" [value]="quantity()" readonly>
-                <button (click)="incrementQuantity()" [disabled]="!isVirtual && stock !== null && quantity() >= stock">+</button>
-              </div>
-
-              <button 
-                class="btn btn-primary btn-block btn-lg add-cart-btn"
-                [class.success]="addingToCart()"
-                (click)="addToCart()"
-                [disabled]="addingToCart()">
-                {{ addingToCart() ? '¡Agregado al Carrito!' : 'Agregar al Carrito' }}
-              </button>
-            } @else {
-              <div class="stock-status out-of-stock">
-                <span class="dot"></span> Agotado
-              </div>
-              <button class="btn btn-secondary btn-block" disabled>No Disponible</button>
-            }
-          </div>
-
-          <div class="product-features">
-            <div class="feature-item">
-              <span class="icon">🛡️</span>
-              <span>Garantía de 1 año incluida</span>
-            </div>
-            <div class="feature-item">
-              <span class="icon">🚚</span>
-              <span>Envío asegurado a todo el país</span>
-            </div>
-          </div>
+          <button class="btn btn-secondary btn-block" disabled>
+            No Disponible
+          </button>
+          }
         </div>
       </div>
     </div>
+  </div>
   } @else {
-    <div class="container not-found">
-      <h2>Producto no encontrado</h2>
-      <a routerLink="/products" class="btn btn-primary">Volver a la tienda</a>
-    </div>
+  <div class="container not-found">
+    <h2>Producto no encontrado</h2>
+    <a routerLink="/products" class="btn btn-primary">Volver a la tienda</a>
+  </div>
   }
 </div>
