@@ -181,6 +181,7 @@ public class ProductService : IProductService
                 p.PriceLevelId,
                 p.PriceLevel?.Name ?? string.Empty,
                 p.Price,
+                p.PriceWithoutTax,
                 p.MinQuantity,
                 p.IsActive
             )).ToList()

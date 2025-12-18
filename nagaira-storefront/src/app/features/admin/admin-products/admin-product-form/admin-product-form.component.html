@@ -79,14 +79,20 @@
             </div>
 
             <div class="form-group">
-              <label>Precio *</label>
-              <input type="number" [(ngModel)]="newPrice.price" name="newPrice" step="0.01" min="0.01" placeholder="0.00">
+              <label>Precio (con impuesto) *</label>
+              <input type="number" [(ngModel)]="newPrice.price" name="newPrice" step="0.01" min="0.01" placeholder="0.00" (input)="calculatePriceWithoutTax()">
               @if (newPrice.priceLevelId && formData.cost && formData.cost > 0) {
                 <small class="suggested-price">
                   Precio sugerido: ${{ getSuggestedPriceFormatted() }}
                   (Costo: ${{ getCostFormatted() }} + {{ getCurrentMarkupPercentage() }}%)
                 </small>
               }
+            </div>
+
+            <div class="form-group">
+              <label>Precio sin impuesto *</label>
+              <input type="number" [(ngModel)]="newPrice.priceWithoutTax" name="newPriceWithoutTax" step="0.01" min="0.01" placeholder="0.00" (input)="calculatePriceWithTax()">
+              <small>Se calcula automáticamente según configuración de impuestos</small>
             </div>
 
             <div class="form-group">
@@ -106,7 +112,8 @@
               <thead>
                 <tr>
                   <th>Nivel de Precio</th>
-                  <th>Precio</th>
+                  <th>Precio (con IVA)</th>
+                  <th>Precio (sin IVA)</th>
                   <th>Cantidad Mínima</th>
                   <th>Estado</th>
                   <th>Acciones</th>
@@ -117,6 +124,7 @@
                   <tr>
                     <td>{{ price.priceLevelName }}</td>
                     <td>${{ price.price.toFixed(2) }}</td>
+                    <td>${{ price.priceWithoutTax.toFixed(2) }}</td>
                     <td>{{ price.minQuantity }}</td>
                     <td>
                       <span class="badge" [class.active]="price.isActive" [class.inactive]="!price.isActive">

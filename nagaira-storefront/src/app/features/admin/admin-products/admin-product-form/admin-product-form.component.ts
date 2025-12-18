@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { firstValueFrom, forkJoin } from 'rxjs';
 import { AdminService } from '../../../../core/services/admin.service';
 import { CategoryService } from '../../../../core/services/category.service';
+import { AppSettingsService } from '../../../../core/services/app-settings.service';
 import { Product, ProductPrice, ProductImage, PriceLevel } from '../../../../core/models/models';
 
 @Component({
@@ -17,6 +18,7 @@ import { Product, ProductPrice, ProductImage, PriceLevel } from '../../../../cor
 export class AdminProductFormComponent implements OnInit {
   private adminService = inject(AdminService);
   private categoryService = inject(CategoryService);
+  private appSettingsService = inject(AppSettingsService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   
@@ -43,6 +45,7 @@ export class AdminProductFormComponent implements OnInit {
   newPrice = {
     priceLevelId: '',
     price: 0,
+    priceWithoutTax: 0,
     minQuantity: 1
   };
 
@@ -152,6 +155,7 @@ export class AdminProductFormComponent implements OnInit {
       const suggestedPrice = this.calculateSuggestedPrice(this.newPrice.priceLevelId);
       if (suggestedPrice > 0) {
         this.newPrice.price = Math.round(suggestedPrice * 100) / 100;
+        this.calculatePriceWithoutTax();
       }
     }
   }
@@ -161,12 +165,29 @@ export class AdminProductFormComponent implements OnInit {
       const suggestedPrice = this.calculateSuggestedPrice(this.newPrice.priceLevelId);
       if (suggestedPrice > 0) {
         this.newPrice.price = Math.round(suggestedPrice * 100) / 100;
+        this.calculatePriceWithoutTax();
       }
     }
   }
 
+  calculatePriceWithoutTax(): void {
+    if (this.newPrice.price > 0) {
+      const taxRate = this.appSettingsService.getTaxRate();
+      const taxMultiplier = 1 + taxRate;
+      this.newPrice.priceWithoutTax = Math.round((this.newPrice.price / taxMultiplier) * 100) / 100;
+    }
+  }
+
+  calculatePriceWithTax(): void {
+    if (this.newPrice.priceWithoutTax > 0) {
+      const taxRate = this.appSettingsService.getTaxRate();
+      const taxMultiplier = 1 + taxRate;
+      this.newPrice.price = Math.round((this.newPrice.priceWithoutTax * taxMultiplier) * 100) / 100;
+    }
+  }
+
   addPrice(): void {
-    if (!this.newPrice.priceLevelId || this.newPrice.price <= 0) {
+    if (!this.newPrice.priceLevelId || this.newPrice.price <= 0 || this.newPrice.priceWithoutTax <= 0) {
       alert('Por favor complete todos los campos del precio');
       return;
     }
@@ -183,12 +204,13 @@ export class AdminProductFormComponent implements OnInit {
       priceLevelId: this.newPrice.priceLevelId,
       priceLevelName: this.priceLevels().find(l => l.id === this.newPrice.priceLevelId)?.name || '',
       price: this.newPrice.price,
+      priceWithoutTax: this.newPrice.priceWithoutTax,
       minQuantity: this.newPrice.minQuantity,
       isActive: true
     };
 
     this.productPrices.set([...this.productPrices(), tempPrice]);
-    this.newPrice = { priceLevelId: '', price: 0, minQuantity: 1 };
+    this.newPrice = { priceLevelId: '', price: 0, priceWithoutTax: 0, minQuantity: 1 };
   }
 
   removePrice(priceId: string): void {
@@ -292,6 +314,7 @@ export class AdminProductFormComponent implements OnInit {
       .map(p => ({
         priceLevelId: p.priceLevelId,
         price: p.price,
+        priceWithoutTax: p.priceWithoutTax,
         minQuantity: p.minQuantity
       }));
 
@@ -371,8 +394,10 @@ export class AdminProductFormComponent implements OnInit {
       operations.push(
         firstValueFrom(
           this.adminService.createProductPrice(productId, {
+            productId: productId,
             priceLevelId: price.priceLevelId,
             price: price.price,
+            priceWithoutTax: price.priceWithoutTax,
             minQuantity: price.minQuantity
           })
         )

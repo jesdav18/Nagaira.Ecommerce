@@ -28,6 +28,7 @@ export interface ProductPrice {
   priceLevelId: string;
   priceLevelName: string;
   price: number;
+  priceWithoutTax: number;
   minQuantity: number;
   isActive: boolean;
 }

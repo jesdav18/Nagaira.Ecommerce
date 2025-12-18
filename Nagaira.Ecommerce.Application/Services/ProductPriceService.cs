@@ -50,6 +50,7 @@ public class ProductPriceService : IProductPriceService
             ProductId = dto.ProductId,
             PriceLevelId = dto.PriceLevelId,
             Price = dto.Price,
+            PriceWithoutTax = dto.PriceWithoutTax,
             MinQuantity = dto.MinQuantity,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
@@ -66,6 +67,7 @@ public class ProductPriceService : IProductPriceService
         if (productPrice == null) throw new Exception("Product price not found");
 
         productPrice.Price = dto.Price;
+        productPrice.PriceWithoutTax = dto.PriceWithoutTax;
         productPrice.MinQuantity = dto.MinQuantity;
         productPrice.IsActive = dto.IsActive;
         productPrice.UpdatedAt = DateTime.UtcNow;
@@ -112,6 +114,7 @@ public class ProductPriceService : IProductPriceService
             price.PriceLevelId,
             price.PriceLevel?.Name ?? string.Empty,
             price.Price,
+            price.PriceWithoutTax,
             price.MinQuantity,
             price.IsActive
         );

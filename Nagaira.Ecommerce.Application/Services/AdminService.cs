@@ -125,6 +125,7 @@ public class AdminService : IAdminService
                 pp.PriceLevelId,
                 pp.PriceLevel?.Name ?? string.Empty,
                 pp.Price,
+                pp.PriceWithoutTax,
                 pp.MinQuantity,
                 pp.IsActive
             )).ToList()

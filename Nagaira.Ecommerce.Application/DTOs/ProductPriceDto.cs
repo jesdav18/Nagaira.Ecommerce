@@ -8,6 +8,7 @@ public record ProductPriceDto(
     Guid PriceLevelId,
     string PriceLevelName,
     decimal Price,
+    decimal PriceWithoutTax,
     int MinQuantity,
     bool IsActive
 );
@@ -23,6 +24,10 @@ public record CreateProductPriceDto(
     [Range(0.01, double.MaxValue, ErrorMessage = "El precio debe ser mayor a 0")]
     decimal Price,
     
+    [Required(ErrorMessage = "El precio sin impuesto es requerido")]
+    [Range(0.01, double.MaxValue, ErrorMessage = "El precio sin impuesto debe ser mayor a 0")]
+    decimal PriceWithoutTax,
+    
     [Range(1, int.MaxValue, ErrorMessage = "La cantidad mínima debe ser mayor a 0")]
     int MinQuantity
 );
@@ -30,6 +35,7 @@ public record CreateProductPriceDto(
 public record UpdateProductPriceDto(
     Guid Id,
     decimal Price,
+    decimal PriceWithoutTax,
     int MinQuantity,
     bool IsActive
 );
