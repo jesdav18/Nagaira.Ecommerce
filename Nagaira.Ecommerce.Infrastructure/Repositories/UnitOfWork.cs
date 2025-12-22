@@ -24,6 +24,8 @@ public class UnitOfWork : IUnitOfWork
     public IPaymentMethodRepository PaymentMethods { get; }
     public IPaymentMethodTypeRepository PaymentMethodTypes { get; }
     public IAppSettingRepository AppSettings { get; }
+    public ISupplierRepository Suppliers { get; }
+    public IProductSupplierRepository ProductSuppliers { get; }
 
     public UnitOfWork(
         ApplicationDbContext context,
@@ -40,7 +42,9 @@ public class UnitOfWork : IUnitOfWork
         ICategoryRepository categoryRepository,
         IPaymentMethodRepository paymentMethodRepository,
         IPaymentMethodTypeRepository paymentMethodTypeRepository,
-        IAppSettingRepository appSettingRepository)
+        IAppSettingRepository appSettingRepository,
+        ISupplierRepository supplierRepository,
+        IProductSupplierRepository productSupplierRepository)
     {
         _context = context;
         Products = productRepository;
@@ -57,6 +61,8 @@ public class UnitOfWork : IUnitOfWork
         PaymentMethods = paymentMethodRepository;
         PaymentMethodTypes = paymentMethodTypeRepository;
         AppSettings = appSettingRepository;
+        Suppliers = supplierRepository;
+        ProductSuppliers = productSupplierRepository;
     }
 
     public IRepository<T> Repository<T>() where T : class

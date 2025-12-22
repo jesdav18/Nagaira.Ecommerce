@@ -16,6 +16,10 @@ public class OrderRepository : Repository<Order>, IOrderRepository
         return await _dbSet
             .Include(o => o.Items)
             .ThenInclude(i => i.Product)
+            .Include(o => o.Items)
+            .ThenInclude(i => i.OrderItemSuppliers)
+            .ThenInclude(ois => ois.ProductSupplier)
+            .ThenInclude(ps => ps.Supplier)
             .Include(o => o.ShippingAddress)
             .Where(o => o.UserId == userId && !o.IsDeleted)
             .OrderByDescending(o => o.CreatedAt)
@@ -27,7 +31,24 @@ public class OrderRepository : Repository<Order>, IOrderRepository
         return await _dbSet
             .Include(o => o.Items)
             .ThenInclude(i => i.Product)
+            .Include(o => o.Items)
+            .ThenInclude(i => i.OrderItemSuppliers)
+            .ThenInclude(ois => ois.ProductSupplier)
+            .ThenInclude(ps => ps.Supplier)
             .Include(o => o.ShippingAddress)
             .FirstOrDefaultAsync(o => o.OrderNumber == orderNumber && !o.IsDeleted);
+    }
+
+    public override async Task<Order?> GetByIdAsync(Guid id)
+    {
+        return await _dbSet
+            .Include(o => o.Items)
+            .ThenInclude(i => i.Product)
+            .Include(o => o.Items)
+            .ThenInclude(i => i.OrderItemSuppliers)
+            .ThenInclude(ois => ois.ProductSupplier)
+            .ThenInclude(ps => ps.Supplier)
+            .Include(o => o.ShippingAddress)
+            .FirstOrDefaultAsync(o => o.Id == id && !o.IsDeleted);
     }
 }

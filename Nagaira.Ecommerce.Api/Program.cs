@@ -117,6 +117,8 @@ builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IPaymentMethodRepository, PaymentMethodRepository>();
 builder.Services.AddScoped<IPaymentMethodTypeRepository, PaymentMethodTypeRepository>();
 builder.Services.AddScoped<IAppSettingRepository, AppSettingRepository>();
+builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
+builder.Services.AddScoped<IProductSupplierRepository, ProductSupplierRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 var jwtSecret = builder.Configuration["Jwt:Secret"] ?? throw new InvalidOperationException("JWT Secret not configured");
@@ -135,6 +137,8 @@ builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IPaymentMethodService, PaymentMethodService>();
 builder.Services.AddScoped<IPaymentMethodTypeService, PaymentMethodTypeService>();
 builder.Services.AddScoped<IAppSettingService, AppSettingService>();
+builder.Services.AddScoped<ISupplierService, SupplierService>();
+builder.Services.AddScoped<IProductSupplierService, ProductSupplierService>();
 builder.Services.AddScoped<ICloudinaryService, Nagaira.Ecommerce.Infrastructure.Services.CloudinaryService>();
 builder.Services.AddScoped<IAuthService>(sp => 
     new AuthService(sp.GetRequiredService<IUnitOfWork>(), jwtSecret, jwtIssuer));

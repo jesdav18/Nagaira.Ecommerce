@@ -20,9 +20,52 @@
 
             <div class="order-items-preview">
               @for (item of order.items; track item.productId) {
-                <span class="item-preview">
-                  {{ item.quantity }}x {{ item.productName }}
-                </span>
+                <div class="item-preview-container">
+                  <span class="item-preview">
+                    {{ item.quantity }}x {{ item.productName }}
+                  </span>
+                  @if (item.suppliers && item.suppliers.length > 0) {
+                    <div class="supplier-info">
+                      <button 
+                        type="button"
+                        class="supplier-toggle"
+                        (click)="toggleSupplierDetails(item.productId)"
+                        [attr.aria-expanded]="isSupplierExpanded(item.productId)">
+                        <span class="supplier-badge">
+                          {{ item.suppliers.length }} proveedor{{ item.suppliers.length > 1 ? 'es' : '' }}
+                        </span>
+                        <span class="cost-badge">
+                          Costo promedio: {{ item.averageCost | appCurrency:'1.2-2' }}
+                        </span>
+                        <span class="toggle-icon">{{ isSupplierExpanded(item.productId) ? '▼' : '▶' }}</span>
+                      </button>
+                      @if (isSupplierExpanded(item.productId)) {
+                        <div class="supplier-details">
+                          <div class="supplier-distribution">
+                            <div class="distribution-header">
+                              <strong>Distribución de Proveedores:</strong>
+                            </div>
+                            @for (supplier of item.suppliers; track supplier.productSupplierId) {
+                              <div class="supplier-item">
+                                <span class="supplier-name">{{ supplier.supplierName }}</span>
+                                <span class="supplier-quantity">{{ supplier.quantity }} unidades</span>
+                                <span class="supplier-cost">${{ supplier.unitCost.toFixed(2) }}/unidad</span>
+                                <span class="supplier-total">Total: {{ supplier.totalCost | appCurrency:'1.2-2' }}</span>
+                              </div>
+                            }
+                            <div class="weighted-average">
+                              <strong>Costo Promedio Ponderado:</strong>
+                              <span class="average-value">{{ item.averageCost | appCurrency:'1.2-2' }}</span>
+                              <small class="calculation-hint">
+                                ({{ getSupplierCalculationFormula(item) }} = {{ getSupplierTotalCost(item) | appCurrency:'1.2-2' }} ÷ {{ item.quantity }})
+                              </small>
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
               }
             </div>
 

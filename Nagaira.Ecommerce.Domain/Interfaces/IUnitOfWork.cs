@@ -20,6 +20,8 @@ public interface IUnitOfWork : IDisposable
     IPaymentMethodRepository PaymentMethods { get; }
     IPaymentMethodTypeRepository PaymentMethodTypes { get; }
     IAppSettingRepository AppSettings { get; }
+    ISupplierRepository Suppliers { get; }
+    IProductSupplierRepository ProductSuppliers { get; }
     IRepository<T> Repository<T>() where T : class;
     Task<int> SaveChangesAsync();
     Task<IDbContextTransaction> BeginTransactionAsync();

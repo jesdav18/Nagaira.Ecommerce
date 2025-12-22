@@ -18,7 +18,17 @@ public record OrderItemDto(
     string ProductName,
     int Quantity,
     decimal UnitPrice,
-    decimal Subtotal
+    decimal Subtotal,
+    decimal? AverageCost,
+    List<OrderItemSupplierDto>? Suppliers
+);
+
+public record OrderItemSupplierDto(
+    Guid ProductSupplierId,
+    string SupplierName,
+    int Quantity,
+    decimal UnitCost,
+    decimal TotalCost
 );
 
 public record CreateOrderDto(

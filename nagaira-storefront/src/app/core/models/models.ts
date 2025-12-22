@@ -99,6 +99,16 @@ export interface OrderItem {
   quantity: number;
   unitPrice: number;
   subtotal: number;
+  averageCost?: number;
+  suppliers?: OrderItemSupplier[];
+}
+
+export interface OrderItemSupplier {
+  productSupplierId: string;
+  supplierName: string;
+  quantity: number;
+  unitCost: number;
+  totalCost: number;
 }
 
 export interface Address {
@@ -122,4 +132,55 @@ export interface CreateOrderRequest {
     quantity: number;
   }>;
   shippingAddressId?: string;
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  legalName?: string;
+  taxId?: string;
+  contactName?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postalCode?: string;
+  website?: string;
+  notes?: string;
+  paymentTerms?: string;
+  leadTimeDays: number;
+  minOrderAmount?: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface ProductSupplier {
+  id: string;
+  productId: string;
+  productName: string;
+  supplierId: string;
+  supplierName: string;
+  supplierSku?: string;
+  supplierCost: number;
+  isPrimary: boolean;
+  priority: number;
+  leadTimeDays: number;
+  minOrderQuantity: number;
+  notes?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface SupplierCostHistory {
+  id: string;
+  productSupplierId: string;
+  productName: string;
+  supplierName: string;
+  oldCost?: number;
+  newCost: number;
+  changedByUserName?: string;
+  changeReason?: string;
+  createdAt: string;
 }

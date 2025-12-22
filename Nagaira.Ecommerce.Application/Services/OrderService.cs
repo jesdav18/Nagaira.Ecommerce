@@ -129,6 +129,32 @@ public class OrderService : IOrderService
                         CreatedAt = DateTime.UtcNow
                     };
 
+                    var supplierDistribution = await DistributeQuantityAmongSuppliersAsync(item.ProductId, item.Quantity);
+                    decimal totalCost = 0;
+
+                    foreach (var dist in supplierDistribution)
+                    {
+                        var orderItemSupplier = new OrderItemSupplier
+                        {
+                            Id = Guid.NewGuid(),
+                            OrderItemId = orderItem.Id,
+                            ProductSupplierId = dist.ProductSupplierId,
+                            Quantity = dist.Quantity,
+                            UnitCost = dist.UnitCost,
+                            TotalCost = dist.TotalCost,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        orderItem.OrderItemSuppliers.Add(orderItemSupplier);
+                        totalCost += dist.TotalCost;
+                    }
+
+                    if (supplierDistribution.Any())
+                    {
+                        var averageCost = totalCost / item.Quantity;
+                        product.Cost = averageCost;
+                        await _unitOfWork.Products.UpdateAsync(product);
+                    }
+
                     order.Items.Add(orderItem);
 
                     var inventoryMovement = new InventoryMovement
@@ -209,13 +235,33 @@ public class OrderService : IOrderService
             order.ShippingCost,
             order.Total,
             order.Status.ToString(),
-            order.Items.Select(i => new OrderItemDto(
-                i.ProductId,
-                i.Product?.Name ?? string.Empty,
-                i.Quantity,
-                i.UnitPrice,
-                i.Subtotal
-            )).ToList(),
+            order.Items.Select(i => 
+            {
+                var suppliers = i.OrderItemSuppliers?.Select(ois => new OrderItemSupplierDto(
+                    ois.ProductSupplierId,
+                    ois.ProductSupplier?.Supplier?.Name ?? "Proveedor desconocido",
+                    ois.Quantity,
+                    ois.UnitCost,
+                    ois.TotalCost
+                )).ToList();
+
+                decimal? averageCost = null;
+                if (i.OrderItemSuppliers != null && i.OrderItemSuppliers.Any())
+                {
+                    var totalCost = i.OrderItemSuppliers.Sum(ois => ois.TotalCost);
+                    averageCost = totalCost / i.Quantity;
+                }
+
+                return new OrderItemDto(
+                    i.ProductId,
+                    i.Product?.Name ?? string.Empty,
+                    i.Quantity,
+                    i.UnitPrice,
+                    i.Subtotal,
+                    averageCost,
+                    suppliers
+                );
+            }).ToList(),
             order.ShippingAddress != null ? new AddressDto(
                 order.ShippingAddress.Id,
                 order.ShippingAddress.Street,
@@ -231,5 +277,76 @@ public class OrderService : IOrderService
     private static string GenerateOrderNumber()
     {
         return $"ORD-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..8].ToUpper()}";
+    }
+
+    private async Task<List<SupplierDistribution>> DistributeQuantityAmongSuppliersAsync(Guid productId, int totalQuantity)
+    {
+        var suppliers = await _unitOfWork.ProductSuppliers.GetOrderedByPriorityAsync(productId);
+        var distribution = new List<SupplierDistribution>();
+        int remainingQuantity = totalQuantity;
+
+        foreach (var supplier in suppliers)
+        {
+            if (remainingQuantity <= 0) break;
+
+            int quantityToAssign = remainingQuantity;
+
+            if (supplier.MinOrderQuantity > 0 && quantityToAssign < supplier.MinOrderQuantity)
+            {
+                if (distribution.Count == 0)
+                {
+                    quantityToAssign = supplier.MinOrderQuantity;
+                }
+                else
+                {
+                    continue;
+                }
+            }
+
+            var supplierDist = new SupplierDistribution
+            {
+                ProductSupplierId = supplier.Id,
+                Quantity = quantityToAssign,
+                UnitCost = supplier.SupplierCost,
+                TotalCost = supplier.SupplierCost * quantityToAssign
+            };
+
+            distribution.Add(supplierDist);
+            remainingQuantity -= quantityToAssign;
+        }
+
+        if (remainingQuantity > 0 && suppliers.Any())
+        {
+            var lastSupplier = suppliers.LastOrDefault();
+            if (lastSupplier != null)
+            {
+                var lastDist = distribution.LastOrDefault();
+                if (lastDist != null && lastDist.ProductSupplierId == lastSupplier.Id)
+                {
+                    lastDist.Quantity += remainingQuantity;
+                    lastDist.TotalCost = lastDist.UnitCost * lastDist.Quantity;
+                }
+                else
+                {
+                    distribution.Add(new SupplierDistribution
+                    {
+                        ProductSupplierId = lastSupplier.Id,
+                        Quantity = remainingQuantity,
+                        UnitCost = lastSupplier.SupplierCost,
+                        TotalCost = lastSupplier.SupplierCost * remainingQuantity
+                    });
+                }
+            }
+        }
+
+        return distribution;
+    }
+
+    private class SupplierDistribution
+    {
+        public Guid ProductSupplierId { get; set; }
+        public int Quantity { get; set; }
+        public decimal UnitCost { get; set; }
+        public decimal TotalCost { get; set; }
     }
 }

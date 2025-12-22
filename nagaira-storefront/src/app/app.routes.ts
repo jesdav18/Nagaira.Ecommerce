@@ -110,6 +110,14 @@ export const routes: Routes = [
       {
         path: 'settings',
         loadComponent: () => import('./features/admin/admin-settings/admin-settings.component').then(m => m.AdminSettingsComponent)
+      },
+      {
+        path: 'suppliers',
+        loadComponent: () => import('./features/admin/admin-suppliers/admin-suppliers.component').then(m => m.AdminSuppliersComponent)
+      },
+      {
+        path: 'suppliers/:id',
+        loadComponent: () => import('./features/admin/admin-suppliers/admin-supplier-form/admin-supplier-form.component').then(m => m.AdminSupplierFormComponent)
       }
     ]
   },

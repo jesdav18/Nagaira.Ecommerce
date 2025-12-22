@@ -1,0 +1,85 @@
+<div class="admin-container">
+  <div class="page-header">
+    <div>
+      <h1>Gestión de Proveedores</h1>
+      <p class="subtitle">Administra los proveedores de productos</p>
+    </div>
+    <a routerLink="/admin/suppliers/new" class="btn btn-primary">
+      <span>+ Nuevo Proveedor</span>
+    </a>
+  </div>
+
+  <div class="filters-section">
+    <div class="search-box">
+      <input 
+        type="text" 
+        placeholder="Buscar por nombre, email o RUC/NIT..."
+        [value]="searchTerm()"
+        (input)="searchTerm.set($any($event.target).value)">
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">Cargando proveedores...</div>
+  } @else if (filteredSuppliers.length === 0) {
+    <div class="empty-state">
+      <span class="empty-icon">📦</span>
+      <h2>No hay proveedores</h2>
+      <p>Comienza agregando tu primer proveedor</p>
+      <a routerLink="/admin/suppliers/new" class="btn btn-primary">Crear Proveedor</a>
+    </div>
+  } @else {
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Razón Social</th>
+            <th>RUC/NIT</th>
+            <th>Contacto</th>
+            <th>Email</th>
+            <th>Teléfono</th>
+            <th>Ciudad</th>
+            <th>Tiempo Entrega</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (supplier of filteredSuppliers; track supplier.id) {
+            <tr>
+              <td class="font-semibold">{{ supplier.name }}</td>
+              <td>{{ supplier.legalName || '-' }}</td>
+              <td>{{ supplier.taxId || '-' }}</td>
+              <td>{{ supplier.contactName || '-' }}</td>
+              <td>{{ supplier.email || '-' }}</td>
+              <td>{{ supplier.phone || '-' }}</td>
+              <td>{{ supplier.city || '-' }}</td>
+              <td>{{ supplier.leadTimeDays }} días</td>
+              <td>
+                <span class="badge" [class.active]="supplier.isActive" [class.inactive]="!supplier.isActive">
+                  {{ supplier.isActive ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="actions">
+                <a [routerLink]="['/admin/suppliers', supplier.id]" class="btn-icon" title="Editar">
+                  ✏️
+                </a>
+                <button 
+                  (click)="toggleStatus(supplier)" 
+                  class="btn-icon"
+                  [title]="supplier.isActive ? 'Desactivar' : 'Activar'">
+                  {{ supplier.isActive ? '🔒' : '🔓' }}
+                </button>
+                <button (click)="deleteSupplier(supplier.id)" class="btn-icon" title="Eliminar">
+                  🗑️
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+

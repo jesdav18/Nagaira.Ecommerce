@@ -17,6 +17,7 @@ export class OrderListComponent implements OnInit {
 
   orders = signal<Order[]>([]);
   loading = signal(true);
+  expandedSuppliers = signal<Set<string>>(new Set());
 
   ngOnInit(): void {
     this.orderService.getMyOrders().subscribe({
@@ -32,7 +33,6 @@ export class OrderListComponent implements OnInit {
   }
 
   getStatusLabel(status: any): string {
-    // Mapeo simple de estatus numérico o string
     const statusMap: any = {
       1: 'Pendiente',
       2: 'Pagado',
@@ -41,5 +41,31 @@ export class OrderListComponent implements OnInit {
       5: 'Cancelado'
     };
     return statusMap[status] || 'Desconocido';
+  }
+
+  toggleSupplierDetails(productId: string): void {
+    const current = this.expandedSuppliers();
+    const updated = new Set(current);
+    if (updated.has(productId)) {
+      updated.delete(productId);
+    } else {
+      updated.add(productId);
+    }
+    this.expandedSuppliers.set(updated);
+  }
+
+  isSupplierExpanded(productId: string): boolean {
+    return this.expandedSuppliers().has(productId);
+  }
+
+  getSupplierCalculationFormula(item: any): string {
+    if (!item.suppliers || item.suppliers.length === 0) return '';
+    const parts = item.suppliers.map((s: any) => `${s.quantity} × $${s.unitCost.toFixed(2)}`);
+    return parts.join(' + ');
+  }
+
+  getSupplierTotalCost(item: any): number {
+    if (!item.suppliers || item.suppliers.length === 0) return 0;
+    return item.suppliers.reduce((sum: number, s: any) => sum + s.totalCost, 0);
   }
 }

@@ -6,7 +6,8 @@ import { firstValueFrom, forkJoin } from 'rxjs';
 import { AdminService } from '../../../../core/services/admin.service';
 import { CategoryService } from '../../../../core/services/category.service';
 import { AppSettingsService } from '../../../../core/services/app-settings.service';
-import { Product, ProductPrice, ProductImage, PriceLevel } from '../../../../core/models/models';
+import { SupplierService } from '../../../../core/services/supplier.service';
+import { Product, ProductPrice, ProductImage, PriceLevel, Supplier, ProductSupplier, SupplierCostHistory } from '../../../../core/models/models';
 
 @Component({
   selector: 'app-admin-product-form',
@@ -19,6 +20,7 @@ export class AdminProductFormComponent implements OnInit {
   private adminService = inject(AdminService);
   private categoryService = inject(CategoryService);
   private appSettingsService = inject(AppSettingsService);
+  private supplierService = inject(SupplierService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   
@@ -28,9 +30,15 @@ export class AdminProductFormComponent implements OnInit {
   priceLevels = signal<PriceLevel[]>([]);
   productPrices = signal<ProductPrice[]>([]);
   productImages = signal<ProductImage[]>([]);
+  suppliers = signal<Supplier[]>([]);
+  productSuppliers = signal<ProductSupplier[]>([]);
   loading = signal(true);
   saving = signal(false);
   uploadingImage = signal(false);
+  editingCostId = signal<string | null>(null);
+  editingCost = signal<number>(0);
+  costHistory = signal<any[]>([]);
+  showingHistory = signal<string | null>(null);
   
   formData = {
     name: '',
@@ -56,9 +64,107 @@ export class AdminProductFormComponent implements OnInit {
     displayOrder: 0
   };
 
+  newProductSupplier = {
+    supplierId: '',
+    supplierSku: '',
+    supplierCost: 0,
+    isPrimary: false,
+    priority: 1,
+    leadTimeDays: 0,
+    minOrderQuantity: 1,
+    notes: '',
+    isActive: true
+  };
+
+  getNextAvailablePriority(): number {
+    const existingPriorities = this.productSuppliers().map(ps => ps.priority).sort((a, b) => a - b);
+    if (existingPriorities.length === 0) return 1;
+    
+    for (let i = 1; i <= existingPriorities.length + 1; i++) {
+      if (!existingPriorities.includes(i)) {
+        return i;
+      }
+    }
+    return existingPriorities.length + 1;
+  }
+
+  hasPrimarySupplier(): boolean {
+    return this.productSuppliers().some(ps => ps.isPrimary);
+  }
+
+  getPrimarySupplier(): any {
+    return this.productSuppliers().find(ps => ps.isPrimary);
+  }
+
+  editCost(id: string, currentCost: number): void {
+    this.editingCostId.set(id);
+    this.editingCost.set(currentCost);
+  }
+
+  cancelEditCost(): void {
+    this.editingCostId.set(null);
+    this.editingCost.set(0);
+  }
+
+  saveCost(id: string): void {
+    const newCost = this.editingCost();
+    if (newCost <= 0) {
+      alert('El costo debe ser mayor a 0');
+      return;
+    }
+
+    const supplier = this.productSuppliers().find(ps => ps.id === id);
+    if (!supplier) return;
+
+    const changeReason = prompt('Razón del cambio de costo (opcional):');
+    
+    this.supplierService.updateProductSupplier(id, {
+      id: id,
+      supplierSku: supplier.supplierSku,
+      supplierCost: newCost,
+      isPrimary: supplier.isPrimary,
+      priority: supplier.priority,
+      leadTimeDays: supplier.leadTimeDays,
+      minOrderQuantity: supplier.minOrderQuantity,
+      notes: supplier.notes,
+      isActive: supplier.isActive
+    }, changeReason || undefined).subscribe({
+      next: () => {
+        if (this.productId()) {
+          this.loadProductSuppliers(this.productId()!);
+        }
+        this.cancelEditCost();
+      },
+      error: (err: any) => {
+        console.error('Error updating cost:', err);
+        alert('Error al actualizar el costo: ' + (err.error?.message || err.message));
+      }
+    });
+  }
+
+  viewCostHistory(id: string): void {
+    if (this.showingHistory() === id) {
+      this.showingHistory.set(null);
+      this.costHistory.set([]);
+      return;
+    }
+
+    this.supplierService.getCostHistory(id).subscribe({
+      next: (history) => {
+        this.costHistory.set(history);
+        this.showingHistory.set(id);
+      },
+      error: (err: any) => {
+        console.error('Error loading cost history:', err);
+        alert('Error al cargar el historial: ' + (err.error?.message || err.message));
+      }
+    });
+  }
+
   ngOnInit(): void {
     this.loadCategories();
     this.loadPriceLevels();
+    this.loadSuppliers();
     
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
@@ -93,11 +199,34 @@ export class AdminProductFormComponent implements OnInit {
     });
   }
 
+  loadSuppliers(): void {
+    this.supplierService.getActiveSuppliers().subscribe({
+      next: (data) => {
+        this.suppliers.set(data);
+      },
+      error: (err: any) => {
+        console.error('Error loading suppliers:', err);
+      }
+    });
+  }
+
+  loadProductSuppliers(productId: string): void {
+    this.supplierService.getProductSuppliers(productId).subscribe({
+      next: (data) => {
+        this.productSuppliers.set(data);
+      },
+      error: (err: any) => {
+        console.error('Error loading product suppliers:', err);
+      }
+    });
+  }
+
   loadProduct(id: string): void {
     this.loading.set(true);
     this.adminService.getProductById(id).subscribe({
       next: (product: any) => {
         this.product.set(product);
+        this.loadProductSuppliers(id);
         this.formData = {
           name: product.name,
           description: product.description,
@@ -215,6 +344,96 @@ export class AdminProductFormComponent implements OnInit {
 
   removePrice(priceId: string): void {
     this.productPrices.set(this.productPrices().filter(p => p.id !== priceId));
+  }
+
+  addProductSupplier(): void {
+    if (!this.newProductSupplier.supplierId || this.newProductSupplier.supplierCost <= 0) {
+      alert('Por favor complete el proveedor y el costo');
+      return;
+    }
+
+    const productId = this.productId();
+    if (!productId) {
+      alert('Debe guardar el producto primero');
+      return;
+    }
+
+    const supplierExists = this.productSuppliers().some(ps => ps.supplierId === this.newProductSupplier.supplierId);
+    if (supplierExists) {
+      alert('Este proveedor ya está asignado al producto');
+      return;
+    }
+
+    const priorityExists = this.productSuppliers().some(ps => ps.priority === this.newProductSupplier.priority);
+    if (priorityExists) {
+      alert(`Ya existe un proveedor con prioridad ${this.newProductSupplier.priority}. Por favor use otra prioridad.`);
+      return;
+    }
+
+    this.supplierService.createProductSupplier({
+      productId: productId,
+      supplierId: this.newProductSupplier.supplierId,
+      supplierSku: this.newProductSupplier.supplierSku || null,
+      supplierCost: this.newProductSupplier.supplierCost,
+      isPrimary: this.newProductSupplier.isPrimary,
+      priority: this.newProductSupplier.priority,
+      leadTimeDays: this.newProductSupplier.leadTimeDays,
+      minOrderQuantity: this.newProductSupplier.minOrderQuantity,
+      notes: this.newProductSupplier.notes || null,
+      isActive: this.newProductSupplier.isActive
+    }).subscribe({
+      next: () => {
+        this.loadProductSuppliers(productId);
+        this.newProductSupplier = {
+          supplierId: '',
+          supplierSku: '',
+          supplierCost: 0,
+          isPrimary: false,
+          priority: this.getNextAvailablePriority(),
+          leadTimeDays: 0,
+          minOrderQuantity: 1,
+          notes: '',
+          isActive: true
+        };
+      },
+      error: (err: any) => {
+        console.error('Error adding product supplier:', err);
+        alert('Error al agregar el proveedor: ' + (err.error?.message || err.message));
+      }
+    });
+  }
+
+  removeProductSupplier(id: string): void {
+    if (!confirm('¿Estás seguro de eliminar este proveedor del producto?')) return;
+
+    this.supplierService.deleteProductSupplier(id).subscribe({
+      next: () => {
+        const productId = this.productId();
+        if (productId) {
+          this.loadProductSuppliers(productId);
+        }
+      },
+      error: (err: any) => {
+        console.error('Error removing product supplier:', err);
+        alert('Error al eliminar el proveedor');
+      }
+    });
+  }
+
+  setPrimarySupplier(supplierId: string): void {
+    const productId = this.productId();
+    if (!productId) return;
+
+    this.supplierService.setAsPrimary(productId, supplierId).subscribe({
+      next: () => {
+        this.loadProductSuppliers(productId);
+        this.loadProduct(productId);
+      },
+      error: (err: any) => {
+        console.error('Error setting primary supplier:', err);
+        alert('Error al establecer proveedor primario');
+      }
+    });
   }
 
   addImage(): void {

@@ -9,4 +9,5 @@ public class OrderItem : BaseEntity
     public int Quantity { get; set; }
     public decimal UnitPrice { get; set; }
     public decimal Subtotal { get; set; }
+    public List<OrderItemSupplier> OrderItemSuppliers { get; set; } = new();
 }

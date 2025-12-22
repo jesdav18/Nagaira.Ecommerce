@@ -31,6 +31,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<PaymentMethod> PaymentMethods { get; set; }
     public DbSet<PaymentMethodType> PaymentMethodTypes { get; set; }
     public DbSet<AppSetting> AppSettings { get; set; }
+    public DbSet<Supplier> Suppliers { get; set; }
+    public DbSet<ProductSupplier> ProductSuppliers { get; set; }
+    public DbSet<OrderItemSupplier> OrderItemSuppliers { get; set; }
+    public DbSet<SupplierCostHistory> SupplierCostHistories { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -279,6 +283,32 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.DisplayOrder).IsRequired();
             entity.Property(e => e.IsActive).IsRequired();
             entity.Ignore(e => e.UpdatedAt);
+        });
+
+        modelBuilder.Entity<OrderItemSupplier>(entity =>
+        {
+            entity.ToTable("order_item_suppliers");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Quantity).IsRequired();
+            entity.Property(e => e.UnitCost).HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.TotalCost).HasPrecision(18, 2).IsRequired();
+            entity.HasOne(e => e.OrderItem).WithMany(e => e.OrderItemSuppliers)
+                .HasForeignKey(e => e.OrderItemId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.ProductSupplier).WithMany()
+                .HasForeignKey(e => e.ProductSupplierId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<SupplierCostHistory>(entity =>
+        {
+            entity.ToTable("supplier_cost_history");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.OldCost).HasPrecision(18, 2);
+            entity.Property(e => e.NewCost).HasPrecision(18, 2).IsRequired();
+            entity.Ignore(e => e.UpdatedAt);
+            entity.HasOne(e => e.ProductSupplier).WithMany()
+                .HasForeignKey(e => e.ProductSupplierId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.ChangedByUser).WithMany()
+                .HasForeignKey(e => e.ChangedBy).OnDelete(DeleteBehavior.SetNull);
         });
 
         // Configure all DateTime properties to use timestamp with time zone and convert to UTC
