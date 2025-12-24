@@ -114,35 +114,38 @@ export class AdminService {
   }
 
   getProductPrices(productId: string) {
-    return this.http.get(`${this.apiUrl}/products/${productId}/prices`);
+    return this.http.get(`${this.apiUrl}/product-prices/product/${productId}`);
   }
 
   createProductPrice(productId: string, price: any) {
-    return this.http.post(`${this.apiUrl}/products/${productId}/prices`, price);
+    return this.http.post(`${this.apiUrl}/product-prices`, {
+      ...price,
+      productId
+    });
   }
 
   updateProductPrice(productId: string, priceId: string, price: any) {
-    return this.http.put(`${this.apiUrl}/products/${productId}/prices/${priceId}`, price);
+    return this.http.put(`${this.apiUrl}/product-prices/${priceId}`, price);
   }
 
   deleteProductPrice(productId: string, priceId: string) {
-    return this.http.delete(`${this.apiUrl}/products/${productId}/prices/${priceId}`);
+    return this.http.delete(`${this.apiUrl}/product-prices/${priceId}`);
   }
 
   getProductImages(productId: string) {
-    return this.http.get(`${this.apiUrl}/products/${productId}/images`);
+    return this.http.get(`${this.apiUrl}/product-images/product/${productId}`);
   }
 
   createProductImage(image: any) {
-    return this.http.post(`${this.apiUrl}/products/images`, image);
+    return this.http.post(`${this.apiUrl}/product-images`, image);
   }
 
   updateProductImage(imageId: string, image: any) {
-    return this.http.put(`${this.apiUrl}/products/images/${imageId}`, image);
+    return this.http.put(`${this.apiUrl}/product-images/${imageId}`, image);
   }
 
   deleteProductImage(imageId: string) {
-    return this.http.delete(`${this.apiUrl}/products/images/${imageId}`);
+    return this.http.delete(`${this.apiUrl}/product-images/${imageId}`);
   }
 
   addStockToProduct(productId: string, stockData: any) {
