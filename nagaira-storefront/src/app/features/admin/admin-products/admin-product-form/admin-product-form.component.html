@@ -1,423 +1,692 @@
 <div class="admin-product-form">
   <div class="page-header">
-    <h1>{{ productId() ? 'Editar Producto' : 'Nuevo Producto' }}</h1>
-    <button class="btn btn-secondary" routerLink="/admin/products">← Volver</button>
+    <h1>{{ productId() ? "Editar Producto" : "Nuevo Producto" }}</h1>
+    <button class="btn btn-secondary" routerLink="/admin/products">
+      ← Volver
+    </button>
   </div>
 
   @if (loading()) {
-    <div class="loading">Cargando...</div>
+  <div class="loading">Cargando...</div>
   } @else {
-    <form (ngSubmit)="save()" class="product-form">
-      <div class="form-section">
-        <h2>Información Básica</h2>
-        
+  <form (ngSubmit)="save()" class="product-form">
+    <div class="form-section">
+      <h2>Información Básica</h2>
+
+      <div class="form-group">
+        <label>Nombre del Producto *</label>
+        <input type="text" [(ngModel)]="formData.name" name="name" required />
+      </div>
+
+      <div class="form-group">
+        <label>Descripción *</label>
+        <textarea
+          [(ngModel)]="formData.description"
+          name="description"
+          rows="4"
+          required
+        ></textarea>
+      </div>
+
+      <div class="form-row">
         <div class="form-group">
-          <label>Nombre del Producto *</label>
-          <input type="text" [(ngModel)]="formData.name" name="name" required>
+          <label>SKU *</label>
+          <input type="text" [(ngModel)]="formData.sku" name="sku" required />
         </div>
 
         <div class="form-group">
-          <label>Descripción *</label>
-          <textarea [(ngModel)]="formData.description" name="description" rows="4" required></textarea>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>SKU *</label>
-            <input type="text" [(ngModel)]="formData.sku" name="sku" required>
-          </div>
-
-          <div class="form-group">
-            <label>Categoría *</label>
-            <select [(ngModel)]="formData.categoryId" name="categoryId" required>
-              <option value="">Seleccionar categoría</option>
-              @for (category of categories(); track category.id) {
-                <option [value]="category.id">{{ category.name }}</option>
-              }
-            </select>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Costo de Adquisición</label>
-            @if (productSuppliers().length > 0) {
-              @if (hasPrimarySupplier()) {
-                @for (ps of productSuppliers(); track ps.id) {
-                  @if (ps.isPrimary) {
-                    <div class="cost-display">
-                      <input type="number" [value]="formData.cost" step="0.01" readonly class="readonly-input">
-                      <small class="cost-source">Sincronizado desde proveedor primario: <strong>{{ ps.supplierName }}</strong> (${{ ps.supplierCost.toFixed(2) }})</small>
-                    </div>
-                  }
-                }
-              } @else {
-                <input type="number" [(ngModel)]="formData.cost" name="cost" step="0.01" min="0" placeholder="0.00" (change)="onCostChange()">
-                <small class="warning">No hay proveedor primario. El costo se puede editar manualmente.</small>
-              }
-            } @else {
-              <input type="number" [(ngModel)]="formData.cost" name="cost" step="0.01" min="0" placeholder="0.00" (change)="onCostChange()">
-              <small>Sin proveedores asignados. Puede editar el costo manualmente.</small>
+          <label>Categoría *</label>
+          <select [(ngModel)]="formData.categoryId" name="categoryId" required>
+            <option value="">Seleccionar categoría</option>
+            @for (category of categories(); track category.id) {
+            <option [value]="category.id">{{ category.name }}</option>
             }
-          </div>
+          </select>
+        </div>
+      </div>
 
-          <div class="form-group">
-            <label>
-              <input type="checkbox" [(ngModel)]="formData.isActive" name="isActive">
-              Producto activo
-            </label>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Costo de Adquisición</label>
+          @if (productSuppliers().length > 0) { @if (hasPrimarySupplier()) {
+          @for (ps of productSuppliers(); track ps.id) { @if (ps.isPrimary) {
+          <div class="cost-display">
+            <input
+              type="number"
+              [value]="formData.cost"
+              step="0.01"
+              readonly
+              class="readonly-input"
+            />
+            <small class="cost-source"
+              >Sincronizado desde proveedor primario:
+              <strong>{{ ps.supplierName }}</strong> (${{
+                ps.supplierCost.toFixed(2)
+              }})</small
+            >
           </div>
+          } } } @else {
+          <input
+            type="number"
+            [(ngModel)]="formData.cost"
+            name="cost"
+            step="0.01"
+            min="0"
+            placeholder="0.00"
+            (change)="onCostChange()"
+          />
+          <small class="warning"
+            >No hay proveedor primario. El costo se puede editar
+            manualmente.</small
+          >
+          } } @else {
+          <input
+            type="number"
+            [(ngModel)]="formData.cost"
+            name="cost"
+            step="0.01"
+            min="0"
+            placeholder="0.00"
+            (change)="onCostChange()"
+          />
+          <small
+            >Sin proveedores asignados. Puede editar el costo
+            manualmente.</small
+          >
+          }
         </div>
 
         <div class="form-group">
           <label>
-            <input type="checkbox" [(ngModel)]="formData.hasVirtualStock" name="hasVirtualStock">
-            Stock virtual (Dropshipping)
+            <input
+              type="checkbox"
+              [(ngModel)]="formData.isActive"
+              name="isActive"
+            />
+            Producto activo
           </label>
-          <small>Activa esta opción si el producto tiene stock infinito (modelo dropshipping). No se validará disponibilidad de inventario.</small>
         </div>
       </div>
 
-      <div class="form-section">
-        <h2>Precios</h2>
-        <p class="section-description">Configure los precios para cada nivel de precio. Debe agregar al menos un precio.</p>
+      <div class="form-group">
+        <label>
+          <input
+            type="checkbox"
+            [(ngModel)]="formData.hasVirtualStock"
+            name="hasVirtualStock"
+          />
+          Stock virtual (Dropshipping)
+        </label>
+        <small
+          >Activa esta opción si el producto tiene stock infinito (modelo
+          dropshipping). No se validará disponibilidad de inventario.</small
+        >
+      </div>
+    </div>
 
-        <div class="price-form">
-          <div class="form-row">
-            <div class="form-group">
-              <label>Nivel de Precio</label>
-              <select [(ngModel)]="newPrice.priceLevelId" name="newPriceLevelId" (change)="onPriceLevelChange()">
-                <option value="">Seleccionar nivel</option>
-                @for (level of priceLevels(); track level.id) {
-                  <option [value]="level.id">{{ level.name }} ({{ level.markupPercentage }}% margen)</option>
-                }
-              </select>
-            </div>
+    <div class="form-section">
+      <h2>Precios</h2>
+      @if (!productId()) {
+      <p class="section-description">
+        Los precios se generan automaticamente al crear el producto segun el
+        costo y los niveles de precio. Podras agregar precios manualmente cuando
+        edites el producto.
+      </p>
+      } @else {
+      <p class="section-description">
+        Configure los precios para cada nivel de precio.
+      </p>
 
-            <div class="form-group">
-              <label>Precio (con impuesto) *</label>
-              <input type="number" [(ngModel)]="newPrice.price" name="newPrice" step="0.01" min="0.01" placeholder="0.00" (input)="calculatePriceWithoutTax()">
-              @if (newPrice.priceLevelId && formData.cost && formData.cost > 0) {
-                <small class="suggested-price">
-                  Precio sugerido: ${{ getSuggestedPriceFormatted() }}
-                  (Costo: ${{ getCostFormatted() }} + {{ getCurrentMarkupPercentage() }}%)
-                </small>
+      <div class="price-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nivel de Precio</label>
+            <select
+              [(ngModel)]="newPrice.priceLevelId"
+              name="newPriceLevelId"
+              (change)="onPriceLevelChange()"
+            >
+              <option value="">Seleccionar nivel</option>
+              @for (level of priceLevels(); track level.id) {
+              <option [value]="level.id">
+                {{ level.name }} ({{ level.markupPercentage }}% margen)
+              </option>
               }
-            </div>
-
-            <div class="form-group">
-              <label>Precio sin impuesto *</label>
-              <input type="number" [(ngModel)]="newPrice.priceWithoutTax" name="newPriceWithoutTax" step="0.01" min="0.01" placeholder="0.00" (input)="calculatePriceWithTax()">
-              <small>Se calcula automáticamente según configuración de impuestos</small>
-            </div>
-
-            <div class="form-group">
-              <label>Cantidad Mínima</label>
-              <input type="number" [(ngModel)]="newPrice.minQuantity" name="newMinQuantity" min="1" value="1">
-            </div>
-
-            <div class="form-group">
-              <button type="button" class="btn btn-add" (click)="addPrice()">Agregar Precio</button>
-            </div>
-          </div>
-        </div>
-
-        @if (productPrices().length > 0) {
-          <div class="prices-list">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Nivel de Precio</th>
-                  <th>Precio (con IVA)</th>
-                  <th>Precio (sin IVA)</th>
-                  <th>Cantidad Mínima</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (price of productPrices(); track price.id) {
-                  <tr>
-                    <td>{{ price.priceLevelName }}</td>
-                    <td>${{ price.price.toFixed(2) }}</td>
-                    <td>${{ price.priceWithoutTax.toFixed(2) }}</td>
-                    <td>{{ price.minQuantity }}</td>
-                    <td>
-                      <span class="badge" [class.active]="price.isActive" [class.inactive]="!price.isActive">
-                        {{ price.isActive ? 'Activo' : 'Inactivo' }}
-                      </span>
-                    </td>
-                    <td>
-                      <button type="button" class="btn-icon" (click)="removePrice(price.id)" title="Eliminar">
-                        🗑️
-                      </button>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        } @else {
-          <div class="empty-state">
-            <p>No hay precios configurados. Agregue al menos un precio para el producto.</p>
-          </div>
-        }
-      </div>
-
-      <div class="form-section">
-        <h2>Proveedores</h2>
-        <p class="section-description">Asigne proveedores a este producto. El proveedor primario se usará para calcular el costo base.</p>
-
-        @if (productId()) {
-          <div class="supplier-form">
-            <div class="form-row">
-              <div class="form-group">
-                <label>Proveedor *</label>
-                <select [(ngModel)]="newProductSupplier.supplierId" name="newSupplierId">
-                  <option value="">Seleccionar proveedor</option>
-                  @for (supplier of suppliers(); track supplier.id) {
-                    <option [value]="supplier.id">{{ supplier.name }}</option>
-                  }
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label>Costo del Proveedor *</label>
-                <input type="number" [(ngModel)]="newProductSupplier.supplierCost" name="newSupplierCost" step="0.01" min="0.01" placeholder="0.00">
-              </div>
-
-              <div class="form-group">
-                <label>SKU del Proveedor</label>
-                <input type="text" [(ngModel)]="newProductSupplier.supplierSku" name="newSupplierSku" placeholder="SKU en el sistema del proveedor">
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>Prioridad</label>
-                <input type="number" [(ngModel)]="newProductSupplier.priority" name="newPriority" min="1" [value]="getNextAvailablePriority()" (focus)="newProductSupplier.priority = getNextAvailablePriority()">
-                <small>1 = mayor prioridad. Siguiente disponible: {{ getNextAvailablePriority() }}</small>
-              </div>
-
-              <div class="form-group">
-                <label>Tiempo de Entrega (días)</label>
-                <input type="number" [(ngModel)]="newProductSupplier.leadTimeDays" name="newLeadTimeDays" min="0" value="0">
-              </div>
-
-              <div class="form-group">
-                <label>Cantidad Mínima</label>
-                <input type="number" [(ngModel)]="newProductSupplier.minOrderQuantity" name="newMinOrderQuantity" min="1" value="1">
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>
-                  <input type="checkbox" [(ngModel)]="newProductSupplier.isPrimary" name="newIsPrimary">
-                  Proveedor Primario
-                </label>
-                <small>El costo de este proveedor se usará como costo base del producto</small>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>Notas</label>
-              <textarea [(ngModel)]="newProductSupplier.notes" name="newSupplierNotes" rows="2" placeholder="Información adicional sobre este proveedor"></textarea>
-            </div>
-
-            <div class="form-group">
-              <button type="button" class="btn btn-add" (click)="addProductSupplier()">Agregar Proveedor</button>
-            </div>
+            </select>
           </div>
 
-          @if (productSuppliers().length > 0) {
-            <div class="suppliers-list">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Proveedor</th>
-                    <th>SKU Proveedor</th>
-                    <th>Costo</th>
-                    <th>Prioridad</th>
-                    <th>Tiempo Entrega</th>
-                    <th>Primario</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (ps of productSuppliers(); track ps.id) {
-                    <tr [class.primary]="ps.isPrimary">
-                      <td class="font-semibold">{{ ps.supplierName }}</td>
-                      <td>{{ ps.supplierSku || '-' }}</td>
-                      <td>
-                        @if (editingCostId() === ps.id) {
-                          <div class="cost-edit">
-                            <input 
-                              type="number" 
-                              [(ngModel)]="editingCost" 
-                              step="0.01" 
-                              min="0.01"
-                              class="cost-input"
-                              (keyup.enter)="saveCost(ps.id)"
-                              (keyup.escape)="cancelEditCost()">
-                            <button type="button" class="btn-icon-small" (click)="saveCost(ps.id)" title="Guardar">✓</button>
-                            <button type="button" class="btn-icon-small" (click)="cancelEditCost()" title="Cancelar">✕</button>
-                          </div>
-                        } @else {
-                          <div class="cost-display-cell">
-                            <span class="cost-value">${{ ps.supplierCost.toFixed(2) }}</span>
-                            <button type="button" class="btn-icon-small" (click)="editCost(ps.id, ps.supplierCost)" title="Editar costo">✏️</button>
-                            <button type="button" class="btn-icon-small" (click)="viewCostHistory(ps.id)" title="Ver historial">📊</button>
-                          </div>
-                        }
-                      </td>
-                      <td>{{ ps.priority }}</td>
-                      <td>{{ ps.leadTimeDays }} días</td>
-                      <td>
-                        @if (ps.isPrimary) {
-                          <span class="badge active">Primario</span>
-                        } @else {
-                          <button type="button" class="btn-link" (click)="setPrimarySupplier(ps.supplierId)">Marcar Primario</button>
-                        }
-                      </td>
-                      <td>
-                        @if (!ps.isPrimary) {
-                          <button type="button" class="btn-link" (click)="setPrimarySupplier(ps.supplierId)">Marcar Primario</button>
-                        }
-                        <button type="button" class="btn-icon" (click)="removeProductSupplier(ps.id)" title="Eliminar">
-                          🗑️
-                        </button>
-                      </td>
-                    </tr>
-                    @if (showingHistory() === ps.id && costHistory().length > 0) {
-                      <tr class="history-row">
-                        <td colspan="7">
-                          <div class="cost-history">
-                            <h4>Historial de Costos - {{ ps.supplierName }}</h4>
-                            <table class="history-table">
-                              <thead>
-                                <tr>
-                                  <th>Fecha</th>
-                                  <th>Costo Anterior</th>
-                                  <th>Costo Nuevo</th>
-                                  <th>Cambio</th>
-                                  <th>Cambiado Por</th>
-                                  <th>Razón</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                @for (entry of costHistory(); track entry.id) {
-                                  <tr>
-                                    <td>{{ entry.createdAt | date:'short' }}</td>
-                                    <td>{{ entry.oldCost ? '$' + entry.oldCost.toFixed(2) : 'N/A' }}</td>
-                                    <td class="new-cost">${{ entry.newCost.toFixed(2) }}</td>
-                                    <td [class.positive]="entry.oldCost && entry.newCost > entry.oldCost" [class.negative]="entry.oldCost && entry.newCost < entry.oldCost">
-                                      @if (entry.oldCost) {
-                                        {{ entry.newCost > entry.oldCost ? '+' : '' }}${{ (entry.newCost - entry.oldCost).toFixed(2) }}
-                                      } @else {
-                                        -
-                                      }
-                                    </td>
-                                    <td>{{ entry.changedByUserName || 'Sistema' }}</td>
-                                    <td>{{ entry.changeReason || '-' }}</td>
-                                  </tr>
-                                }
-                              </tbody>
-                            </table>
-                          </div>
-                        </td>
-                      </tr>
-                    }
-                  }
-                </tbody>
-              </table>
-            </div>
-          } @else {
-            <div class="empty-state">
-              <p>No hay proveedores asignados. Agregue al menos un proveedor para este producto.</p>
-            </div>
-          }
-        } @else {
-          <div class="info-box">
-            <p>Guarde el producto primero para poder asignar proveedores.</p>
-          </div>
-        }
-      </div>
-
-      <div class="form-section">
-        <h2>Imágenes</h2>
-        <p class="section-description">Agregue imágenes del producto. Puede subir archivos o usar URLs directas.</p>
-
-        <div class="image-form">
           <div class="form-group">
-            <label>Subir Imagen</label>
-            <input type="file" accept="image/*" (change)="uploadImage($event)" [disabled]="uploadingImage()">
-            @if (uploadingImage()) {
-              <small>Subiendo imagen...</small>
+            <label>Precio (con impuesto) *</label>
+            <input
+              type="number"
+              [(ngModel)]="newPrice.price"
+              name="newPrice"
+              step="0.01"
+              min="0.01"
+              placeholder="0.00"
+              (input)="calculatePriceWithoutTax()"
+            />
+            @if (newPrice.priceLevelId && formData.cost && formData.cost > 0) {
+            <small class="suggested-price">
+              Precio sugerido: ${{ getSuggestedPriceFormatted() }} (Costo: ${{
+                getCostFormatted()
+              }}
+              + {{ getCurrentMarkupPercentage() }}%)
+            </small>
             }
           </div>
 
           <div class="form-group">
-            <label>URL de Imagen</label>
-            <input type="url" [(ngModel)]="newImage.imageUrl" name="newImageUrl" placeholder="https://ejemplo.com/imagen.jpg">
-            <small>O ingrese una URL directa de la imagen</small>
+            <label>Precio sin impuesto *</label>
+            <input
+              type="number"
+              [(ngModel)]="newPrice.priceWithoutTax"
+              name="newPriceWithoutTax"
+              step="0.01"
+              min="0.01"
+              placeholder="0.00"
+              (input)="calculatePriceWithTax()"
+            />
+            <small
+              >Se calcula automaticamente segun configuracion de
+              impuestos</small
+            >
           </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label>Texto Alternativo</label>
-              <input type="text" [(ngModel)]="newImage.altText" name="newAltText" placeholder="Descripción de la imagen">
-            </div>
+          <div class="form-group">
+            <label>Cantidad Minima</label>
+            <input
+              type="number"
+              [(ngModel)]="newPrice.minQuantity"
+              name="newMinQuantity"
+              min="1"
+              value="1"
+            />
+          </div>
 
-            <div class="form-group">
-              <label>
-                <input type="checkbox" [(ngModel)]="newImage.isPrimary" name="newIsPrimary">
-                Imagen Principal
-              </label>
-            </div>
+          <div class="form-group">
+            <button type="button" class="btn btn-add" (click)="addPrice()">
+              Agregar Precio
+            </button>
+          </div>
+        </div>
+      </div>
+      } @if (productPrices().length > 0) {
+      <div class="prices-list">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Nivel de Precio</th>
+              <th>Precio (con IVA)</th>
+              <th>Precio (sin IVA)</th>
+              <th>Cantidad Minima</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (price of productPrices(); track price.id) {
+            <tr>
+              <td>{{ price.priceLevelName }}</td>
+              <td>${{ price.price.toFixed(2) }}</td>
+              <td>${{ price.priceWithoutTax.toFixed(2) }}</td>
+              <td>{{ price.minQuantity }}</td>
+              <td>
+                <span
+                  class="badge"
+                  [class.active]="price.isActive"
+                  [class.inactive]="!price.isActive"
+                >
+                  {{ price.isActive ? "Activo" : "Inactivo" }}
+                </span>
+              </td>
+              <td>
+                <button
+                  type="button"
+                  class="btn-icon"
+                  (click)="removePrice(price.id)"
+                  title="Eliminar"
+                >
+                  🗑️
+                </button>
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      } @else if (productId()) {
+      <div class="empty-state">
+        <p>
+          No hay precios configurados. Agregue al menos un precio para el
+          producto.
+        </p>
+      </div>
+      }
+    </div>
 
-            <div class="form-group">
-              <button type="button" class="btn btn-add" (click)="addImage()">Agregar Imagen</button>
-            </div>
+    <div class="form-section">
+      <h2>Proveedores</h2>
+      <p class="section-description">
+        Asigne proveedores a este producto. El proveedor primario se usará para
+        calcular el costo base.
+      </p>
+
+      @if (productId()) {
+      <div class="supplier-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Proveedor *</label>
+            <select
+              [(ngModel)]="newProductSupplier.supplierId"
+              name="newSupplierId"
+            >
+              <option value="">Seleccionar proveedor</option>
+              @for (supplier of suppliers(); track supplier.id) {
+              <option [value]="supplier.id">{{ supplier.name }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Costo del Proveedor *</label>
+            <input
+              type="number"
+              [(ngModel)]="newProductSupplier.supplierCost"
+              name="newSupplierCost"
+              step="0.01"
+              min="0.01"
+              placeholder="0.00"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>SKU del Proveedor</label>
+            <input
+              type="text"
+              [(ngModel)]="newProductSupplier.supplierSku"
+              name="newSupplierSku"
+              placeholder="SKU en el sistema del proveedor"
+            />
           </div>
         </div>
 
-        @if (productImages().length > 0) {
-          <div class="images-grid">
-            @for (image of productImages(); track image.id) {
-              <div class="image-card" [class.primary]="image.isPrimary">
-                <img [src]="image.imageUrl" [alt]="image.altText || 'Imagen del producto'">
-                <div class="image-overlay">
-                  @if (image.isPrimary) {
-                    <span class="primary-badge">Principal</span>
-                  }
-                  <div class="image-actions">
-                    @if (!image.isPrimary) {
-                      <button type="button" class="btn-icon" (click)="setPrimaryImage(image.id)" title="Marcar como principal">
-                        ⭐
-                      </button>
-                    }
-                    <button type="button" class="btn-icon" (click)="removeImage(image.id)" title="Eliminar">
-                      🗑️
-                    </button>
-                  </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Prioridad</label>
+            <input
+              type="number"
+              [(ngModel)]="newProductSupplier.priority"
+              name="newPriority"
+              min="1"
+              [value]="getNextAvailablePriority()"
+              (focus)="newProductSupplier.priority = getNextAvailablePriority()"
+            />
+            <small
+              >1 = mayor prioridad. Siguiente disponible:
+              {{ getNextAvailablePriority() }}</small
+            >
+          </div>
+
+          <div class="form-group">
+            <label>Tiempo de Entrega (días)</label>
+            <input
+              type="number"
+              [(ngModel)]="newProductSupplier.leadTimeDays"
+              name="newLeadTimeDays"
+              min="0"
+              value="0"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Cantidad Mínima</label>
+            <input
+              type="number"
+              [(ngModel)]="newProductSupplier.minOrderQuantity"
+              name="newMinOrderQuantity"
+              min="1"
+              value="1"
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>
+              <input
+                type="checkbox"
+                [(ngModel)]="newProductSupplier.isPrimary"
+                name="newIsPrimary"
+              />
+              Proveedor Primario
+            </label>
+            <small
+              >El costo de este proveedor se usará como costo base del
+              producto</small
+            >
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Notas</label>
+          <textarea
+            [(ngModel)]="newProductSupplier.notes"
+            name="newSupplierNotes"
+            rows="2"
+            placeholder="Información adicional sobre este proveedor"
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <button
+            type="button"
+            class="btn btn-add"
+            (click)="addProductSupplier()"
+          >
+            Agregar Proveedor
+          </button>
+        </div>
+      </div>
+
+      @if (productSuppliers().length > 0) {
+      <div class="suppliers-list">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Proveedor</th>
+              <th>SKU Proveedor</th>
+              <th>Costo</th>
+              <th>Prioridad</th>
+              <th>Tiempo Entrega</th>
+              <th>Primario</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (ps of productSuppliers(); track ps.id) {
+            <tr [class.primary]="ps.isPrimary">
+              <td class="font-semibold">{{ ps.supplierName }}</td>
+              <td>{{ ps.supplierSku || "-" }}</td>
+              <td>
+                @if (editingCostId() === ps.id) {
+                <div class="cost-edit">
+                  <input
+                    type="number"
+                    [(ngModel)]="editingCost"
+                    step="0.01"
+                    min="0.01"
+                    class="cost-input"
+                    (keyup.enter)="saveCost(ps.id)"
+                    (keyup.escape)="cancelEditCost()"
+                  />
+                  <button
+                    type="button"
+                    class="btn-icon-small"
+                    (click)="saveCost(ps.id)"
+                    title="Guardar"
+                  >
+                    ✓
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-icon-small"
+                    (click)="cancelEditCost()"
+                    title="Cancelar"
+                  >
+                    ✕
+                  </button>
                 </div>
-              </div>
-            }
+                } @else {
+                <div class="cost-display-cell">
+                  <span class="cost-value"
+                    >${{ ps.supplierCost.toFixed(2) }}</span
+                  >
+                  <button
+                    type="button"
+                    class="btn-icon-small"
+                    (click)="editCost(ps.id, ps.supplierCost)"
+                    title="Editar costo"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-icon-small"
+                    (click)="viewCostHistory(ps.id)"
+                    title="Ver historial"
+                  >
+                    📊
+                  </button>
+                </div>
+                }
+              </td>
+              <td>{{ ps.priority }}</td>
+              <td>{{ ps.leadTimeDays }} días</td>
+              <td>
+                @if (ps.isPrimary) {
+                <span class="badge active">Primario</span>
+                } @else {
+                <button
+                  type="button"
+                  class="btn-link"
+                  (click)="setPrimarySupplier(ps.supplierId)"
+                >
+                  Marcar Primario
+                </button>
+                }
+              </td>
+              <td>
+                @if (!ps.isPrimary) {
+                <button
+                  type="button"
+                  class="btn-link"
+                  (click)="setPrimarySupplier(ps.supplierId)"
+                >
+                  Marcar Primario
+                </button>
+                }
+                <button
+                  type="button"
+                  class="btn-icon"
+                  (click)="removeProductSupplier(ps.id)"
+                  title="Eliminar"
+                >
+                  🗑️
+                </button>
+              </td>
+            </tr>
+            @if (showingHistory() === ps.id && costHistory().length > 0) {
+            <tr class="history-row">
+              <td colspan="7">
+                <div class="cost-history">
+                  <h4>Historial de Costos - {{ ps.supplierName }}</h4>
+                  <table class="history-table">
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Costo Anterior</th>
+                        <th>Costo Nuevo</th>
+                        <th>Cambio</th>
+                        <th>Cambiado Por</th>
+                        <th>Razón</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (entry of costHistory(); track entry.id) {
+                      <tr>
+                        <td>{{ entry.createdAt | date : "short" }}</td>
+                        <td>
+                          {{
+                            entry.oldCost
+                              ? "$" + entry.oldCost.toFixed(2)
+                              : "N/A"
+                          }}
+                        </td>
+                        <td class="new-cost">
+                          ${{ entry.newCost.toFixed(2) }}
+                        </td>
+                        <td
+                          [class.positive]="
+                            entry.oldCost && entry.newCost > entry.oldCost
+                          "
+                          [class.negative]="
+                            entry.oldCost && entry.newCost < entry.oldCost
+                          "
+                        >
+                          @if (entry.oldCost) {
+                          {{ entry.newCost > entry.oldCost ? "+" : "" }}${{
+                            (entry.newCost - entry.oldCost).toFixed(2)
+                          }}
+                          } @else { - }
+                        </td>
+                        <td>{{ entry.changedByUserName || "Sistema" }}</td>
+                        <td>{{ entry.changeReason || "-" }}</td>
+                      </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </td>
+            </tr>
+            } }
+          </tbody>
+        </table>
+      </div>
+      } @else {
+      <div class="empty-state">
+        <p>
+          No hay proveedores asignados. Agregue al menos un proveedor para este
+          producto.
+        </p>
+      </div>
+      } } @else {
+      <div class="info-box">
+        <p>Guarde el producto primero para poder asignar proveedores.</p>
+      </div>
+      }
+    </div>
+
+    <div class="form-section">
+      <h2>Imágenes</h2>
+      <p class="section-description">
+        Agregue imágenes del producto. Puede subir archivos o usar URLs
+        directas.
+      </p>
+
+      <div class="image-form">
+        <div class="form-group">
+          <label>Subir Imagen</label>
+          <input
+            type="file"
+            accept="image/*"
+            (change)="uploadImage($event)"
+            [disabled]="uploadingImage()"
+          />
+          @if (uploadingImage()) {
+          <small>Subiendo imagen...</small>
+          }
+        </div>
+
+        <div class="form-group">
+          <label>URL de Imagen</label>
+          <input
+            type="url"
+            [(ngModel)]="newImage.imageUrl"
+            name="newImageUrl"
+            placeholder="https://ejemplo.com/imagen.jpg"
+          />
+          <small>O ingrese una URL directa de la imagen</small>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Texto Alternativo</label>
+            <input
+              type="text"
+              [(ngModel)]="newImage.altText"
+              name="newAltText"
+              placeholder="Descripción de la imagen"
+            />
           </div>
-        } @else {
-          <div class="empty-state">
-            <p>No hay imágenes agregadas. Agregue al menos una imagen para el producto.</p>
+
+          <div class="form-group">
+            <label>
+              <input
+                type="checkbox"
+                [(ngModel)]="newImage.isPrimary"
+                name="newIsPrimary"
+              />
+              Imagen Principal
+            </label>
           </div>
-        }
+
+          <div class="form-group">
+            <button type="button" class="btn btn-add" (click)="addImage()">
+              Agregar Imagen
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div class="form-actions">
-        <button type="button" class="btn btn-secondary" routerLink="/admin/products">Cancelar</button>
-        <button type="submit" class="btn btn-primary" [disabled]="saving()">
-          {{ saving() ? 'Guardando...' : 'Guardar Producto' }}
-        </button>
+      @if (productImages().length > 0) {
+      <div class="images-grid">
+        @for (image of productImages(); track image.id) {
+        <div class="image-card" [class.primary]="image.isPrimary">
+          <img
+            [src]="image.imageUrl"
+            [alt]="image.altText || 'Imagen del producto'"
+          />
+          <div class="image-overlay">
+            @if (image.isPrimary) {
+            <span class="primary-badge">Principal</span>
+            }
+            <div class="image-actions">
+              @if (!image.isPrimary) {
+              <button
+                type="button"
+                class="btn-icon"
+                (click)="setPrimaryImage(image.id)"
+                title="Marcar como principal"
+              >
+                ⭐
+              </button>
+              }
+              <button
+                type="button"
+                class="btn-icon"
+                (click)="removeImage(image.id)"
+                title="Eliminar"
+              >
+                🗑️
+              </button>
+            </div>
+          </div>
+        </div>
+        }
       </div>
-    </form>
+      } @else {
+      <div class="empty-state">
+        <p>
+          No hay imágenes agregadas. Agregue al menos una imagen para el
+          producto.
+        </p>
+      </div>
+      }
+    </div>
+
+    <div class="form-actions">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        routerLink="/admin/products"
+      >
+        Cancelar
+      </button>
+      <button type="submit" class="btn btn-primary" [disabled]="saving()">
+        {{ saving() ? "Guardando..." : "Guardar Producto" }}
+      </button>
+    </div>
+  </form>
   }
 </div>

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Nagaira.Ecommerce.Application.DTOs;
 using Nagaira.Ecommerce.Application.Interfaces;
 using Nagaira.Ecommerce.Domain.Entities;
@@ -89,12 +90,17 @@ public class ProductService : IProductService
                         ProductId = product.Id,
                         PriceLevelId = priceDto.PriceLevelId,
                         Price = priceDto.Price,
+                        PriceWithoutTax = priceDto.PriceWithoutTax,
                         MinQuantity = priceDto.MinQuantity,
                         IsActive = true,
                         CreatedAt = DateTime.UtcNow
                     };
                     await _unitOfWork.ProductPrices.AddAsync(productPrice);
                 }
+            }
+            else
+            {
+                await CreateDefaultPricesAsync(product);
             }
             
             if (dto.Images != null && dto.Images.Any())
@@ -186,5 +192,59 @@ public class ProductService : IProductService
                 p.IsActive
             )).ToList()
         );
+    }
+
+    private async Task CreateDefaultPricesAsync(Product product)
+    {
+        if (!product.Cost.HasValue || product.Cost.Value <= 0)
+        {
+            return;
+        }
+
+        var levels = await _unitOfWork.PriceLevels.GetActiveLevelsAsync();
+        var levelList = levels.ToList();
+        if (levelList.Count == 0)
+        {
+            return;
+        }
+
+        var taxRate = await GetTaxRateAsync();
+        var taxMultiplier = 1 + taxRate;
+
+        foreach (var level in levelList)
+        {
+            var markupMultiplier = 1 + (level.MarkupPercentage / 100m);
+            var priceWithTax = Math.Round(product.Cost.Value * markupMultiplier, 2);
+            var priceWithoutTax = taxMultiplier > 0
+                ? Math.Round(priceWithTax / taxMultiplier, 2)
+                : priceWithTax;
+
+            var productPrice = new ProductPrice
+            {
+                Id = Guid.NewGuid(),
+                ProductId = product.Id,
+                PriceLevelId = level.Id,
+                Price = priceWithTax,
+                PriceWithoutTax = priceWithoutTax,
+                MinQuantity = 1,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _unitOfWork.ProductPrices.AddAsync(productPrice);
+        }
+    }
+
+    private async Task<decimal> GetTaxRateAsync()
+    {
+        var setting = await _unitOfWork.AppSettings.GetByKeyAsync("tax_rate");
+        if (setting?.Value == null)
+        {
+            return 0.16m;
+        }
+
+        return decimal.TryParse(setting.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out var rate)
+            ? rate
+            : 0.16m;
     }
 }

@@ -513,14 +513,10 @@ export class AdminProductFormComponent implements OnInit {
       return;
     }
 
-    if (this.productPrices().length === 0) {
-      alert('Debe agregar al menos un precio para el producto');
-      return;
-    }
-
-    this.saving.set(true);
     const currentProductId = this.productId();
     const isEdit = currentProductId !== null && currentProductId !== undefined;
+
+    this.saving.set(true);
     
     if (isEdit && !currentProductId) {
       alert('Error: No se pudo obtener el ID del producto');
