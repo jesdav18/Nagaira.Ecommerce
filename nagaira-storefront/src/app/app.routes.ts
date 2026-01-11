@@ -43,6 +43,22 @@ export const routes: Routes = [
     loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent)
   },
   {
+    path: 'politica-venta',
+    loadComponent: () => import('./features/info/policy-sales.component').then(m => m.PolicySalesComponent)
+  },
+  {
+    path: 'politica-reembolso',
+    loadComponent: () => import('./features/info/policy-refund.component').then(m => m.PolicyRefundComponent)
+  },
+  {
+    path: 'envio-devolucion',
+    loadComponent: () => import('./features/info/shipping-returns.component').then(m => m.ShippingReturnsComponent)
+  },
+  {
+    path: 'terminos-condiciones',
+    loadComponent: () => import('./features/info/terms-conditions.component').then(m => m.TermsConditionsComponent)
+  },
+  {
     path: 'admin',
     loadComponent: () => import('./features/admin/admin-layout/admin-layout.component').then(m => m.AdminLayoutComponent),
     canActivate: [adminGuard],

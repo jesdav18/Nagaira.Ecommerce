@@ -40,6 +40,12 @@ public class AdminProductImagesController : ControllerBase
         var product = await _unitOfWork.Products.GetByIdAsync(dto.ProductId);
         if (product == null) return BadRequest("Product not found");
 
+        var existing = product.Images.FirstOrDefault(i => !i.IsDeleted && i.ImageUrl == dto.ImageUrl);
+        if (existing != null)
+        {
+            return Ok(new ProductImageDto(existing.Id, existing.ImageUrl, existing.AltText, existing.IsPrimary, existing.DisplayOrder));
+        }
+
         if (dto.IsPrimary)
         {
             var existingPrimary = product.Images.FirstOrDefault(i => i.IsPrimary && !i.IsDeleted);

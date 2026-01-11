@@ -29,7 +29,9 @@ export class AdminProductFormComponent implements OnInit {
   categories = signal<any[]>([]);
   priceLevels = signal<PriceLevel[]>([]);
   productPrices = signal<ProductPrice[]>([]);
+  originalPrices = signal<ProductPrice[]>([]);
   productImages = signal<ProductImage[]>([]);
+  originalImages = signal<ProductImage[]>([]);
   suppliers = signal<Supplier[]>([]);
   productSuppliers = signal<ProductSupplier[]>([]);
   loading = signal(true);
@@ -236,8 +238,12 @@ export class AdminProductFormComponent implements OnInit {
           isActive: product.isActive,
           hasVirtualStock: product.hasVirtualStock || false
         };
-        this.productPrices.set(product.prices || []);
-        this.productImages.set(product.images || []);
+        const prices = product.prices || [];
+        this.productPrices.set(prices);
+        this.originalPrices.set(prices.map((price: ProductPrice) => ({ ...price })));
+        const images = product.images || [];
+        this.productImages.set(images);
+        this.originalImages.set(images.map((image: ProductImage) => ({ ...image })));
         this.loading.set(false);
       },
       error: (error) => {
@@ -600,8 +606,15 @@ export class AdminProductFormComponent implements OnInit {
     const allImages = this.productImages();
     
     const newPrices = allPrices.filter(p => p.id.startsWith('temp'));
+    const existingPrices = allPrices.filter(p => !p.id.startsWith('temp'));
+    const originalPrices = this.originalPrices();
+    const currentPriceIds = new Set(existingPrices.map(price => price.id));
+    const deletedPrices = originalPrices.filter(price => !currentPriceIds.has(price.id));
     const newImages = allImages.filter(img => img.id.startsWith('temp'));
     const existingImages = allImages.filter(img => !img.id.startsWith('temp'));
+    const originalImages = this.originalImages();
+    const currentImageIds = new Set(existingImages.map(image => image.id));
+    const deletedImages = originalImages.filter(image => !currentImageIds.has(image.id));
 
     const operations: Promise<any>[] = [];
 
@@ -615,6 +628,28 @@ export class AdminProductFormComponent implements OnInit {
             priceWithoutTax: price.priceWithoutTax,
             minQuantity: price.minQuantity
           })
+        )
+      );
+    });
+
+    existingPrices.forEach(price => {
+      operations.push(
+        firstValueFrom(
+          this.adminService.updateProductPrice(productId, price.id, {
+            id: price.id,
+            price: price.price,
+            priceWithoutTax: price.priceWithoutTax,
+            minQuantity: price.minQuantity,
+            isActive: price.isActive
+          })
+        )
+      );
+    });
+
+    deletedPrices.forEach(price => {
+      operations.push(
+        firstValueFrom(
+          this.adminService.deleteProductPrice(productId, price.id)
         )
       );
     });
@@ -642,6 +677,14 @@ export class AdminProductFormComponent implements OnInit {
             isPrimary: image.isPrimary,
             displayOrder: image.displayOrder
           })
+        )
+      );
+    });
+
+    deletedImages.forEach(image => {
+      operations.push(
+        firstValueFrom(
+          this.adminService.deleteProductImage(image.id)
         )
       );
     });
