@@ -11,6 +11,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/products/products.component').then(m => m.ProductsComponent)
   },
   {
+    path: 'encargo',
+    loadComponent: () => import('./features/product-requests/product-request.component').then(m => m.ProductRequestComponent)
+  },
+  {
     path: 'categories',
     loadComponent: () => import('./features/categories/categories.component').then(m => m.CategoriesComponent)
   },
@@ -90,6 +94,10 @@ export const routes: Routes = [
       {
         path: 'offers',
         loadComponent: () => import('./features/admin/admin-offers/admin-offers.component').then(m => m.AdminOffersComponent)
+      },
+      {
+        path: 'product-requests',
+        loadComponent: () => import('./features/admin/admin-product-requests/admin-product-requests.component').then(m => m.AdminProductRequestsComponent)
       },
       {
         path: 'reports',

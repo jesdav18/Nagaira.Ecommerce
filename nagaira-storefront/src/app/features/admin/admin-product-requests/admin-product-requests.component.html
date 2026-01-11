@@ -1,0 +1,97 @@
+<div class="admin-product-requests">
+  <div class="page-header">
+    <h1>Encargos</h1>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">Cargando solicitudes...</div>
+  } @else if (requests().length === 0) {
+    <div class="empty-state">
+      <p>No hay encargos registrados.</p>
+    </div>
+  } @else {
+    <div class="requests-table">
+      <div class="table-header">
+        <span>Fecha</span>
+        <span>Nombre</span>
+        <span>Telefono</span>
+        <span>Estado</span>
+        <span>Acciones</span>
+      </div>
+      @for (request of requests(); track request.id) {
+        <div class="table-row">
+          <span class="request-date">{{ request.createdAt | date: 'short' }}</span>
+          <span class="request-name">{{ request.name }}</span>
+          <span class="request-phone">{{ request.phone }}</span>
+          <span class="request-status">
+            <select
+              class="status-select"
+              [value]="request.status"
+              (change)="updateStatus(request, $any($event.target).value)"
+            >
+              @for (option of statusOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </span>
+          <span class="request-actions">
+            <button class="btn btn-sm btn-secondary" type="button" (click)="toggleDetails(request.id)">
+              {{ expandedId() === request.id ? 'Ocultar' : 'Ver detalle' }}
+            </button>
+          </span>
+        </div>
+        @if (expandedId() === request.id) {
+          <div class="details-row">
+            <div class="details-main">
+              <div class="details-block">
+                <span class="detail-label">Descripcion</span>
+                <span class="detail-value">{{ request.description }}</span>
+              </div>
+              <div class="details-grid">
+                <div>
+                  <span class="detail-label">Urgencia</span>
+                  <span class="detail-value">{{ getUrgencyLabel(request.urgency) }}</span>
+                </div>
+                <div>
+                  <span class="detail-label">Email</span>
+                  <span class="detail-value">{{ request.email || 'Sin email' }}</span>
+                </div>
+                <div>
+                  <span class="detail-label">Ciudad</span>
+                  <span class="detail-value">{{ request.city || 'Sin ciudad' }}</span>
+                </div>
+                <div>
+                  <span class="detail-label">Direccion</span>
+                  <span class="detail-value">{{ request.address || 'Sin direccion' }}</span>
+                </div>
+                <div>
+                  <span class="detail-label">Link</span>
+                  @if (request.link) {
+                    <a class="detail-link" [href]="request.link" target="_blank" rel="noopener">{{ request.link }}</a>
+                  } @else {
+                    <span class="detail-value">Sin link</span>
+                  }
+                </div>
+              </div>
+            </div>
+            <div class="details-aside">
+              <span class="detail-label">Foto</span>
+              @if (request.imageUrl) {
+                <a [href]="request.imageUrl" target="_blank" rel="noopener">
+                  <img
+                    class="request-thumb"
+                    [src]="request.imageUrl"
+                    [alt]="request.imageName || 'Foto de solicitud'"
+                  />
+                </a>
+                <span class="request-file">{{ request.imageName || 'Foto' }}</span>
+              } @else {
+                <span class="muted">Sin foto</span>
+              }
+            </div>
+          </div>
+        }
+      }
+    </div>
+  }
+</div>

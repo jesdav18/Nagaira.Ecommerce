@@ -61,6 +61,10 @@
     padding: 5rem 0;
 }
 
+.home-cta {
+    margin-bottom: 3rem;
+}
+
 .section-header {
     display: flex;
     justify-content: space-between;

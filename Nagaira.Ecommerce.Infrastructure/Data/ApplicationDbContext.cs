@@ -35,6 +35,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<ProductSupplier> ProductSuppliers { get; set; }
     public DbSet<OrderItemSupplier> OrderItemSuppliers { get; set; }
     public DbSet<SupplierCostHistory> SupplierCostHistories { get; set; }
+    public DbSet<ProductRequest> ProductRequests { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -309,6 +310,24 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.ProductSupplierId).OnDelete(DeleteBehavior.Cascade);
             entity.HasOne(e => e.ChangedByUser).WithMany()
                 .HasForeignKey(e => e.ChangedBy).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<ProductRequest>(entity =>
+        {
+            entity.ToTable("product_requests");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).HasMaxLength(120).IsRequired();
+            entity.Property(e => e.Phone).HasMaxLength(30).IsRequired();
+            entity.Property(e => e.Email).HasMaxLength(255);
+            entity.Property(e => e.City).HasMaxLength(120);
+            entity.Property(e => e.Address).HasMaxLength(255);
+            entity.Property(e => e.Description).IsRequired();
+            entity.Property(e => e.Urgency).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Link).HasMaxLength(500);
+            entity.Property(e => e.ImageUrl).HasMaxLength(1000);
+            entity.Property(e => e.ImageName).HasMaxLength(255);
+            entity.Property(e => e.Status).HasMaxLength(30).HasDefaultValue("new");
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
         });
 
         // Configure all DateTime properties to use timestamp with time zone and convert to UTC

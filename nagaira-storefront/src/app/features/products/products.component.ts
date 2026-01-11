@@ -5,11 +5,12 @@ import { ProductService } from '../../core/services/product.service';
 import { Product, Category } from '../../core/models/models';
 import { ProductCardComponent } from '../../shared/components/product-card/product-card.component';
 import { CategoryService } from '../../core/services/category.service';
+import { ProductRequestCtaComponent } from '../product-requests/product-request-cta.component';
 
 @Component({
   selector: 'app-products',
   standalone: true,
-  imports: [CommonModule, RouterLink, ProductCardComponent, RouterLinkActive],
+  imports: [CommonModule, RouterLink, ProductCardComponent, RouterLinkActive, ProductRequestCtaComponent],
   templateUrl: './products.component.html',
   styleUrls: ['./products.component.css']
 })
@@ -151,4 +152,6 @@ export class ProductsComponent {
   hasSubcategories(category: Category): boolean {
     return !!(category.subCategories && category.subCategories.length > 0);
   }
+
+
 }

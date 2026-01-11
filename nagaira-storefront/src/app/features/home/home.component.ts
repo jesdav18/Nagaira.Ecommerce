@@ -4,11 +4,12 @@ import { RouterLink } from '@angular/router';
 import { ProductCardComponent } from '../../shared/components/product-card/product-card.component';
 import { ProductService } from '../../core/services/product.service';
 import { Product } from '../../core/models/models';
+import { ProductRequestCtaComponent } from '../product-requests/product-request-cta.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, ProductCardComponent],
+  imports: [CommonModule, RouterLink, ProductCardComponent, ProductRequestCtaComponent],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css']
 })

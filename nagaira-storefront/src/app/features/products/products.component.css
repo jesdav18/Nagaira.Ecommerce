@@ -264,6 +264,7 @@
     color: white;
 }
 
+
 /* Responsive */
 @media (max-width: 900px) {
     .products-layout {
@@ -274,4 +275,5 @@
         position: static;
         margin-bottom: 2rem;
     }
+
 }

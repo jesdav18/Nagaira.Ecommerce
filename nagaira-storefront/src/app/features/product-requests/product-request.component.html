@@ -1,0 +1,122 @@
+<section class="request-page">
+  <div class="container">
+    <div class="request-hero">
+      <div>
+        <span class="request-eyebrow">Encargos</span>
+        <h1>No encontraste lo que buscabas</h1>
+        <p>Contanos que necesitas, te lo conseguimos y te contactamos pronto.</p>
+      </div>
+      <a routerLink="/products" class="btn btn-outline">Volver a productos</a>
+    </div>
+
+    <div class="request-card">
+      <form class="request-form" (ngSubmit)="submitRequest()">
+        <div class="request-grid">
+          <label class="field">
+            <span>Nombre completo</span>
+            <input
+              type="text"
+              [ngModel]="requestName()"
+              (ngModelChange)="requestName.set($event)"
+              name="requestName"
+              required
+            />
+          </label>
+          <label class="field">
+            <span>Telefono</span>
+            <input
+              type="tel"
+              [ngModel]="requestPhone()"
+              (ngModelChange)="requestPhone.set($event)"
+              name="requestPhone"
+              required
+            />
+          </label>
+          <label class="field">
+            <span>Urgencia</span>
+            <select
+              [ngModel]="requestUrgency()"
+              (ngModelChange)="requestUrgency.set($event)"
+              name="requestUrgency"
+              required
+            >
+              <option value="" disabled>Selecciona una opcion</option>
+              <option value="low">Baja</option>
+              <option value="normal">Normal</option>
+              <option value="high">Alta</option>
+              <option value="urgent">Urgente</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Email (opcional)</span>
+            <input
+              type="email"
+              [ngModel]="requestEmail()"
+              (ngModelChange)="requestEmail.set($event)"
+              name="requestEmail"
+            />
+          </label>
+          <label class="field">
+            <span>Ciudad (opcional)</span>
+            <input
+              type="text"
+              [ngModel]="requestCity()"
+              (ngModelChange)="requestCity.set($event)"
+              name="requestCity"
+            />
+          </label>
+          <label class="field">
+            <span>Direccion (opcional)</span>
+            <input
+              type="text"
+              [ngModel]="requestAddress()"
+              (ngModelChange)="requestAddress.set($event)"
+              name="requestAddress"
+            />
+          </label>
+          <label class="field field-full">
+            <span>Link de referencia (opcional)</span>
+            <input
+              type="url"
+              [ngModel]="requestLink()"
+              (ngModelChange)="requestLink.set($event)"
+              name="requestLink"
+            />
+          </label>
+          <label class="field field-full">
+            <span>Descripcion</span>
+            <textarea
+              rows="4"
+              [ngModel]="requestDescription()"
+              (ngModelChange)="requestDescription.set($event)"
+              name="requestDescription"
+              required
+            ></textarea>
+          </label>
+        </div>
+
+        <div class="request-footer">
+          <label class="file-input">
+            <input #requestFileInput type="file" accept="image/*" (change)="onRequestFileChange($event)">
+            <span>Adjuntar foto</span>
+          </label>
+          <div class="request-actions">
+            @if (requestImageName()) {
+              <span class="file-name">Archivo: {{ requestImageName() }}</span>
+            }
+            <button type="submit" class="btn btn-primary" [disabled]="requestSubmitting()">
+              {{ requestSubmitting() ? 'Enviando...' : 'Enviar encargo' }}
+            </button>
+          </div>
+        </div>
+
+        @if (requestSuccess()) {
+          <div class="request-message success">{{ requestSuccess() }}</div>
+        }
+        @if (requestError()) {
+          <div class="request-message error">{{ requestError() }}</div>
+        }
+      </form>
+    </div>
+  </div>
+</section>

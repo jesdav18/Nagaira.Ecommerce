@@ -320,4 +320,16 @@ export class AdminService {
     
     return this.http.post<{ imageUrl: string }>(`${this.apiUrl}/upload/image`, formData, httpOptions);
   }
+
+  getProductRequests() {
+    return this.http.get(`${this.apiUrl}/product-requests`);
+  }
+
+  getProductRequestById(id: string) {
+    return this.http.get(`${this.apiUrl}/product-requests/${id}`);
+  }
+
+  updateProductRequestStatus(id: string, status: string) {
+    return this.http.patch(`${this.apiUrl}/product-requests/${id}/status`, { status });
+  }
 }
