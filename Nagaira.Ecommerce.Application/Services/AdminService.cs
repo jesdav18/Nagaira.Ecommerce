@@ -101,9 +101,9 @@ public class AdminService : IAdminService
         );
     }
 
-    public async Task<PagedResultDto<ProductDto>> GetProductsPagedAsync(int pageNumber, int pageSize, string? searchTerm = null, bool? isActive = null)
+    public async Task<PagedResultDto<ProductDto>> GetProductsPagedAsync(int pageNumber, int pageSize, string? searchTerm = null, bool? isActive = null, Guid? categoryId = null)
     {
-        var (totalCount, products) = await _unitOfWork.Admin.GetProductsPagedAsync(pageNumber, pageSize, searchTerm, isActive);
+        var (totalCount, products) = await _unitOfWork.Admin.GetProductsPagedAsync(pageNumber, pageSize, searchTerm, isActive, categoryId);
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
         var productDtos = products.Select(p => new ProductDto(

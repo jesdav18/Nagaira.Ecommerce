@@ -135,7 +135,7 @@ public class AdminRepository : IAdminRepository
             .AverageAsync(o => (decimal?)o.Total) ?? 0;
     }
 
-    public async Task<(int TotalCount, List<Product> Products)> GetProductsPagedAsync(int pageNumber, int pageSize, string? searchTerm = null, bool? isActive = null)
+    public async Task<(int TotalCount, List<Product> Products)> GetProductsPagedAsync(int pageNumber, int pageSize, string? searchTerm = null, bool? isActive = null, Guid? categoryId = null)
     {
         var query = _context.Products
             .Include(p => p.Category)
@@ -147,12 +147,43 @@ public class AdminRepository : IAdminRepository
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
-            query = query.Where(p => p.Name.Contains(searchTerm) || p.Description.Contains(searchTerm) || p.Sku.Contains(searchTerm));
+            var searchPattern = $"%{searchTerm}%";
+            query = query.Where(p =>
+                EF.Functions.ILike(p.Name, searchPattern) ||
+                (p.Description != null && EF.Functions.ILike(p.Description, searchPattern)) ||
+                EF.Functions.ILike(p.Sku, searchPattern) ||
+                (p.Category != null && EF.Functions.ILike(p.Category.Name, searchPattern))
+            );
         }
 
         if (isActive.HasValue)
         {
             query = query.Where(p => p.IsActive == isActive.Value);
+        }
+
+        if (categoryId.HasValue)
+        {
+            var categories = await _context.Categories
+                .Where(c => !c.IsDeleted)
+                .ToListAsync();
+            var categoryIds = new List<Guid> { categoryId.Value };
+
+            void CollectChildren(Guid parentId)
+            {
+                var children = categories.Where(c => c.ParentCategoryId == parentId).ToList();
+                foreach (var child in children)
+                {
+                    if (!categoryIds.Contains(child.Id))
+                    {
+                        categoryIds.Add(child.Id);
+                    }
+                    CollectChildren(child.Id);
+                }
+            }
+
+            CollectChildren(categoryId.Value);
+
+            query = query.Where(p => categoryIds.Contains(p.CategoryId));
         }
 
         var totalCount = await query.CountAsync();

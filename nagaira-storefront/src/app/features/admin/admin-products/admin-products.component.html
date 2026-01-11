@@ -10,7 +10,7 @@
         type="text" 
         placeholder="Buscar productos..." 
         [ngModel]="searchTerm()"
-        (ngModelChange)="searchTerm.set($event)"
+        (ngModelChange)="onSearchInput($event)"
         (keyup.enter)="onSearch()"
       >
       <button (click)="onSearch()" class="btn btn-secondary">Buscar</button>
@@ -19,9 +19,19 @@
     <div class="filter-group">
       <label>Estado:</label>
       <select [ngModel]="isActiveFilter()" (ngModelChange)="isActiveFilter.set($event); onFilterChange()">
-        <option [value]="null">Todos</option>
-        <option [value]="true">Activos</option>
-        <option [value]="false">Inactivos</option>
+        <option [ngValue]="null">Todos</option>
+        <option [ngValue]="true">Activos</option>
+        <option [ngValue]="false">Inactivos</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Categoria:</label>
+      <select [ngModel]="categoryFilter()" (ngModelChange)="categoryFilter.set($event); onFilterChange()">
+        <option [ngValue]="null">Todas</option>
+        @for (category of categories(); track category.id) {
+          <option [ngValue]="category.id">{{ category.name }}</option>
+        }
       </select>
     </div>
   </div>
@@ -40,7 +50,6 @@
             <th>SKU</th>
             <th>Nombre</th>
             <th>Categoría</th>
-            <th>Stock</th>
             <th>Estado</th>
             <th>Acciones</th>
           </tr>
@@ -55,11 +64,6 @@
                 <small>{{ product.description | slice:0:50 }}...</small>
               </td>
               <td>{{ product.categoryName }}</td>
-              <td>
-                <span [class.low-stock]="product.availableQuantity <= 10">
-                  {{ product.availableQuantity }}
-                </span>
-              </td>
               <td>
                 <span [class]="product.isActive ? 'badge active' : 'badge inactive'">
                   {{ product.isActive ? 'Activo' : 'Inactivo' }}

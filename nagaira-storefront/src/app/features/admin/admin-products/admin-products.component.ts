@@ -1,7 +1,8 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { AdminService } from '../../../core/services/admin.service';
 
 @Component({
@@ -11,8 +12,10 @@ import { AdminService } from '../../../core/services/admin.service';
   templateUrl: './admin-products.component.html',
   styleUrls: ['./admin-products.component.css']
 })
-export class AdminProductsComponent implements OnInit {
+export class AdminProductsComponent implements OnInit, OnDestroy {
   private adminService = inject(AdminService);
+  private searchInput$ = new Subject<string>();
+  private destroy$ = new Subject<void>();
   
   products = signal<any[]>([]);
   loading = signal(true);
@@ -22,10 +25,21 @@ export class AdminProductsComponent implements OnInit {
   totalPages = signal(0);
   searchTerm = signal('');
   isActiveFilter = signal<boolean | null>(null);
+  categories = signal<any[]>([]);
+  categoryFilter = signal<string | null>(null);
 
   ngOnInit(): void {
     this.loadMovementTypes();
+    this.loadCategories();
     this.loadProducts();
+
+    this.searchInput$
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
+      .subscribe((value) => {
+        this.searchTerm.set(value.trim());
+        this.pageNumber.set(1);
+        this.loadProducts();
+      });
   }
 
   loadMovementTypes(): void {
@@ -52,7 +66,8 @@ export class AdminProductsComponent implements OnInit {
       this.pageNumber(),
       this.pageSize(),
       this.searchTerm() || undefined,
-      this.isActiveFilter() ?? undefined
+      this.isActiveFilter() ?? undefined,
+      this.categoryFilter() ?? undefined
     ).subscribe({
       next: (response: any) => {
         this.products.set(response.items || []);
@@ -68,13 +83,30 @@ export class AdminProductsComponent implements OnInit {
   }
 
   onSearch(): void {
+    this.searchTerm.set(this.searchTerm().trim());
     this.pageNumber.set(1);
     this.loadProducts();
+  }
+
+  onSearchInput(value: string): void {
+    this.searchInput$.next(value ?? '');
   }
 
   onFilterChange(): void {
     this.pageNumber.set(1);
     this.loadProducts();
+  }
+
+  loadCategories(): void {
+    this.adminService.getAllCategories().subscribe({
+      next: (categories: any) => {
+        this.categories.set(categories || []);
+      },
+      error: (error) => {
+        console.error('Error loading categories:', error);
+        this.categories.set([]);
+      }
+    });
   }
 
   goToPage(page: number): void {
@@ -182,6 +214,12 @@ export class AdminProductsComponent implements OnInit {
         this.saving.set(false);
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+    this.searchInput$.complete();
   }
 }
 
