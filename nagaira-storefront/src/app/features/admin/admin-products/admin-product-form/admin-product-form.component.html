@@ -60,8 +60,8 @@
             />
             <small class="cost-source"
               >Sincronizado desde proveedor primario:
-              <strong>{{ ps.supplierName }}</strong> (${{
-                ps.supplierCost.toFixed(2)
+              <strong>{{ ps.supplierName }}</strong> ({{
+                ps.supplierCost | appCurrency:'1.2-2'
               }})</small
             >
           </div>
@@ -168,10 +168,7 @@
             />
             @if (newPrice.priceLevelId && formData.cost && formData.cost > 0) {
             <small class="suggested-price">
-              Precio sugerido: ${{ getSuggestedPriceFormatted() }} (Costo: ${{
-                getCostFormatted()
-              }}
-              + {{ getCurrentMarkupPercentage() }}%)
+              Precio sugerido: {{ getSuggestedPrice() | appCurrency:'1.2-2' }} (Costo: {{ formData.cost | appCurrency:'1.2-2' }} + {{ getCurrentMarkupPercentage() }}%)
             </small>
             }
           </div>
@@ -228,8 +225,8 @@
             @for (price of productPrices(); track price.id) {
             <tr>
               <td>{{ price.priceLevelName }}</td>
-              <td>${{ price.price.toFixed(2) }}</td>
-              <td>${{ price.priceWithoutTax.toFixed(2) }}</td>
+              <td>{{ price.price | appCurrency:'1.2-2' }}</td>
+              <td>{{ price.priceWithoutTax | appCurrency:'1.2-2' }}</td>
               <td>{{ price.minQuantity }}</td>
               <td>
                 <span
@@ -440,7 +437,7 @@
                 } @else {
                 <div class="cost-display-cell">
                   <span class="cost-value"
-                    >${{ ps.supplierCost.toFixed(2) }}</span
+                    >{{ ps.supplierCost | appCurrency:'1.2-2' }}</span
                   >
                   <button
                     type="button"
@@ -518,24 +515,24 @@
                         <td>{{ entry.createdAt | date : "short" }}</td>
                         <td>
                           {{
-                            entry.oldCost
-                              ? "$" + entry.oldCost.toFixed(2)
+                            entry.oldCost !== null && entry.oldCost !== undefined
+                              ? (entry.oldCost | appCurrency:'1.2-2')
                               : "N/A"
                           }}
                         </td>
                         <td class="new-cost">
-                          ${{ entry.newCost.toFixed(2) }}
+                          {{ entry.newCost | appCurrency:'1.2-2' }}
                         </td>
                         <td
                           [class.positive]="
-                            entry.oldCost && entry.newCost > entry.oldCost
+                            entry.oldCost !== null && entry.oldCost !== undefined && entry.newCost > entry.oldCost
                           "
                           [class.negative]="
-                            entry.oldCost && entry.newCost < entry.oldCost
+                            entry.oldCost !== null && entry.oldCost !== undefined && entry.newCost < entry.oldCost
                           "
                         >
-                          @if (entry.oldCost) {
-                          {{ entry.newCost > entry.oldCost ? "+" : "" }}${{
+                          @if (entry.oldCost !== null && entry.oldCost !== undefined) {
+                          {{ entry.newCost > entry.oldCost ? "+" : "" }}{{
                             (entry.newCost - entry.oldCost).toFixed(2)
                           }}
                           } @else { - }

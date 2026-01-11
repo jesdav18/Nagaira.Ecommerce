@@ -7,12 +7,13 @@ import { AdminService } from '../../../../core/services/admin.service';
 import { CategoryService } from '../../../../core/services/category.service';
 import { AppSettingsService } from '../../../../core/services/app-settings.service';
 import { SupplierService } from '../../../../core/services/supplier.service';
+import { AppCurrencyPipe } from '../../../../core/pipes/currency.pipe';
 import { Product, ProductPrice, ProductImage, PriceLevel, Supplier, ProductSupplier, SupplierCostHistory } from '../../../../core/models/models';
 
 @Component({
   selector: 'app-admin-product-form',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, AppCurrencyPipe],
   templateUrl: './admin-product-form.component.html',
   styleUrls: ['./admin-product-form.component.css']
 })

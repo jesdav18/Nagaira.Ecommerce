@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { OrderService } from '../../core/services/order.service';
 import { AppCurrencyPipe } from '../../core/pipes/currency.pipe';
+import { AppSettingsService } from '../../core/services/app-settings.service';
 import { Order } from '../../core/models/models';
 
 @Component({
@@ -14,6 +15,7 @@ import { Order } from '../../core/models/models';
 })
 export class OrderListComponent implements OnInit {
   private orderService = inject(OrderService);
+  private appSettingsService = inject(AppSettingsService);
 
   orders = signal<Order[]>([]);
   loading = signal(true);
@@ -60,7 +62,7 @@ export class OrderListComponent implements OnInit {
 
   getSupplierCalculationFormula(item: any): string {
     if (!item.suppliers || item.suppliers.length === 0) return '';
-    const parts = item.suppliers.map((s: any) => `${s.quantity} × $${s.unitCost.toFixed(2)}`);
+    const parts = item.suppliers.map((s: any) => `${s.quantity} x ${this.formatCurrency(s.unitCost)}`);
     return parts.join(' + ');
   }
 
@@ -68,4 +70,11 @@ export class OrderListComponent implements OnInit {
     if (!item.suppliers || item.suppliers.length === 0) return 0;
     return item.suppliers.reduce((sum: number, s: any) => sum + s.totalCost, 0);
   }
+  private formatCurrency(value: number): string {
+    const symbol = this.appSettingsService.currencySymbol();
+    const position = this.appSettingsService.currencyPosition();
+    const formatted = value.toFixed(2);
+    return position === 'after' ? `${formatted}${symbol}` : `${symbol}${formatted}`;
+  }
+
 }

@@ -49,7 +49,7 @@
                               <div class="supplier-item">
                                 <span class="supplier-name">{{ supplier.supplierName }}</span>
                                 <span class="supplier-quantity">{{ supplier.quantity }} unidades</span>
-                                <span class="supplier-cost">${{ supplier.unitCost.toFixed(2) }}/unidad</span>
+                                <span class="supplier-cost">{{ supplier.unitCost | appCurrency:'1.2-2' }}/unidad</span>
                                 <span class="supplier-total">Total: {{ supplier.totalCost | appCurrency:'1.2-2' }}</span>
                               </div>
                             }

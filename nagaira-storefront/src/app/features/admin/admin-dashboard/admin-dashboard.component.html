@@ -30,9 +30,9 @@
       <div class="stat-card">
         <div class="stat-icon">💰</div>
         <div class="stat-content">
-          <h3>{{ stats()?.totalRevenue | currency }}</h3>
+          <h3>{{ stats()?.totalRevenue | appCurrency:'1.2-2' }}</h3>
           <p>Ingresos Totales</p>
-          <span class="stat-sub">{{ stats()?.monthlyRevenue | currency }} este mes</span>
+          <span class="stat-sub">{{ stats()?.monthlyRevenue | appCurrency:'1.2-2' }} este mes</span>
         </div>
       </div>
 
@@ -48,7 +48,7 @@
       <div class="stat-card">
         <div class="stat-icon">📊</div>
         <div class="stat-content">
-          <h3>{{ stats()?.averageOrderValue | currency }}</h3>
+          <h3>{{ stats()?.averageOrderValue | appCurrency:'1.2-2' }}</h3>
           <p>Valor Promedio</p>
           <span class="stat-sub">Por orden</span>
         </div>
@@ -70,16 +70,16 @@
       <div class="revenue-grid">
         <div class="revenue-card">
           <h4>Hoy</h4>
-          <p class="revenue-amount">{{ stats()?.dailyRevenue | currency }}</p>
+          <p class="revenue-amount">{{ stats()?.dailyRevenue | appCurrency:'1.2-2' }}</p>
           <span class="revenue-orders">{{ stats()?.ordersToday || 0 }} órdenes</span>
         </div>
         <div class="revenue-card">
           <h4>Esta Semana</h4>
-          <p class="revenue-amount">{{ stats()?.weeklyRevenue | currency }}</p>
+          <p class="revenue-amount">{{ stats()?.weeklyRevenue | appCurrency:'1.2-2' }}</p>
         </div>
         <div class="revenue-card">
           <h4>Este Mes</h4>
-          <p class="revenue-amount">{{ stats()?.monthlyRevenue | currency }}</p>
+          <p class="revenue-amount">{{ stats()?.monthlyRevenue | appCurrency:'1.2-2' }}</p>
         </div>
       </div>
     </div>
@@ -120,7 +120,7 @@
             <div class="top-product-item">
               <span class="product-name">{{ product.productName }}</span>
               <span class="product-sold">{{ product.totalSold }} unidades</span>
-              <span class="product-revenue">{{ product.revenue | currency }}</span>
+              <span class="product-revenue">{{ product.revenue | appCurrency:'1.2-2' }}</span>
             </div>
           }
         </div>
