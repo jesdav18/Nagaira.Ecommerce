@@ -1,8 +1,9 @@
-import { Component, ElementRef, ViewChild, inject, signal } from '@angular/core';
+import { Component, ElementRef, ViewChild, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ProductRequestService } from '../../core/services/product-request.service';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-product-request',
@@ -13,6 +14,7 @@ import { ProductRequestService } from '../../core/services/product-request.servi
 })
 export class ProductRequestComponent {
   private productRequestService = inject(ProductRequestService);
+  private authService = inject(AuthService);
 
   requestDescription = signal('');
   requestImageName = signal('');
@@ -29,6 +31,24 @@ export class ProductRequestComponent {
   requestError = signal('');
 
   @ViewChild('requestFileInput') requestFileInput?: ElementRef<HTMLInputElement>;
+
+  constructor() {
+    effect(() => {
+      const user = this.authService.currentUser();
+      if (!user) {
+        return;
+      }
+      if (!this.requestName().trim()) {
+        this.requestName.set(`${user.firstName} ${user.lastName}`.trim());
+      }
+      if (!this.requestPhone().trim()) {
+        this.requestPhone.set(user.phoneNumber || '');
+      }
+      if (!this.requestEmail().trim()) {
+        this.requestEmail.set(user.email || '');
+      }
+    });
+  }
 
   onRequestFileChange(event: Event): void {
     const input = event.target as HTMLInputElement;
