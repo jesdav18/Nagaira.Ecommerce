@@ -36,6 +36,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<OrderItemSupplier> OrderItemSuppliers { get; set; }
     public DbSet<SupplierCostHistory> SupplierCostHistories { get; set; }
     public DbSet<ProductRequest> ProductRequests { get; set; }
+    public DbSet<Banner> Banners { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -327,6 +328,19 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.ImageUrl).HasMaxLength(1000);
             entity.Property(e => e.ImageName).HasMaxLength(255);
             entity.Property(e => e.Status).HasMaxLength(30).HasDefaultValue("new");
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+        });
+
+        modelBuilder.Entity<Banner>(entity =>
+        {
+            entity.ToTable("banners");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).HasMaxLength(150).IsRequired();
+            entity.Property(e => e.Subtitle).HasMaxLength(300);
+            entity.Property(e => e.ImageUrl).HasMaxLength(1000).IsRequired();
+            entity.Property(e => e.LinkUrl).HasMaxLength(1000);
+            entity.Property(e => e.DisplayOrder).IsRequired();
+            entity.Property(e => e.IsActive).IsRequired();
             entity.Property(e => e.IsDeleted).HasDefaultValue(false);
         });
 

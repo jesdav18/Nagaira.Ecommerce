@@ -1,0 +1,68 @@
+<div class="admin-banner-form">
+  <div class="page-header">
+    <h1>{{ bannerId() ? 'Editar Banner' : 'Nuevo Banner' }}</h1>
+    <button class="btn btn-secondary" routerLink="/admin/banners">Volver</button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">Cargando...</div>
+  } @else {
+    <form (ngSubmit)="save()" class="banner-form">
+      <div class="form-group">
+        <label>Titulo *</label>
+        <input type="text" [(ngModel)]="formData.title" name="title" required>
+      </div>
+
+      <div class="form-group">
+        <label>Subtitulo</label>
+        <textarea [(ngModel)]="formData.subtitle" name="subtitle" rows="3"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Imagen *</label>
+        <div class="image-upload-section">
+          @if (formData.imageUrl) {
+            <div class="image-preview">
+              <img [src]="formData.imageUrl" alt="Preview">
+              <button type="button" class="btn-remove-image" (click)="removeImage()">X</button>
+            </div>
+          } @else {
+            <div class="image-upload-placeholder">
+              <p>No hay imagen seleccionada</p>
+            </div>
+          }
+          <div class="upload-controls">
+            <input type="file" accept="image/*" (change)="uploadImage($event)" [disabled]="uploadingImage()">
+            @if (uploadingImage()) {
+              <span class="upload-status">Subiendo imagen...</span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Link (opcional)</label>
+        <input type="url" [(ngModel)]="formData.linkUrl" name="linkUrl">
+      </div>
+
+      <div class="form-group">
+        <label>Orden</label>
+        <input type="number" [(ngModel)]="formData.displayOrder" name="displayOrder" min="0">
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input type="checkbox" [(ngModel)]="formData.isActive" name="isActive">
+          Banner activo
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" routerLink="/admin/banners">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">
+          {{ saving() ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+  }
+</div>

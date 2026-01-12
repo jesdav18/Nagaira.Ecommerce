@@ -1,0 +1,67 @@
+<div class="admin-banners">
+  <div class="page-header">
+    <h1>Banners</h1>
+    <button class="btn btn-primary" routerLink="/admin/banners/new">+ Nuevo banner</button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">Cargando banners...</div>
+  } @else if (banners().length === 0) {
+    <div class="empty-state">
+      <p>No hay banners registrados.</p>
+    </div>
+  } @else {
+    <div class="banners-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Imagen</th>
+            <th>Titulo</th>
+            <th>Orden</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (banner of banners(); track banner.id) {
+            <tr>
+              <td>
+                <img [src]="banner.imageUrl" [alt]="banner.title" class="banner-image">
+              </td>
+              <td>
+                <strong>{{ banner.title }}</strong>
+                @if (banner.subtitle) {
+                  <span class="banner-subtitle">{{ banner.subtitle }}</span>
+                }
+              </td>
+              <td>{{ banner.displayOrder }}</td>
+              <td>
+                <span [class]="banner.isActive ? 'badge active' : 'badge inactive'">
+                  {{ banner.isActive ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td>
+                <div class="actions">
+                  <button class="btn btn-sm btn-secondary" [routerLink]="['/admin/banners', banner.id]">
+                    Editar
+                  </button>
+                  <button
+                    class="btn btn-sm"
+                    [class.btn-success]="!banner.isActive"
+                    [class.btn-warning]="banner.isActive"
+                    (click)="toggleBannerStatus(banner)"
+                  >
+                    {{ banner.isActive ? 'Desactivar' : 'Activar' }}
+                  </button>
+                  <button class="btn btn-sm btn-danger" (click)="deleteBanner(banner.id)">
+                    Eliminar
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

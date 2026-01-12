@@ -96,6 +96,18 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/admin-offers/admin-offers.component').then(m => m.AdminOffersComponent)
       },
       {
+        path: 'banners',
+        loadComponent: () => import('./features/admin/admin-banners/admin-banners.component').then(m => m.AdminBannersComponent)
+      },
+      {
+        path: 'banners/new',
+        loadComponent: () => import('./features/admin/admin-banners/admin-banner-form/admin-banner-form.component').then(m => m.AdminBannerFormComponent)
+      },
+      {
+        path: 'banners/:id',
+        loadComponent: () => import('./features/admin/admin-banners/admin-banner-form/admin-banner-form.component').then(m => m.AdminBannerFormComponent)
+      },
+      {
         path: 'product-requests',
         loadComponent: () => import('./features/admin/admin-product-requests/admin-product-requests.component').then(m => m.AdminProductRequestsComponent)
       },

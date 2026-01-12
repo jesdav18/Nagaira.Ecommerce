@@ -332,4 +332,24 @@ export class AdminService {
   updateProductRequestStatus(id: string, status: string) {
     return this.http.patch(`${this.apiUrl}/product-requests/${id}/status`, { status });
   }
+
+  getBanners() {
+    return this.http.get(`${this.apiUrl}/banners`);
+  }
+
+  getBannerById(id: string) {
+    return this.http.get(`${this.apiUrl}/banners/${id}`);
+  }
+
+  createBanner(payload: any) {
+    return this.http.post(`${this.apiUrl}/banners`, payload);
+  }
+
+  updateBanner(id: string, payload: any) {
+    return this.http.put(`${this.apiUrl}/banners/${id}`, payload);
+  }
+
+  deleteBanner(id: string) {
+    return this.http.delete(`${this.apiUrl}/banners/${id}`);
+  }
 }

@@ -184,3 +184,14 @@ export interface SupplierCostHistory {
   changeReason?: string;
   createdAt: string;
 }
+
+export interface Banner {
+  id: string;
+  title: string;
+  subtitle?: string | null;
+  imageUrl: string;
+  linkUrl?: string | null;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+}

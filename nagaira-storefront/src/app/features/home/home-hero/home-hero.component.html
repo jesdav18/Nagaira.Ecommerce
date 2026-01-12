@@ -1,20 +1,50 @@
-<section class="hero">
+<section class="hero hero-carousel">
+  <div class="hero-media">
+    @if (currentSlide().imageUrl) {
+      <img [src]="currentSlide().imageUrl" [alt]="currentSlide().title">
+    }
+  </div>
+  <div class="hero-overlay"></div>
+
   <div class="container">
     <div class="hero-content">
-      <h1 class="hero-title">
-        Descubre lo <span class="gradient-text">Extraordinario</span>
-      </h1>
-      <p class="hero-subtitle">
-        Los mejores productos de tecnologia, moda y mas. Todo en un solo lugar.
-      </p>
+      <h1 class="hero-title">{{ currentSlide().title }}</h1>
+      <p class="hero-subtitle">{{ currentSlide().subtitle }}</p>
       <div class="hero-actions">
-        <a routerLink="/products" class="btn btn-primary btn-lg">
-          Explorar Productos
-        </a>
+        @if (currentSlide().linkUrl) {
+          <a class="btn btn-primary btn-lg" [href]="currentSlide().linkUrl" target="_blank" rel="noopener">
+            Ver banner
+          </a>
+        } @else {
+          <a routerLink="/products" class="btn btn-primary btn-lg">
+            Explorar Productos
+          </a>
+        }
         <a routerLink="/categories" class="btn btn-secondary btn-lg">
           Ver Categorias
         </a>
       </div>
     </div>
   </div>
+
+  @if (slides().length > 1) {
+    <button type="button" class="hero-nav prev" (click)="prevSlide()" aria-label="Anterior">
+      &lt;
+    </button>
+    <button type="button" class="hero-nav next" (click)="nextSlide()" aria-label="Siguiente">
+      &gt;
+    </button>
+
+    <div class="hero-dots">
+      @for (slide of slides(); track slide.id; let i = $index) {
+        <button
+          type="button"
+          class="hero-dot"
+          [class.active]="i === currentIndex()"
+          (click)="selectSlide(i)"
+          aria-label="Seleccionar banner"
+        ></button>
+      }
+    </div>
+  }
 </section>
