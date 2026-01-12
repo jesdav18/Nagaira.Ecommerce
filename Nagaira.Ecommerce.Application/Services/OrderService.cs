@@ -10,10 +10,12 @@ namespace Nagaira.Ecommerce.Application.Services;
 public class OrderService : IOrderService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IEmailService _emailService;
 
-    public OrderService(IUnitOfWork unitOfWork)
+    public OrderService(IUnitOfWork unitOfWork, IEmailService emailService)
     {
         _unitOfWork = unitOfWork;
+        _emailService = emailService;
     }
 
     public async Task<OrderDto> CreateOrderAsync(Guid userId, CreateOrderDto dto)
@@ -180,6 +182,18 @@ public class OrderService : IOrderService
                 await _unitOfWork.Orders.AddAsync(order);
                 await _unitOfWork.SaveChangesAsync();
                 await transaction.CommitAsync();
+
+                // try
+                // {
+                //     var savedOrder = await _unitOfWork.Orders.GetByIdAsync(order.Id);
+                //     if (savedOrder != null)
+                //     {
+                //         await _emailService.SendOrderConfirmationAsync(savedOrder, user);
+                //     }
+                // }
+                // catch
+                // {
+                // }
 
                 return await GetOrderDtoAsync(order.Id);
             }

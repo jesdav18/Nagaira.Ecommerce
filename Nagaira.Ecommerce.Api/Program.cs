@@ -137,6 +137,7 @@ builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IPaymentMethodService, PaymentMethodService>();
 builder.Services.AddScoped<IPaymentMethodTypeService, PaymentMethodTypeService>();
 builder.Services.AddScoped<IAppSettingService, AppSettingService>();
+builder.Services.AddScoped<IEmailService, Nagaira.Ecommerce.Infrastructure.Services.SmtpEmailService>();
 builder.Services.AddScoped<ISupplierService, SupplierService>();
 builder.Services.AddScoped<IProductSupplierService, ProductSupplierService>();
 builder.Services.AddScoped<ICloudinaryService, Nagaira.Ecommerce.Infrastructure.Services.CloudinaryService>();

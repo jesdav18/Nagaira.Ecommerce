@@ -160,6 +160,8 @@ export class AdminSettingsComponent implements OnInit {
       case 'integer':
       case 'decimal':
         return 'number';
+      case 'password':
+        return 'password';
       case 'boolean':
         return 'checkbox';
       default:
