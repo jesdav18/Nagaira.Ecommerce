@@ -31,6 +31,14 @@ public class ProductsController : ControllerBase
         return Ok(product);
     }
 
+    [HttpGet("slug/{slug}")]
+    public async Task<ActionResult<ProductDto>> GetBySlug(string slug)
+    {
+        var product = await _productService.GetProductBySlugAsync(slug);
+        if (product == null) return NotFound();
+        return Ok(product);
+    }
+
     [HttpGet("category/{categoryId:guid}")]
     public async Task<ActionResult<IEnumerable<ProductDto>>> GetByCategory(Guid categoryId)
     {

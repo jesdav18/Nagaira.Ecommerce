@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "prerender:routes": "node scripts/generate-prerender-routes.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },

@@ -32,8 +32,7 @@
         <div class="categories-grid">
           @for (cat of sortedCategories(); track cat.id) {
             <article class="category-card"
-                     [routerLink]="['/products']"
-                     [queryParams]="{ category: cat.id }"
+                     [routerLink]="['/c', cat.slug]"
                      tabindex="0"
                      [attr.aria-label]="'Categoría ' + cat.name">
 

@@ -111,6 +111,7 @@ public class AdminService : IAdminService
             p.Name,
             p.Description,
             p.Sku,
+            p.Slug,
             p.IsActive,
             p.CategoryId,
             p.Category?.Name ?? string.Empty,

@@ -41,6 +41,20 @@ public class CategoryRepository : Repository<Category>, ICategoryRepository
         return allCategories.Where(c => !childrenIds.Contains(c.Id)).ToList();
     }
 
+    public async Task<Category?> GetBySlugAsync(string slug)
+    {
+        return await _dbSet
+            .Include(c => c.SubCategories)
+            .FirstOrDefaultAsync(c => c.Slug == slug && c.IsActive && !c.IsDeleted);
+    }
+
+    public async Task<bool> SlugExistsAsync(string slug, Guid? excludeId = null)
+    {
+        return await _dbSet
+            .IgnoreQueryFilters()
+            .AnyAsync(c => c.Slug == slug && !c.IsDeleted && (!excludeId.HasValue || c.Id != excludeId.Value));
+    }
+
     public async Task<List<Guid>> GetAllCategoryIdsRecursiveAsync(Guid categoryId)
     {
         var allCategories = await _dbSet

@@ -88,6 +88,17 @@ public class ProductRepository : Repository<Product>, IProductRepository
             .FirstOrDefaultAsync(p => p.Sku == sku && !p.IsDeleted);
     }
 
+    public async Task<Product?> GetBySlugAsync(string slug)
+    {
+        return await _dbSet
+            .Include(p => p.Category)
+            .Include(p => p.Images)
+            .Include(p => p.Prices)
+                .ThenInclude(pp => pp.PriceLevel)
+            .Include(p => p.InventoryBalance)
+            .FirstOrDefaultAsync(p => p.Slug == slug && p.IsActive && !p.IsDeleted);
+    }
+
     public async Task<Product?> GetBySkuIncludingDeletedAsync(string sku)
     {
         // Usar IgnoreQueryFilters para asegurar que buscamos todos los productos, incluso eliminados
@@ -102,6 +113,13 @@ public class ProductRepository : Repository<Product>, IProductRepository
         return await _dbSet
             .IgnoreQueryFilters()
             .AnyAsync(p => p.Sku == sku && !p.IsDeleted);
+    }
+
+    public async Task<bool> SlugExistsAsync(string slug, Guid? excludeId = null)
+    {
+        return await _dbSet
+            .IgnoreQueryFilters()
+            .AnyAsync(p => p.Slug == slug && !p.IsDeleted && (!excludeId.HasValue || p.Id != excludeId.Value));
     }
 
     public async Task<IEnumerable<Product>> SearchAsync(string searchTerm)

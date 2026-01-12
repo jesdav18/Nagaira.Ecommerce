@@ -1,0 +1,40 @@
+<div class="category-detail">
+  <div class="container">
+    @if (loading()) {
+      <div class="loading-grid">
+        @for (i of [1,2,3,4,5,6]; track i) {
+          <div class="skeleton-card"></div>
+        }
+      </div>
+    } @else if (notFound()) {
+      <div class="empty-state">
+        <h2>Categoria no encontrada</h2>
+        <p>La categoria que buscas no esta disponible.</p>
+        <a routerLink="/categories" class="btn btn-secondary">Volver a categorias</a>
+      </div>
+    } @else {
+      <div class="page-header">
+        <div>
+          <h1>{{ category()?.name }}</h1>
+          @if (category()?.description) {
+            <p>{{ category()?.description }}</p>
+          }
+        </div>
+        <a routerLink="/products" class="btn btn-secondary">Ver todo</a>
+      </div>
+
+      @if (products().length > 0) {
+        <div class="products-grid">
+          @for (product of products(); track product.id) {
+            <app-product-card [product]="product"></app-product-card>
+          }
+        </div>
+      } @else {
+        <div class="empty-state">
+          <h2>Sin productos</h2>
+          <p>No hay productos disponibles en esta categoria.</p>
+        </div>
+      }
+    }
+  </div>
+</div>

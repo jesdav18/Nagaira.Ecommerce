@@ -31,6 +31,14 @@ public class CategoriesController : ControllerBase
         return Ok(category);
     }
 
+    [HttpGet("slug/{slug}")]
+    public async Task<ActionResult<CategoryDto>> GetBySlug(string slug)
+    {
+        var category = await _categoryService.GetCategoryBySlugAsync(slug);
+        if (category == null) return NotFound();
+        return Ok(category);
+    }
+
     [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPost]
     public async Task<ActionResult<CategoryDto>> Create([FromBody] CreateCategoryDto dto)

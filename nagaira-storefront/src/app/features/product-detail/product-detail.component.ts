@@ -1,11 +1,13 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ProductService } from '../../core/services/product.service';
 import { CartService } from '../../core/services/cart.service';
 import { AppCurrencyPipe } from '../../core/pipes/currency.pipe';
 import { Product } from '../../core/models/models';
 import { getProductPrice, getProductStock, isVirtualStock } from '../../core/utils/product.utils';
+import { SeoService } from '../../core/services/seo.service';
+import { SeoResolveService } from '../../core/services/seo-resolve.service';
 
 @Component({
   selector: 'app-product-detail',
@@ -16,35 +18,99 @@ import { getProductPrice, getProductStock, isVirtualStock } from '../../core/uti
 })
 export class ProductDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private productService = inject(ProductService);
   private cartService = inject(CartService);
+  private seoService = inject(SeoService);
+  private seoResolveService = inject(SeoResolveService);
 
   product = signal<Product | null>(null);
   loading = signal(true);
+  notFound = signal(false);
   selectedImageIndex = signal(0);
   quantity = signal(1);
   addingToCart = signal(false);
 
   ngOnInit(): void {
+    const slug = this.route.snapshot.paramMap.get('slug');
     const id = this.route.snapshot.paramMap.get('id');
+    if (slug) {
+      this.loadProductBySlug(slug);
+      return;
+    }
     if (id) {
-      this.loadProduct(id);
+      this.loadProductById(id);
     }
   }
 
-  loadProduct(id: string): void {
-    this.productService.getById(id).subscribe({
+  loadProductBySlug(slug: string): void {
+    this.productService.getBySlug(slug).subscribe({
       next: (product) => {
         this.product.set(product);
+        this.setMeta(product);
         const primaryIndex = product.images.findIndex(img => img.isPrimary);
         if (primaryIndex !== -1) this.selectedImageIndex.set(primaryIndex);
         this.loading.set(false);
       },
       error: (error) => {
         console.error('Error loading product', error);
+        this.resolveSlug(slug);
+      }
+    });
+  }
+
+  loadProductById(id: string): void {
+    this.productService.getById(id).subscribe({
+      next: (product) => {
+        this.product.set(product);
+        this.setMeta(product);
+        const primaryIndex = product.images.findIndex(img => img.isPrimary);
+        if (primaryIndex !== -1) this.selectedImageIndex.set(primaryIndex);
+        this.loading.set(false);
+        if (product.slug) {
+          this.router.navigate(['/p', product.slug], { replaceUrl: true });
+        }
+      },
+      error: (error) => {
+        console.error('Error loading product', error);
+        this.notFound.set(true);
         this.loading.set(false);
       }
     });
+  }
+
+  private resolveSlug(slug: string): void {
+    this.seoResolveService.resolve('product', slug).subscribe({
+      next: (result) => {
+        if (result.slug && result.slug !== slug) {
+          this.router.navigate(['/p', result.slug], { replaceUrl: true });
+          return;
+        }
+        this.notFound.set(true);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.notFound.set(true);
+        this.loading.set(false);
+      }
+    });
+  }
+
+  private setMeta(product: Product): void {
+    const description = product.description?.trim()
+      ? product.description.trim().slice(0, 160)
+      : `Compra ${product.name} en Nagaira.`;
+    const image = product.images.find(img => img.isPrimary)?.imageUrl || product.images[0]?.imageUrl;
+    const url = this.seoService.buildUrl(`/p/${product.slug}`);
+
+    this.seoService.setMeta({
+      title: `${product.name} | Nagaira`,
+      description,
+      image,
+      url,
+      type: 'product'
+    });
+    this.seoService.setCanonical(url);
   }
 
   get finalPrice(): number {

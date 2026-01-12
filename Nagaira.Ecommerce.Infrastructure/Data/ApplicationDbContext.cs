@@ -37,6 +37,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<SupplierCostHistory> SupplierCostHistories { get; set; }
     public DbSet<ProductRequest> ProductRequests { get; set; }
     public DbSet<Banner> Banners { get; set; }
+    public DbSet<SlugHistory> SlugHistories { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -65,7 +66,9 @@ public class ApplicationDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(255);
             entity.Property(e => e.Sku).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Slug).IsRequired().HasMaxLength(255);
             entity.HasIndex(e => e.Sku).IsUnique();
+            entity.HasIndex(e => e.Slug).IsUnique();
             entity.Ignore(x => x.UpdatedAt);
             entity.Property(e => e.IsDeleted).HasDefaultValue(false);
             entity.HasOne(e => e.Category).WithMany(e => e.Products)
@@ -342,6 +345,17 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.DisplayOrder).IsRequired();
             entity.Property(e => e.IsActive).IsRequired();
             entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+        });
+
+        modelBuilder.Entity<SlugHistory>(entity =>
+        {
+            entity.ToTable("slug_history");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.EntityType).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.EntityId).IsRequired();
+            entity.Property(e => e.Slug).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+            entity.HasIndex(e => new { e.EntityType, e.Slug }).IsUnique();
         });
 
         // Configure all DateTime properties to use timestamp with time zone and convert to UTC

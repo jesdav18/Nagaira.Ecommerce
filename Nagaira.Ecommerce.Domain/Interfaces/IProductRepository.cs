@@ -9,5 +9,7 @@ public interface IProductRepository : IRepository<Product>
     Task<Product?> GetBySkuAsync(string sku);
     Task<Product?> GetBySkuIncludingDeletedAsync(string sku);
     Task<bool> SkuExistsAsync(string sku);
+    Task<Product?> GetBySlugAsync(string slug);
+    Task<bool> SlugExistsAsync(string slug, Guid? excludeId = null);
     Task<IEnumerable<Product>> SearchAsync(string searchTerm);
 }

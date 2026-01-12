@@ -22,4 +22,8 @@ export class CategoryService {
   getById(id: string): Observable<Category> {
     return this.http.get<Category>(`${this.apiUrl}/${id}`);
   }
+
+  getBySlug(slug: string): Observable<Category> {
+    return this.http.get<Category>(`${this.apiUrl}/slug/${slug}`);
+  }
 }

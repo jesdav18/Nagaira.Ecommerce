@@ -3,6 +3,8 @@ using Nagaira.Ecommerce.Application.DTOs;
 using Nagaira.Ecommerce.Application.Interfaces;
 using Nagaira.Ecommerce.Domain.Entities;
 using Nagaira.Ecommerce.Domain.Interfaces;
+using System.Text.RegularExpressions;
+using System.Text;
 
 namespace Nagaira.Ecommerce.Application.Services;
 
@@ -26,6 +28,12 @@ public class ProductService : IProductService
         var product = await _unitOfWork.Products.GetByIdAsync(id);
         if (product == null || !product.IsActive) return null;
         return MapToDto(product);
+    }
+
+    public async Task<ProductDto?> GetProductBySlugAsync(string slug)
+    {
+        var product = await _unitOfWork.Products.GetBySlugAsync(slug);
+        return product != null ? MapToDto(product) : null;
     }
 
     public async Task<ProductDto?> GetProductByIdWithPriceLevelAsync(Guid id, Guid? priceLevelId)
@@ -64,6 +72,7 @@ public class ProductService : IProductService
             Name = dto.Name,
             Description = dto.Description,
             Sku = dto.Sku,
+            Slug = await GenerateUniqueSlugAsync(dto.Name),
             CategoryId = dto.CategoryId,
             Cost = dto.Cost,
             HasVirtualStock = dto.HasVirtualStock,
@@ -137,6 +146,16 @@ public class ProductService : IProductService
         var product = await _unitOfWork.Products.GetByIdAsync(dto.Id);
         if (product == null) throw new Exception("Product not found");
 
+        if (!string.Equals(product.Name, dto.Name, StringComparison.OrdinalIgnoreCase))
+        {
+            var newSlug = await GenerateUniqueSlugAsync(dto.Name, product.Id);
+            if (!string.Equals(product.Slug, newSlug, StringComparison.OrdinalIgnoreCase))
+            {
+                await AddSlugHistoryAsync("product", product.Id, product.Slug);
+                product.Slug = newSlug;
+            }
+        }
+
         product.Name = dto.Name;
         product.Description = dto.Description;
         product.Cost = dto.Cost;
@@ -173,6 +192,7 @@ public class ProductService : IProductService
             product.Name,
             product.Description,
             product.Sku,
+            product.Slug,
             product.IsActive,
             product.CategoryId,
             product.Category?.Name ?? string.Empty,
@@ -192,6 +212,54 @@ public class ProductService : IProductService
                 p.IsActive
             )).ToList()
         );
+    }
+
+    private async Task<string> GenerateUniqueSlugAsync(string name, Guid? excludeId = null)
+    {
+        var slugBase = Slugify(name);
+        var slug = slugBase;
+        var suffix = 2;
+
+        while (await _unitOfWork.Products.SlugExistsAsync(slug, excludeId))
+        {
+            slug = $"{slugBase}-{suffix}";
+            suffix++;
+        }
+
+        return slug;
+    }
+
+    private static string Slugify(string value)
+    {
+        var normalized = value.Trim().ToLowerInvariant();
+        normalized = normalized.Normalize(NormalizationForm.FormD);
+        var chars = normalized.Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark).ToArray();
+        normalized = new string(chars).Normalize(NormalizationForm.FormC);
+        normalized = Regex.Replace(normalized, @"\s+", "-");
+        normalized = Regex.Replace(normalized, @"[^a-z0-9\-]", "");
+        normalized = Regex.Replace(normalized, @"-+", "-");
+        return normalized.Trim('-');
+    }
+
+    private async Task AddSlugHistoryAsync(string entityType, Guid entityId, string slug)
+    {
+        if (string.IsNullOrWhiteSpace(slug))
+        {
+            return;
+        }
+
+        var history = new SlugHistory
+        {
+            Id = Guid.NewGuid(),
+            EntityType = entityType,
+            EntityId = entityId,
+            Slug = slug,
+            CreatedAt = DateTime.UtcNow,
+            IsDeleted = false
+        };
+
+        await _unitOfWork.Repository<SlugHistory>().AddAsync(history);
+        await _unitOfWork.SaveChangesAsync();
     }
 
     private async Task CreateDefaultPricesAsync(Product product)

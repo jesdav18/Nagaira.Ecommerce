@@ -2,6 +2,9 @@ using Nagaira.Ecommerce.Application.DTOs;
 using Nagaira.Ecommerce.Application.Interfaces;
 using Nagaira.Ecommerce.Domain.Entities;
 using Nagaira.Ecommerce.Domain.Interfaces;
+using System.Globalization;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Nagaira.Ecommerce.Application.Services;
 
@@ -33,6 +36,12 @@ public class CategoryService : ICategoryService
         return MapToDto(category);
     }
 
+    public async Task<CategoryDto?> GetCategoryBySlugAsync(string slug)
+    {
+        var category = await _unitOfWork.Categories.GetBySlugAsync(slug);
+        return category != null ? MapToDto(category) : null;
+    }
+
     public async Task<CategoryDto?> GetActiveCategoryByIdAsync(Guid id)
     {
         var category = await _unitOfWork.Repository<Category>().GetByIdAsync(id);
@@ -42,7 +51,7 @@ public class CategoryService : ICategoryService
 
     public async Task<CategoryDto> CreateCategoryAsync(CreateCategoryDto dto)
     {
-        var slug = dto.Name.ToLower().Replace(" ", "-");
+        var slug = await GenerateUniqueSlugAsync(dto.Name);
         
         var category = new Category
         {
@@ -67,11 +76,18 @@ public class CategoryService : ICategoryService
         if (category == null)
             throw new KeyNotFoundException($"Category with id {id} not found");
 
-        var slug = dto.Name.ToLower().Replace(" ", "-");
+        if (!string.Equals(category.Name, dto.Name, StringComparison.OrdinalIgnoreCase))
+        {
+            var newSlug = await GenerateUniqueSlugAsync(dto.Name, category.Id);
+            if (!string.Equals(category.Slug, newSlug, StringComparison.OrdinalIgnoreCase))
+            {
+                await AddSlugHistoryAsync("category", category.Id, category.Slug);
+                category.Slug = newSlug;
+            }
+        }
         
         category.Name = dto.Name;
         category.Description = dto.Description;
-        category.Slug = slug;
         category.ImageUrl = dto.ImageUrl;
         category.ParentCategoryId = dto.ParentCategoryId;
         category.IsActive = dto.IsActive;
@@ -112,5 +128,53 @@ public class CategoryService : ICategoryService
             category.ParentCategoryId,
             category.SubCategories?.Where(sc => sc.IsActive && !sc.IsDeleted).Select(MapToDto).ToList()
         );
+    }
+
+    private async Task<string> GenerateUniqueSlugAsync(string name, Guid? excludeId = null)
+    {
+        var slugBase = Slugify(name);
+        var slug = slugBase;
+        var suffix = 2;
+
+        while (await _unitOfWork.Categories.SlugExistsAsync(slug, excludeId))
+        {
+            slug = $"{slugBase}-{suffix}";
+            suffix++;
+        }
+
+        return slug;
+    }
+
+    private static string Slugify(string value)
+    {
+        var normalized = value.Trim().ToLowerInvariant();
+        normalized = normalized.Normalize(NormalizationForm.FormD);
+        var chars = normalized.Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark).ToArray();
+        normalized = new string(chars).Normalize(NormalizationForm.FormC);
+        normalized = Regex.Replace(normalized, @"\s+", "-");
+        normalized = Regex.Replace(normalized, @"[^a-z0-9\-]", "");
+        normalized = Regex.Replace(normalized, @"-+", "-");
+        return normalized.Trim('-');
+    }
+
+    private async Task AddSlugHistoryAsync(string entityType, Guid entityId, string slug)
+    {
+        if (string.IsNullOrWhiteSpace(slug))
+        {
+            return;
+        }
+
+        var history = new SlugHistory
+        {
+            Id = Guid.NewGuid(),
+            EntityType = entityType,
+            EntityId = entityId,
+            Slug = slug,
+            CreatedAt = DateTime.UtcNow,
+            IsDeleted = false
+        };
+
+        await _unitOfWork.Repository<SlugHistory>().AddAsync(history);
+        await _unitOfWork.SaveChangesAsync();
     }
 }

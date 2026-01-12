@@ -7,6 +7,7 @@ public interface ICategoryService
     Task<IEnumerable<CategoryDto>> GetAllCategoriesAsync();
     Task<IEnumerable<CategoryDto>> GetAllActiveCategoriesAsync();
     Task<CategoryDto?> GetCategoryByIdAsync(Guid id);
+    Task<CategoryDto?> GetCategoryBySlugAsync(string slug);
     Task<CategoryDto?> GetActiveCategoryByIdAsync(Guid id);
     Task<IEnumerable<CategoryDto>> GetAllCategoriesForAdminAsync();
     Task<CategoryDto?> GetCategoryByIdForAdminAsync(Guid id);

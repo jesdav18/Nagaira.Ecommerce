@@ -3,6 +3,7 @@ export interface Product {
   name: string;
   description: string;
   sku: string;
+  slug: string;
   isActive: boolean;
   categoryId: string;
   categoryName: string;

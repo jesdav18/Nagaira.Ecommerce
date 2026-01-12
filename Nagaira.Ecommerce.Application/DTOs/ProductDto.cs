@@ -5,6 +5,7 @@ public record ProductDto(
     string Name,
     string Description,
     string Sku,
+    string Slug,
     bool IsActive,
     Guid CategoryId,
     string CategoryName,
