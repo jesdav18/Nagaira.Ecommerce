@@ -1,52 +1,8 @@
 <div class="home">
-  <section class="hero">
-    <div class="container">
-      <div class="hero-content">
-        <h1 class="hero-title">
-          Descubre lo <span class="gradient-text">Extraordinario</span>
-        </h1>
-        <p class="hero-subtitle">
-          Los mejores productos de tecnología, moda y más. Todo en un solo lugar.
-        </p>
-        <div class="hero-actions">
-          <a routerLink="/products" class="btn btn-primary btn-lg">
-            Explorar Productos
-          </a>
-          <a routerLink="/categories" class="btn btn-secondary btn-lg">
-            Ver Categorías
-          </a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="featured-section">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">Productos Destacados</h2>
-        <a routerLink="/products" class="view-all">
-          Ver todos →
-        </a>
-      </div>
-
-      @if (loading()) {
-        <div class="loading-grid">
-          @for (i of [1,2,3,4,5,6,7,8]; track i) {
-            <div class="skeleton-card"></div>
-          }
-        </div>
-      } @else {
-        <div class="products-grid">
-          @for (product of featuredProducts(); track product.id) {
-            <app-product-card [product]="product" />
-          }
-        </div>
-      }
-    </div>
-  </section>
+  <app-home-hero></app-home-hero>
+  <app-home-featured></app-home-featured>
 
   <div class="container home-cta">
     <app-product-request-cta></app-product-request-cta>
   </div>
-
 </div>

@@ -1,0 +1,24 @@
+<section class="featured-section">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title">Productos Destacados</h2>
+      <a routerLink="/products" class="view-all">
+        Ver todos →
+      </a>
+    </div>
+
+    @if (loading()) {
+      <div class="loading-grid">
+        @for (i of [1,2,3,4,5,6,7,8]; track i) {
+          <div class="skeleton-card"></div>
+        }
+      </div>
+    } @else {
+      <div class="products-grid">
+        @for (product of featuredProducts(); track product.id) {
+          <app-product-card [product]="product" />
+        }
+      </div>
+    }
+  </div>
+</section>
