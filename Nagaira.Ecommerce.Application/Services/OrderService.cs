@@ -183,17 +183,17 @@ public class OrderService : IOrderService
                 await _unitOfWork.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                // try
-                // {
-                //     var savedOrder = await _unitOfWork.Orders.GetByIdAsync(order.Id);
-                //     if (savedOrder != null)
-                //     {
-                //         await _emailService.SendOrderConfirmationAsync(savedOrder, user);
-                //     }
-                // }
-                // catch
-                // {
-                // }
+                try
+                {
+                    var savedOrder = await _unitOfWork.Orders.GetByIdAsync(order.Id);
+                    if (savedOrder != null)
+                    {
+                        await _emailService.SendOrderConfirmationAsync(savedOrder, user);
+                    }
+                }
+                catch
+                {
+                }
 
                 return await GetOrderDtoAsync(order.Id);
             }
