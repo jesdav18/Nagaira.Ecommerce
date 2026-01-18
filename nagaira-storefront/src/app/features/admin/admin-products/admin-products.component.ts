@@ -4,11 +4,13 @@ import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { AdminService } from '../../../core/services/admin.service';
+import { AppCurrencyPipe } from '../../../core/pipes/currency.pipe';
+import { PriceLevel, Product, ProductPrice } from '../../../core/models/models';
 
 @Component({
   selector: 'app-admin-products',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, AppCurrencyPipe],
   templateUrl: './admin-products.component.html',
   styleUrls: ['./admin-products.component.css']
 })
@@ -17,7 +19,8 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
   private searchInput$ = new Subject<string>();
   private destroy$ = new Subject<void>();
   
-  products = signal<any[]>([]);
+  products = signal<Product[]>([]);
+  priceLevels = signal<PriceLevel[]>([]);
   loading = signal(true);
   pageNumber = signal(1);
   pageSize = signal(20);
@@ -27,10 +30,12 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
   isActiveFilter = signal<boolean | null>(null);
   categories = signal<any[]>([]);
   categoryFilter = signal<string | null>(null);
+  showPriceLevels = signal(false);
 
   ngOnInit(): void {
     this.loadMovementTypes();
     this.loadCategories();
+    this.loadPriceLevels();
     this.loadProducts();
 
     this.searchInput$
@@ -107,6 +112,26 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
         this.categories.set([]);
       }
     });
+  }
+
+  loadPriceLevels(): void {
+    this.adminService.getAllPriceLevels().subscribe({
+      next: (levels: any) => {
+        const activeLevels = (levels || [])
+          .filter((level: PriceLevel) => level.isActive)
+          .sort((a: PriceLevel, b: PriceLevel) => a.priority - b.priority);
+        this.priceLevels.set(activeLevels);
+      },
+      error: (error) => {
+        console.error('Error loading price levels:', error);
+        this.priceLevels.set([]);
+      }
+    });
+  }
+
+  getPriceForLevel(product: Product, priceLevelId: string): ProductPrice | null {
+    if (!product?.prices?.length) return null;
+    return product.prices.find(price => price.priceLevelId === priceLevelId) || null;
   }
 
   goToPage(page: number): void {

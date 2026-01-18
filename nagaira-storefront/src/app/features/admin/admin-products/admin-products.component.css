@@ -60,6 +60,19 @@
   font-size: 0.9rem;
 }
 
+.toggle-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  color: #666;
+}
+
+.toggle-group input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+}
+
 .loading,
 .empty-state {
   text-align: center;
@@ -90,6 +103,34 @@
 .products-table td {
   padding: 1rem;
   border-bottom: 1px solid #eee;
+}
+
+.price-levels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.price-pill {
+  background: #f0f4ff;
+  color: #1a3d7c;
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.price-pill.missing {
+  background: #f8f8f8;
+  color: #999;
+  border: 1px dashed #ddd;
+}
+
+.price-pill.inactive {
+  background: #fff3e0;
+  color: #8a5b00;
 }
 
 .products-table tr:hover {

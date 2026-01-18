@@ -34,6 +34,13 @@
         }
       </select>
     </div>
+
+    <div class="filter-group toggle-group">
+      <label>
+        <input type="checkbox" [ngModel]="showPriceLevels()" (ngModelChange)="showPriceLevels.set($event)">
+        Mostrar niveles de precio
+      </label>
+    </div>
   </div>
 
   @if (loading()) {
@@ -62,6 +69,26 @@
                 <strong>{{ product.name }}</strong>
                 <br>
                 <small>{{ product.description | slice:0:50 }}...</small>
+                @if (showPriceLevels()) {
+                  <div class="price-levels">
+                    @for (level of priceLevels(); track level.id) {
+                      @if (getPriceForLevel(product, level.id); as price) {
+                        <span class="price-pill" [class.inactive]="!price.isActive">
+                          {{ level.name }}:
+                          @if (price.isActive) {
+                            {{ price.price | appCurrency }}
+                          } @else {
+                            Inactivo
+                          }
+                        </span>
+                      } @else {
+                        <span class="price-pill missing">
+                          {{ level.name }}: Sin precio
+                        </span>
+                      }
+                    }
+                  </div>
+                }
               </td>
               <td>{{ product.categoryName }}</td>
               <td>
