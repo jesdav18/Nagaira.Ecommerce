@@ -21,7 +21,7 @@ export class HomeHeroComponent implements OnInit, OnDestroy {
   private fallbackBanner: Banner = {
     id: 'fallback',
     title: 'Descubre lo extraordinario',
-    subtitle: 'Los mejores productos de tecnologia, moda y mas. Todo en un solo lugar.',
+    subtitle: 'Bienestar, hogar, cuidado personal, y mucho más en un solo lugar.',
     imageUrl: '',
     linkUrl: null,
     displayOrder: 0,
