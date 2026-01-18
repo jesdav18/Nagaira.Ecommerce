@@ -15,7 +15,7 @@
              <span class="user-role">{{ authService.currentUser()?.role }}</span>
            </div>
         </div>
-        
+
         <hr class="divider">
 
         <div class="info-grid">
@@ -36,7 +36,7 @@
         <p class="section-desc">Actualiza tu contraseña para mantener tu cuenta segura.</p>
 
         <form [formGroup]="passwordForm" (ngSubmit)="onSubmitPassword()" class="password-form">
-          
+
           @if (message()) {
             <div class="alert" [class.alert-success]="message()?.type === 'success'" [class.alert-error]="message()?.type === 'error'">
               {{ message()?.text }}
