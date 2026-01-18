@@ -20,16 +20,23 @@ export class CartService {
     this.items().reduce((total, item) => total + item.quantity, 0)
   );
 
-  subtotal = computed(() =>
+  private grossSubtotal = computed(() =>
     this.items().reduce((total, item) => {
       const price = getProductPrice(item.product);
       return total + (price * item.quantity);
     }, 0)
   );
 
-  tax = computed(() => this.subtotal() * this.appSettings.taxRate());
+  subtotal = computed(() => {
+    const rate = this.appSettings.taxRate();
+    const divisor = 1 + rate;
+    if (divisor <= 0) return this.grossSubtotal();
+    return this.grossSubtotal() / divisor;
+  });
 
-  total = computed(() => this.subtotal() + this.tax());
+  tax = computed(() => this.grossSubtotal() - this.subtotal());
+
+  total = computed(() => this.grossSubtotal());
 
   addToCart(product: Product, quantity: number = 1): void {
     const currentItems = this.items();
