@@ -27,6 +27,12 @@
   flex-wrap: wrap;
 }
 
+.results-count {
+  margin: -1rem 0 1.5rem;
+  color: #666;
+  font-size: 0.9rem;
+}
+
 .search-box {
   flex: 1;
   display: flex;

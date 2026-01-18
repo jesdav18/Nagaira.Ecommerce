@@ -54,6 +54,9 @@
       </label>
     </div>
   </div>
+  <div class="results-count">
+    Mostrando {{ filteredProducts().length }} de {{ products().length }} registros
+  </div>
 
   @if (loading()) {
     <div class="loading">Cargando productos...</div>
