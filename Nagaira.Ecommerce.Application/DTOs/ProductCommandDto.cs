@@ -46,6 +46,11 @@ public record UpdateProductDto(
     bool HasVirtualStock
 );
 
+public record UpsertProductAssetsDto(
+    List<CreateProductPriceDto>? Prices,
+    List<CreateProductImageDto>? Images
+);
+
 public record CreateProductImageDto(
     [Required(ErrorMessage = "El ID del producto es requerido")]
     Guid ProductId,

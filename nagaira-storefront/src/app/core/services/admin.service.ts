@@ -149,6 +149,10 @@ export class AdminService {
     return this.http.delete(`${this.apiUrl}/product-images/${imageId}`);
   }
 
+  upsertProductAssets(productId: string, payload: { prices?: any[]; images?: any[] }) {
+    return this.http.put(`${this.apiUrl}/products/${productId}/assets`, payload);
+  }
+
   addStockToProduct(productId: string, stockData: any) {
     return this.http.post(`${this.apiUrl}/products/${productId}/stock`, stockData);
   }

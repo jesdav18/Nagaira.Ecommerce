@@ -603,100 +603,29 @@ export class AdminProductFormComponent implements OnInit {
   }
 
   private savePricesAndImages(productId: string): void {
-    const allPrices = this.productPrices();
-    const allImages = this.productImages();
-    
-    const newPrices = allPrices.filter(p => p.id.startsWith('temp'));
-    const existingPrices = allPrices.filter(p => !p.id.startsWith('temp'));
-    const originalPrices = this.originalPrices();
-    const currentPriceIds = new Set(existingPrices.map(price => price.id));
-    const deletedPrices = originalPrices.filter(price => !currentPriceIds.has(price.id));
-    const newImages = allImages.filter(img => img.id.startsWith('temp'));
-    const existingImages = allImages.filter(img => !img.id.startsWith('temp'));
-    const originalImages = this.originalImages();
-    const currentImageIds = new Set(existingImages.map(image => image.id));
-    const deletedImages = originalImages.filter(image => !currentImageIds.has(image.id));
+    const prices = this.productPrices().map(price => ({
+      productId,
+      priceLevelId: price.priceLevelId,
+      price: price.price,
+      priceWithoutTax: price.priceWithoutTax,
+      minQuantity: price.minQuantity
+    }));
 
-    const operations: Promise<any>[] = [];
+    const images = this.productImages().map(image => ({
+      productId,
+      imageUrl: image.imageUrl,
+      altText: image.altText,
+      isPrimary: image.isPrimary,
+      displayOrder: image.displayOrder
+    }));
 
-    newPrices.forEach(price => {
-      operations.push(
-        firstValueFrom(
-          this.adminService.createProductPrice(productId, {
-            productId: productId,
-            priceLevelId: price.priceLevelId,
-            price: price.price,
-            priceWithoutTax: price.priceWithoutTax,
-            minQuantity: price.minQuantity
-          })
-        )
-      );
-    });
-
-    existingPrices.forEach(price => {
-      operations.push(
-        firstValueFrom(
-          this.adminService.updateProductPrice(productId, price.id, {
-            id: price.id,
-            price: price.price,
-            priceWithoutTax: price.priceWithoutTax,
-            minQuantity: price.minQuantity,
-            isActive: price.isActive
-          })
-        )
-      );
-    });
-
-    deletedPrices.forEach(price => {
-      operations.push(
-        firstValueFrom(
-          this.adminService.deleteProductPrice(productId, price.id)
-        )
-      );
-    });
-
-    newImages.forEach(image => {
-      operations.push(
-        firstValueFrom(
-          this.adminService.createProductImage({
-            productId: productId,
-            imageUrl: image.imageUrl,
-            altText: image.altText,
-            isPrimary: image.isPrimary,
-            displayOrder: image.displayOrder
-          })
-        )
-      );
-    });
-
-    existingImages.forEach(image => {
-      operations.push(
-        firstValueFrom(
-          this.adminService.updateProductImage(image.id, {
-            imageUrl: image.imageUrl,
-            altText: image.altText,
-            isPrimary: image.isPrimary,
-            displayOrder: image.displayOrder
-          })
-        )
-      );
-    });
-
-    deletedImages.forEach(image => {
-      operations.push(
-        firstValueFrom(
-          this.adminService.deleteProductImage(image.id)
-        )
-      );
-    });
-
-    if (operations.length === 0) {
+    if (prices.length === 0 && images.length === 0) {
       this.saving.set(false);
       this.router.navigate(['/admin/products']);
       return;
     }
 
-    Promise.all(operations)
+    firstValueFrom(this.adminService.upsertProductAssets(productId, { prices, images }))
       .then(() => {
         console.log('Prices and images saved successfully');
         this.saving.set(false);

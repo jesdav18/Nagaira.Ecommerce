@@ -7,6 +7,8 @@ using System.Security.Claims;
 using System.Text.Json;
 using Nagaira.Ecommerce.Api.Helpers;
 using Npgsql;
+using Nagaira.Ecommerce.Domain.Interfaces;
+using Nagaira.Ecommerce.Domain.Entities;
 
 namespace Nagaira.Ecommerce.Api.Controllers.Admin;
 
@@ -19,17 +21,20 @@ public class AdminProductsController : ControllerBase
     private readonly IProductPriceService _productPriceService;
     private readonly IInventoryService _inventoryService;
     private readonly IAuditService _auditService;
+    private readonly IUnitOfWork _unitOfWork;
 
     public AdminProductsController(
         IProductService productService,
         IProductPriceService productPriceService,
         IInventoryService inventoryService,
-        IAuditService auditService)
+        IAuditService auditService,
+        IUnitOfWork unitOfWork)
     {
         _productService = productService;
         _productPriceService = productPriceService;
         _inventoryService = inventoryService;
         _auditService = auditService;
+        _unitOfWork = unitOfWork;
     }
 
     [HttpGet]
@@ -221,6 +226,135 @@ public class AdminProductsController : ControllerBase
     {
         var movements = await _inventoryService.GetMovementsByProductAsync(id);
         return Ok(movements);
+    }
+
+    [HttpPut("{id:guid}/assets")]
+    public async Task<IActionResult> UpsertAssets(Guid id, [FromBody] UpsertProductAssetsDto dto)
+    {
+        var product = await _unitOfWork.Products.GetByIdAsync(id);
+        if (product == null) return NotFound();
+
+        var strategy = _unitOfWork.GetExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                var existingPrices = product.Prices.Where(p => !p.IsDeleted).ToList();
+                var existingImages = product.Images.Where(i => !i.IsDeleted).ToList();
+
+                var incomingPrices = (dto.Prices ?? new List<CreateProductPriceDto>())
+                    .GroupBy(p => p.PriceLevelId)
+                    .Select(g => g.Last())
+                    .ToList();
+                var incomingImages = (dto.Images ?? new List<CreateProductImageDto>())
+                    .GroupBy(i => i.ImageUrl)
+                    .Select(g => g.Last())
+                    .ToList();
+
+                if (dto.Prices != null && dto.Prices.Count > 0)
+                {
+                    foreach (var priceDto in incomingPrices)
+                    {
+                        var level = await _unitOfWork.PriceLevels.GetByIdAsync(priceDto.PriceLevelId);
+                        if (level == null || level.IsDeleted) continue;
+
+                        var existing = existingPrices
+                            .FirstOrDefault(p => p.PriceLevelId == priceDto.PriceLevelId);
+                        if (existing != null)
+                        {
+                            if (existing.Price != priceDto.Price ||
+                                existing.PriceWithoutTax != priceDto.PriceWithoutTax ||
+                                existing.MinQuantity != priceDto.MinQuantity ||
+                                !existing.IsActive)
+                            {
+                                existing.Price = priceDto.Price;
+                                existing.PriceWithoutTax = priceDto.PriceWithoutTax;
+                                existing.MinQuantity = priceDto.MinQuantity;
+                                existing.IsActive = true;
+                                existing.UpdatedAt = DateTime.UtcNow;
+                                await _unitOfWork.ProductPrices.UpdateAsync(existing);
+                            }
+                        }
+                        else
+                        {
+                            var productPrice = new ProductPrice
+                            {
+                                Id = Guid.NewGuid(),
+                                ProductId = id,
+                                PriceLevelId = priceDto.PriceLevelId,
+                                Price = priceDto.Price,
+                                PriceWithoutTax = priceDto.PriceWithoutTax,
+                                MinQuantity = priceDto.MinQuantity,
+                                IsActive = true,
+                                CreatedAt = DateTime.UtcNow
+                            };
+                            await _unitOfWork.ProductPrices.AddAsync(productPrice);
+                        }
+                    }
+                }
+
+                if (dto.Images != null && dto.Images.Count > 0)
+                {
+                    var primaryUrl = incomingImages.FirstOrDefault(i => i.IsPrimary)?.ImageUrl;
+
+                    foreach (var imageDto in incomingImages)
+                    {
+                        var existing = existingImages
+                            .FirstOrDefault(i => i.ImageUrl == imageDto.ImageUrl);
+
+                        var shouldBePrimary = primaryUrl != null && imageDto.ImageUrl == primaryUrl;
+                        if (existing != null)
+                        {
+                            if (existing.AltText != imageDto.AltText ||
+                                existing.DisplayOrder != imageDto.DisplayOrder ||
+                                existing.IsPrimary != shouldBePrimary)
+                            {
+                                existing.AltText = imageDto.AltText;
+                                existing.DisplayOrder = imageDto.DisplayOrder;
+                                existing.IsPrimary = shouldBePrimary;
+                                await _unitOfWork.Repository<ProductImage>().UpdateAsync(existing);
+                            }
+                            continue;
+                        }
+
+                        var image = new ProductImage
+                        {
+                            Id = Guid.NewGuid(),
+                            ProductId = id,
+                            ImageUrl = imageDto.ImageUrl,
+                            AltText = imageDto.AltText,
+                            IsPrimary = shouldBePrimary,
+                            DisplayOrder = imageDto.DisplayOrder,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        await _unitOfWork.Repository<ProductImage>().AddAsync(image);
+                    }
+                }
+
+                var incomingPriceLevelIds = new HashSet<Guid>(incomingPrices.Select(p => p.PriceLevelId));
+                foreach (var price in existingPrices.Where(p => !incomingPriceLevelIds.Contains(p.PriceLevelId)))
+                {
+                    await _unitOfWork.ProductPrices.DeleteAsync(price.Id);
+                }
+
+                var incomingImageUrls = new HashSet<string>(incomingImages.Select(i => i.ImageUrl));
+                foreach (var image in existingImages.Where(i => !incomingImageUrls.Contains(i.ImageUrl)))
+                {
+                    await _unitOfWork.Repository<ProductImage>().DeleteAsync(image.Id);
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
+        });
+
+        return NoContent();
     }
 }
 
