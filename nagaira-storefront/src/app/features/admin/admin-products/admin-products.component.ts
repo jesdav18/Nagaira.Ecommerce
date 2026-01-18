@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -31,6 +31,40 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
   categories = signal<any[]>([]);
   categoryFilter = signal<string | null>(null);
   showPriceLevels = signal(false);
+  priceLevelFilter = signal<string | null>(null);
+
+  activePriceLevelIds = computed(() => {
+    return new Set(this.priceLevels().filter(level => level.isActive).map(level => level.id));
+  });
+
+  activePriceLevelCount = computed(() => this.activePriceLevelIds().size);
+
+  filteredProducts = computed(() => {
+    const filter = this.priceLevelFilter();
+    const items = this.products();
+    if (!filter) return items;
+
+    const activeLevelsCount = this.activePriceLevelCount();
+    if (filter === 'all' && activeLevelsCount === 0) return items;
+
+    return items.filter(product => {
+      const count = this.getProductActivePriceLevelCount(product);
+      switch (filter) {
+        case 'none':
+          return count === 0;
+        case 'one':
+          return count === 1;
+        case 'two':
+          return count === 2;
+        case 'three':
+          return count === 3;
+        case 'all':
+          return count === activeLevelsCount;
+        default:
+          return true;
+      }
+    });
+  });
 
   ngOnInit(): void {
     this.loadMovementTypes();
@@ -132,6 +166,14 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
   getPriceForLevel(product: Product, priceLevelId: string): ProductPrice | null {
     if (!product?.prices?.length) return null;
     return product.prices.find(price => price.priceLevelId === priceLevelId) || null;
+  }
+
+  getProductActivePriceLevelCount(product: Product): number {
+    const activeIds = this.activePriceLevelIds();
+    const levelIds = product.prices
+      .filter(price => price.isActive && activeIds.has(price.priceLevelId))
+      .map(price => price.priceLevelId);
+    return new Set(levelIds).size;
   }
 
   goToPage(page: number): void {

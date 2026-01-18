@@ -35,6 +35,18 @@
       </select>
     </div>
 
+    <div class="filter-group">
+      <label>Nivel de precio:</label>
+      <select [ngModel]="priceLevelFilter()" (ngModelChange)="priceLevelFilter.set($event)">
+        <option [ngValue]="null">Todos</option>
+        <option value="none">Sin niveles</option>
+        <option value="one">Solo 1 nivel</option>
+        <option value="two">Solo 2 niveles</option>
+        <option value="three">Solo 3 niveles</option>
+        <option value="all">Todos los niveles</option>
+      </select>
+    </div>
+
     <div class="filter-group toggle-group">
       <label>
         <input type="checkbox" [ngModel]="showPriceLevels()" (ngModelChange)="showPriceLevels.set($event)">
@@ -45,7 +57,7 @@
 
   @if (loading()) {
     <div class="loading">Cargando productos...</div>
-  } @else if (products().length === 0) {
+  } @else if (filteredProducts().length === 0) {
     <div class="empty-state">
       <p>No se encontraron productos</p>
     </div>
@@ -62,7 +74,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (product of products(); track product.id) {
+          @for (product of filteredProducts(); track product.id) {
             <tr>
               <td>{{ product.sku }}</td>
               <td>
