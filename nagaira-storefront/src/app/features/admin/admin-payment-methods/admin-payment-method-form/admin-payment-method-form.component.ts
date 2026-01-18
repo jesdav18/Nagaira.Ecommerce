@@ -13,17 +13,17 @@ import { AdminService } from '../../../../core/services/admin.service';
 })
 export class AdminPaymentMethodFormComponent implements OnInit {
   @ViewChild('paymentMethodForm') form?: NgForm;
-  
+
   private adminService = inject(AdminService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-  
+
   paymentMethodId = signal<string | null>(null);
   paymentMethod = signal<any>(null);
   loading = signal(true);
   saving = signal(false);
   paymentMethodTypes = signal<any[]>([]);
-  
+
   formData = {
     name: '',
     description: '',
@@ -136,12 +136,12 @@ export class AdminPaymentMethodFormComponent implements OnInit {
       alert('El nombre es requerido');
       return;
     }
-    
+
     if (!this.formData.type) {
       alert('El tipo de medio de pago es requerido');
       return;
     }
-    
+
     if (this.requiresAccountNumber()) {
       const accountNumber = this.formData.accountNumber?.trim();
       if (!accountNumber) {
@@ -149,7 +149,7 @@ export class AdminPaymentMethodFormComponent implements OnInit {
         return;
       }
     }
-    
+
     if (this.requiresWalletInfo()) {
       const walletNumber = this.formData.walletNumber?.trim();
       if (!walletNumber) {
@@ -161,7 +161,7 @@ export class AdminPaymentMethodFormComponent implements OnInit {
     this.saving.set(true);
     const currentId = this.paymentMethodId();
     const isEdit = currentId !== null && currentId !== undefined;
-    
+
     const paymentMethodData: any = {
       name: this.formData.name.trim(),
       description: this.formData.description.trim() || null,
@@ -196,11 +196,11 @@ export class AdminPaymentMethodFormComponent implements OnInit {
     if (isEdit) {
       paymentMethodData.id = currentId;
     }
-    
+
     const operation = isEdit
       ? this.adminService.updatePaymentMethod(currentId!, paymentMethodData)
       : this.adminService.createPaymentMethod(paymentMethodData);
-    
+
     operation.subscribe({
       next: () => {
         this.router.navigate(['/admin/payment-methods']);

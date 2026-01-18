@@ -25,6 +25,41 @@ public class SmtpEmailService : IEmailService
             return;
         }
 
+        var subject = $"Confirmacion de pedido {order.OrderNumber}";
+        var body = BuildOrderHtml(order, user);
+
+        try
+        {
+            await SendEmailAsync(user.Email, subject, body);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending order confirmation email");
+        }
+    }
+
+    public async Task SendWelcomeAsync(User user)
+    {
+        if (string.IsNullOrWhiteSpace(user.Email))
+        {
+            return;
+        }
+
+        var subject = "Bienvenido a Nagaira";
+        var body = BuildWelcomeHtml(user);
+
+        try
+        {
+            await SendEmailAsync(user.Email, subject, body);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending welcome email");
+        }
+    }
+
+    private async Task SendEmailAsync(string toEmail, string subject, string body)
+    {
         var enabled = await _appSettingService.GetSettingValueAsync("email_enabled");
         if (!string.Equals(enabled, "true", StringComparison.OrdinalIgnoreCase))
         {
@@ -55,32 +90,22 @@ public class SmtpEmailService : IEmailService
         var senderEmail = string.IsNullOrWhiteSpace(fromEmail) ? username : fromEmail;
         var senderName = string.IsNullOrWhiteSpace(fromName) ? "Nagaira" : fromName;
 
-        var subject = $"Confirmacion de pedido {order.OrderNumber}";
-        var body = BuildOrderHtml(order, user);
-
-        try
+        using var message = new MailMessage
         {
-            using var message = new MailMessage
-            {
-                From = new MailAddress(senderEmail, senderName),
-                Subject = subject,
-                Body = body,
-                IsBodyHtml = true
-            };
-            message.To.Add(new MailAddress(user.Email));
+            From = new MailAddress(senderEmail, senderName),
+            Subject = subject,
+            Body = body,
+            IsBodyHtml = true
+        };
+        message.To.Add(new MailAddress(toEmail));
 
-            using var client = new SmtpClient(host, port)
-            {
-                EnableSsl = useSsl,
-                Credentials = new NetworkCredential(username, password)
-            };
-
-            await client.SendMailAsync(message);
-        }
-        catch (Exception ex)
+        using var client = new SmtpClient(host, port)
         {
-            _logger.LogError(ex, "Error sending order confirmation email");
-        }
+            EnableSsl = useSsl,
+            Credentials = new NetworkCredential(username, password)
+        };
+
+        await client.SendMailAsync(message);
     }
 
     private static string BuildOrderHtml(Order order, User user)
@@ -116,6 +141,18 @@ public class SmtpEmailService : IEmailService
         sb.Append($"<strong>Total: {order.Total:0.00}</strong>");
         sb.Append("</p>");
 
+        return sb.ToString();
+    }
+
+    private static string BuildWelcomeHtml(User user)
+    {
+        var sb = new StringBuilder();
+        var name = $"{user.FirstName} {user.LastName}".Trim();
+        var greetingName = string.IsNullOrWhiteSpace(name) ? "cliente" : WebUtility.HtmlEncode(name);
+        sb.Append("<h2>Bienvenido a Nagaira</h2>");
+        sb.Append($"<p>Hola {greetingName},</p>");
+        sb.Append("<p>Gracias por crear tu cuenta. Ahora puedes acceder a ofertas exclusivas y un checkout mas rapido.</p>");
+        sb.Append("<p>Si necesitas ayuda, respondemos a este correo.</p>");
         return sb.ToString();
     }
 }

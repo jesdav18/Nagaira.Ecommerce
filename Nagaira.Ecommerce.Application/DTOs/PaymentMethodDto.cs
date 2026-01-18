@@ -7,6 +7,7 @@ public record PaymentMethodDto(
     string Name,
     string Description,
     string Type,
+    string TypeLabel,
     string? AccountNumber,
     string? BankName,
     string? AccountHolderName,

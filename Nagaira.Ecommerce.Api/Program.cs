@@ -142,7 +142,11 @@ builder.Services.AddScoped<ISupplierService, SupplierService>();
 builder.Services.AddScoped<IProductSupplierService, ProductSupplierService>();
 builder.Services.AddScoped<ICloudinaryService, Nagaira.Ecommerce.Infrastructure.Services.CloudinaryService>();
 builder.Services.AddScoped<IAuthService>(sp => 
-    new AuthService(sp.GetRequiredService<IUnitOfWork>(), jwtSecret, jwtIssuer));
+    new AuthService(
+        sp.GetRequiredService<IUnitOfWork>(),
+        sp.GetRequiredService<IEmailService>(),
+        jwtSecret,
+        jwtIssuer));
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

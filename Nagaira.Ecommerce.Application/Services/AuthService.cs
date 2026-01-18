@@ -12,12 +12,14 @@ namespace Nagaira.Ecommerce.Application.Services;
 public class AuthService : IAuthService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IEmailService _emailService;
     private readonly string _jwtSecret;
     private readonly string _jwtIssuer;
 
-    public AuthService(IUnitOfWork unitOfWork, string jwtSecret, string jwtIssuer)
+    public AuthService(IUnitOfWork unitOfWork, IEmailService emailService, string jwtSecret, string jwtIssuer)
     {
         _unitOfWork = unitOfWork;
+        _emailService = emailService;
         _jwtSecret = jwtSecret;
         _jwtIssuer = jwtIssuer;
     }
@@ -42,6 +44,15 @@ public class AuthService : IAuthService
 
         await _unitOfWork.Users.AddAsync(user);
         await _unitOfWork.SaveChangesAsync();
+
+        try
+        {
+            await _emailService.SendWelcomeAsync(user);
+        }
+        catch
+        {
+            // Ignore email failures to avoid blocking registration.
+        }
 
         var token = GenerateJwtToken(user.Id, user.Email, user.Role.ToString());
         return new AuthResponseDto(token, MapToDto(user));

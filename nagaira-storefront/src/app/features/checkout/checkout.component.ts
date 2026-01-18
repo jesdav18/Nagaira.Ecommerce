@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, effect } from '@angular/core';
+import { Component, inject, signal, OnInit, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -33,9 +33,27 @@ export class CheckoutComponent implements OnInit {
   createdOrderId = signal('');
   paymentMethods = signal<PaymentMethod[]>([]);
   selectedPaymentMethod = signal<PaymentMethod | null>(null);
+  isAuthenticated = computed(() => this.authService.isAuthenticated());
+  currentUser = computed(() => this.authService.currentUser());
+  hasProfileContact = computed(() => {
+    const user = this.currentUser();
+    if (!user) return false;
+    const hasName = Boolean((user.firstName || '').trim() || (user.lastName || '').trim());
+    const hasEmail = Boolean((user.email || '').trim());
+    const hasPhone = Boolean((user.phoneNumber || '').trim());
+    return hasName && hasEmail && hasPhone;
+  });
+  displayName = computed(() => {
+    const user = this.currentUser();
+    if (!user) return 'Cliente';
+    const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+    return fullName || 'Cliente';
+  });
 
   shippingForm = this.fb.group({
     fullName: ['', Validators.required],
+    email: ['', [Validators.required, Validators.email]],
+    phone: ['', Validators.required],
     address: ['', Validators.required],
     city: ['', Validators.required],
     zipCode: ['', Validators.required],
@@ -48,20 +66,34 @@ export class CheckoutComponent implements OnInit {
         this.updateSettings();
       }
     });
+
+    effect(() => {
+      const user = this.currentUser();
+      if (user) {
+        this.prefillFromProfile();
+      }
+    });
   }
 
   ngOnInit(): void {
-    if (!this.authService.isAuthenticated()) {
-      this.router.navigate(['/login'], { queryParams: { returnUrl: '/checkout' } });
-      return;
-    }
-
     if (this.cartService.itemCount() === 0) {
       this.router.navigate(['/cart']);
     }
 
     this.updateSettings();
     this.loadPaymentMethods();
+  }
+
+  private prefillFromProfile(): void {
+    const user = this.currentUser();
+    if (!user) return;
+
+    const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+    this.shippingForm.patchValue({
+      fullName: fullName || '',
+      email: user.email || '',
+      phone: user.phoneNumber || ''
+    });
   }
 
   private updateSettings(): void {
@@ -80,6 +112,15 @@ export class CheckoutComponent implements OnInit {
         console.error('Error loading payment methods:', error);
       }
     });
+  }
+
+  getPaymentTypeLabel(method: PaymentMethod): string {
+    return method.typeLabel || method.type || 'Otro';
+  }
+
+  getPaymentTypeIcon(method: PaymentMethod): string {
+    const label = this.getPaymentTypeLabel(method).trim();
+    return label.length > 0 ? label[0].toUpperCase() : '?';
   }
 
   selectPaymentMethod(method: PaymentMethod): void {

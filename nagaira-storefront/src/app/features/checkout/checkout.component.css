@@ -1,13 +1,60 @@
 .checkout-page {
     padding: 2rem 0 4rem;
-    background-color: var(--bg-tertiary);
+    background:
+        radial-gradient(circle at top left, rgba(99, 102, 241, 0.08), transparent 55%),
+        radial-gradient(circle at 80% 20%, rgba(14, 165, 233, 0.08), transparent 45%),
+        var(--bg-tertiary);
     min-height: calc(100vh - 80px);
 }
 
-.page-title {
+.checkout-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.5rem;
     margin-bottom: 2rem;
+}
+
+.hero-eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.page-title {
+    margin: 0.5rem 0 0.75rem;
     font-size: 2rem;
     color: var(--text-primary);
+}
+
+.hero-subtitle {
+    margin: 0;
+    color: var(--text-secondary);
+    max-width: 520px;
+}
+
+.hero-steps {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.step-chip {
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px dashed var(--border-color);
+    color: var(--text-secondary);
+    background: var(--bg-primary);
+}
+
+.step-chip.active {
+    border-style: solid;
+    color: var(--text-primary);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
 }
 
 .checkout-grid {
@@ -31,11 +78,102 @@
     padding-bottom: 1rem;
 }
 
+.section-card {
+    padding: 1.5rem;
+    border-radius: var(--border-radius-sm);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+}
+
 .shipping-form {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
     margin-bottom: 3rem;
+}
+
+.account-card {
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.05), rgba(15, 23, 42, 0.02));
+    margin-bottom: 1.5rem;
+}
+
+.account-card.is-guest {
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.08), rgba(14, 165, 233, 0.02));
+}
+
+.account-content {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.account-badge {
+    display: inline-flex;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.account-badge.guest {
+    background: rgba(14, 165, 233, 0.15);
+}
+
+.link-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.link-button.secondary {
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    background: var(--bg-primary);
+}
+
+.account-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.profile-summary {
+    display: grid;
+    gap: 1rem;
+}
+
+.summary-label {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-secondary);
+}
+
+.summary-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.hint-text {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
 }
 
 .form-group {
@@ -95,6 +233,11 @@
     gap: 0.25rem;
 }
 
+.method-type {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
 .method-name {
     font-weight: 600;
     color: var(--text-primary);
@@ -151,10 +294,6 @@
     color: var(--text-secondary);
     line-height: 1.6;
     white-space: pre-line;
-}
-
-.method-icon {
-    font-size: 1.5rem;
 }
 
 .check-icon {
@@ -282,6 +421,11 @@
 }
 
 @media (max-width: 900px) {
+    .checkout-hero {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
     .checkout-grid {
         grid-template-columns: 1fr;
     }

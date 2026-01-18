@@ -2,54 +2,125 @@
   <div class="container">
     @if (success()) {
       <div class="success-card">
-        <div class="success-icon">🎉</div>
-        <h1>¡Orden Confirmada!</h1>
+        <div class="success-icon">OK</div>
+        <h1>Orden confirmada</h1>
         <p>Tu pedido ha sido recibido exitosamente.</p>
         <div class="order-id">Orden #{{ createdOrderId() }}</div>
-        <p class="success-message">Te hemos enviado un correo de confirmación.</p>
-        <a routerLink="/" class="btn btn-primary">Volver a la Tienda</a>
+        <p class="success-message">Te hemos enviado un correo de confirmacion.</p>
+        <a routerLink="/" class="btn btn-primary">Volver a la tienda</a>
       </div>
     } @else {
-      <h1 class="page-title">Finalizar Compra</h1>
+      <div class="checkout-hero">
+        <div>
+          <span class="hero-eyebrow">Checkout</span>
+          <h1 class="page-title">Finalizar compra</h1>
+          <p class="hero-subtitle">Compra rapida, clara y sin fricciones. Solo necesitas tu direccion y metodo de pago.</p>
+        </div>
+        <div class="hero-steps">
+          <span class="step-chip active">1. Direccion</span>
+          <span class="step-chip">2. Pago</span>
+          <span class="step-chip">3. Confirmacion</span>
+        </div>
+      </div>
 
       <div class="checkout-grid">
-        <!-- Formulario de Envío -->
         <div class="checkout-form-section">
-          <h2>Dirección de Envío</h2>
+          <div class="account-card" [class.is-guest]="!isAuthenticated()">
+            @if (isAuthenticated()) {
+              <div class="account-content">
+                <div>
+                  <span class="account-badge">Sesion iniciada</span>
+                  <h3>Hola, {{ displayName() }}.</h3>
+                  <p>Usaremos tus datos de perfil para acelerar la compra.</p>
+                </div>
+                <a routerLink="/profile" class="link-button">Editar perfil</a>
+              </div>
+            } @else {
+              <div class="account-content">
+                <div>
+                  <span class="account-badge guest">Compra como invitado</span>
+                  <div style="height: 10px;"></div>
+                  <h3>No necesitas registrarte.</h3>
+                  <p>Podes completar la compra en segundos. Con cuenta accedes a ofertas mucho mejores y checkout mas rapido.</p>
+                </div>
+                <div class="account-actions">
+                  <a routerLink="/login" class="link-button">Iniciar sesion</a>
+                  <a routerLink="/register" class="link-button secondary">Crear cuenta</a>
+                </div>
+              </div>
+            }
+          </div>
+
           <form [formGroup]="shippingForm" class="shipping-form">
-            <div class="form-group">
-              <label>Nombre Completo</label>
-              <input type="text" formControlName="fullName" class="form-input" placeholder="Escriba su nombre completo">
+            <div class="section-card">
+              <h2>Datos de contacto</h2>
+              @if (isAuthenticated() && hasProfileContact()) {
+                <div class="profile-summary">
+                  <div>
+                    <span class="summary-label">Nombre</span>
+                    <span class="summary-value">{{ shippingForm.get('fullName')?.value }}</span>
+                  </div>
+                  <div>
+                    <span class="summary-label">Correo</span>
+                    <span class="summary-value">{{ shippingForm.get('email')?.value }}</span>
+                  </div>
+                  <div>
+                    <span class="summary-label">Telefono</span>
+                    <span class="summary-value">{{ shippingForm.get('phone')?.value }}</span>
+                  </div>
+                </div>
+              } @else {
+                <div class="form-group">
+                  <label>Nombre completo</label>
+                  <input type="text" formControlName="fullName" class="form-input" placeholder="Escribe tu nombre completo">
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Correo electronico</label>
+                    <input type="email" formControlName="email" class="form-input" placeholder="correo@ejemplo.com">
+                  </div>
+                  <div class="form-group">
+                    <label>Telefono</label>
+                    <input type="tel" formControlName="phone" class="form-input" placeholder="0000-0000">
+                  </div>
+                </div>
+                @if (isAuthenticated() && !hasProfileContact()) {
+                  <p class="hint-text">Completa estos datos para agilizar futuras compras.</p>
+                }
+              }
             </div>
 
-            <div class="form-group">
-              <label>Dirección</label>
-              <input type="text" formControlName="address" class="form-input" placeholder="Escriba su dirección">
-            </div>
-
-            <div class="form-row">
+            <div class="section-card">
+              <h2>Direccion de envio</h2>
               <div class="form-group">
-                <label>Ciudad</label>
-                <input type="text" formControlName="city" class="form-input" placeholder="Escriba la ciudad de su dirección">
+                <label>Direccion</label>
+                <input type="text" formControlName="address" class="form-input" placeholder="Escribe tu direccion">
               </div>
-              <div class="form-group">
-                <label>Código Postal</label>
-                <input type="text" formControlName="zipCode" class="form-input" placeholder="00000">
-              </div>
-            </div>
 
-            <div class="form-group">
-              <label>País</label>
-              <input type="text" formControlName="country" class="form-input" readonly>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Ciudad</label>
+                  <input type="text" formControlName="city" class="form-input" placeholder="Ciudad">
+                </div>
+                <div class="form-group">
+                  <label>Codigo postal</label>
+                  <input type="text" formControlName="zipCode" class="form-input" placeholder="00000">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Pais</label>
+                <input type="text" formControlName="country" class="form-input" readonly>
+              </div>
             </div>
           </form>
 
           <div class="payment-section">
-            <h2>Método de Pago</h2>
+            <h2>Metodo de pago</h2>
             @if (paymentMethods().length === 0) {
               <div class="payment-method selected">
-                <span class="method-icon">💳</span>
-                <span>Cargando métodos de pago...</span>
+                <span class="method-icon">...</span>
+                <span>Cargando metodos de pago...</span>
               </div>
             } @else {
               @for (method of paymentMethods(); track method.id) {
@@ -57,34 +128,38 @@
                   class="payment-method"
                   [class.selected]="selectedPaymentMethod()?.id === method.id"
                   (click)="selectPaymentMethod(method)">
-                  <span class="method-icon">{{ method.type === 'BankAccount' ? '🏦' : '📱' }}</span>
                   <div class="method-info">
                     <span class="method-name">{{ method.name }}</span>
+                    <small class="method-type">{{ getPaymentTypeLabel(method) }}</small>
                     @if (method.description) {
                       <small class="method-description">{{ method.description }}</small>
                     }
-                    @if (method.type === 'BankAccount') {
+                    @if (method.bankName || method.accountNumber || method.accountHolderName) {
                       <small class="method-details">
                         {{ method.bankName || 'Banco' }} - {{ method.accountNumber }}
                         @if (method.accountHolderName) {
                           <br>Titular: {{ method.accountHolderName }}
                         }
                       </small>
-                    } @else {
+                    }
+                    @if (method.walletProvider || method.walletNumber) {
                       <small class="method-details">
-                        {{ method.walletProvider || 'Billetera' }} - {{ method.walletNumber || method.accountNumber }}
+                        {{ method.walletProvider }}{{ method.walletProvider && (method.walletNumber || method.accountNumber) ? ' - ' : '' }}{{ method.walletNumber || method.accountNumber }}
                       </small>
+                    }
+                    @if (!method.bankName && !method.walletProvider && method.accountNumber) {
+                      <small class="method-details">Referencia: {{ method.accountNumber }}</small>
                     }
                   </div>
                   @if (selectedPaymentMethod()?.id === method.id) {
-                    <span class="check-icon">✓</span>
+                    <span class="check-icon">OK</span>
                   }
                 </div>
               }
               @if (selectedPaymentMethod()) {
                 @if (selectedPaymentMethod()!.qrCodeUrl) {
                   <div class="qr-code-section">
-                    <p class="qr-label">Escanea el código QR para pagar:</p>
+                    <p class="qr-label">Escanea el codigo QR para pagar:</p>
                     <img [src]="selectedPaymentMethod()!.qrCodeUrl" alt="QR Code" class="qr-code">
                   </div>
                 }
@@ -99,9 +174,8 @@
           </div>
         </div>
 
-        <!-- Resumen de Orden -->
         <div class="order-summary-sidebar">
-          <h2>Tu Pedido</h2>
+          <h2>Tu pedido</h2>
 
           <div class="summary-items">
             @for (item of cartService.cartItems(); track item.product.id) {
@@ -121,7 +195,7 @@
               <span>{{ cartService.subtotal() | appCurrency:'1.2-2' }}</span>
             </div>
             <div class="summary-row">
-              <span>Envío</span>
+              <span>Envio</span>
               <span>{{ getShippingFreeLabel() }}</span>
             </div>
             <div class="summary-row">
@@ -145,10 +219,8 @@
             class="btn btn-primary btn-block place-order-btn"
             (click)="onSubmit()"
             [disabled]="loading() || shippingForm.invalid">
-            {{ loading() ? 'Procesando...' : 'Ejecutar Compra' }}
+            {{ loading() ? 'Procesando...' : 'Ejecutar compra' }}
           </button>
-
-
         </div>
       </div>
     }

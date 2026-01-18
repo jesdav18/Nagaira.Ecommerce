@@ -8,6 +8,7 @@ export interface PaymentMethod {
   name: string;
   description: string;
   type: string;
+  typeLabel?: string;
   accountNumber: string;
   bankName?: string;
   accountHolderName?: string;

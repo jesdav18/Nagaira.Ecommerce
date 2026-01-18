@@ -17,20 +17,23 @@ public class PaymentMethodService : IPaymentMethodService
     public async Task<IEnumerable<PaymentMethodDto>> GetAllPaymentMethodsAsync()
     {
         var paymentMethods = await _unitOfWork.PaymentMethods.GetAllAsync();
-        return paymentMethods.Select(MapToDto);
+        var typeLabels = await GetTypeLabelMapAsync();
+        return paymentMethods.Select(pm => MapToDto(pm, typeLabels));
     }
 
     public async Task<IEnumerable<PaymentMethodDto>> GetActivePaymentMethodsAsync()
     {
         var paymentMethods = await _unitOfWork.PaymentMethods.GetActivePaymentMethodsAsync();
-        return paymentMethods.Select(MapToDto);
+        var typeLabels = await GetTypeLabelMapAsync();
+        return paymentMethods.Select(pm => MapToDto(pm, typeLabels));
     }
 
     public async Task<PaymentMethodDto?> GetPaymentMethodByIdAsync(Guid id)
     {
         var paymentMethod = await _unitOfWork.PaymentMethods.GetByIdAsync(id);
         if (paymentMethod == null || paymentMethod.IsDeleted) return null;
-        return MapToDto(paymentMethod);
+        var typeLabels = await GetTypeLabelMapAsync();
+        return MapToDto(paymentMethod, typeLabels);
     }
 
     public async Task<PaymentMethodDto> CreatePaymentMethodAsync(CreatePaymentMethodDto dto)
@@ -62,7 +65,8 @@ public class PaymentMethodService : IPaymentMethodService
         await _unitOfWork.PaymentMethods.AddAsync(paymentMethod);
         await _unitOfWork.SaveChangesAsync();
 
-        return MapToDto(paymentMethod);
+        var typeLabels = await GetTypeLabelMapAsync();
+        return MapToDto(paymentMethod, typeLabels);
     }
 
     public async Task UpdatePaymentMethodAsync(UpdatePaymentMethodDto dto)
@@ -130,13 +134,30 @@ public class PaymentMethodService : IPaymentMethodService
         return types.Select(t => new PaymentMethodTypeSimpleDto(t.Name, t.Label));
     }
 
-    private static PaymentMethodDto MapToDto(PaymentMethod paymentMethod)
+    private async Task<Dictionary<string, string>> GetTypeLabelMapAsync()
     {
+        var types = await _unitOfWork.PaymentMethodTypes.GetAllAsync();
+        return types
+            .Where(t => !t.IsDeleted)
+            .ToDictionary(
+                t => t.Name,
+                t => string.IsNullOrWhiteSpace(t.Label) ? t.Name : t.Label,
+                StringComparer.OrdinalIgnoreCase
+            );
+    }
+
+    private static PaymentMethodDto MapToDto(PaymentMethod paymentMethod, Dictionary<string, string> typeLabels)
+    {
+        var typeLabel = typeLabels.TryGetValue(paymentMethod.Type, out var label)
+            ? label
+            : paymentMethod.Type;
+
         return new PaymentMethodDto(
             paymentMethod.Id,
             paymentMethod.Name,
             paymentMethod.Description,
             paymentMethod.Type,
+            typeLabel,
             paymentMethod.AccountNumber,
             paymentMethod.BankName,
             paymentMethod.AccountHolderName,
