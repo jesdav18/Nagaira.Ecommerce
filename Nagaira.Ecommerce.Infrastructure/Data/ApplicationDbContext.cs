@@ -38,13 +38,14 @@ public class ApplicationDbContext : DbContext
     public DbSet<ProductRequest> ProductRequests { get; set; }
     public DbSet<Banner> Banners { get; set; }
     public DbSet<SlugHistory> SlugHistories { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
         
         // Entities that don't have UpdatedAt column
-        var entitiesWithoutUpdatedAt = new[] { "Offer", "AuditLog", "InventoryMovement", "OfferProduct", "OfferCategory", "User", "Product", "Category", "PaymentMethod", "PaymentMethodType" };
+        var entitiesWithoutUpdatedAt = new[] { "Offer", "AuditLog", "InventoryMovement", "OfferProduct", "OfferCategory", "User", "Product", "Category", "PaymentMethod", "PaymentMethodType", "RefreshToken" };
 
         modelBuilder.Entity<User>(entity =>
         {
@@ -53,11 +54,24 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Email).IsRequired().HasMaxLength(255);
             entity.HasIndex(e => e.Email).IsUnique();
             entity.Ignore(x => x.UpdatedAt);
+            entity.Property(e => e.FailedLoginAttempts).HasDefaultValue(0);
             entity.Property(e => e.PasswordHash).IsRequired();
             entity.Property(e => e.FirstName).IsRequired().HasMaxLength(100);
             entity.Property(e => e.LastName).IsRequired().HasMaxLength(100);
             entity.HasOne(e => e.PriceLevel).WithMany(e => e.Users)
                 .HasForeignKey(e => e.PriceLevelId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.ToTable("refresh_tokens");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.TokenHash).IsRequired().HasMaxLength(255);
+            entity.HasIndex(e => e.TokenHash).IsUnique();
+            entity.Property(e => e.ExpiresAt).IsRequired();
+            entity.Ignore(e => e.UpdatedAt);
+            entity.HasOne(e => e.User).WithMany(e => e.RefreshTokens)
+                .HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Product>(entity =>

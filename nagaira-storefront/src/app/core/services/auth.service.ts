@@ -15,18 +15,25 @@ export class AuthService {
   
   currentUser = signal<User | null>(null);
   isAuthenticated = signal<boolean>(false);
+  private accessToken = signal<string | null>(null);
 
   constructor() {
-    this.loadUserFromStorage();
+    this.clearLegacyStorage();
+    this.bootstrapSession();
   }
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials)
+    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials, { withCredentials: true })
       .pipe(tap(response => this.handleAuthSuccess(response)));
   }
 
   register(data: RegisterRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, data)
+    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, data, { withCredentials: true })
+      .pipe(tap(response => this.handleAuthSuccess(response)));
+  }
+
+  refreshToken(): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/refresh`, {}, { withCredentials: true })
       .pipe(tap(response => this.handleAuthSuccess(response)));
   }
 
@@ -35,32 +42,44 @@ export class AuthService {
   }
 
   logout(): void {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    this.currentUser.set(null);
-    this.isAuthenticated.set(false);
-    this.router.navigate(['/']);
+    this.http.post(`${this.apiUrl}/logout`, {}, { withCredentials: true }).subscribe({
+      next: () => {
+        this.clearSession();
+      },
+      error: () => {
+        this.clearSession();
+      }
+    });
   }
 
   getToken(): string | null {
-    return localStorage.getItem('token');
+    return this.accessToken();
   }
 
   private handleAuthSuccess(response: AuthResponse): void {
-    localStorage.setItem('token', response.token);
-    localStorage.setItem('user', JSON.stringify(response.user));
+    this.accessToken.set(response.token);
     this.currentUser.set(response.user);
     this.isAuthenticated.set(true);
   }
 
-  private loadUserFromStorage(): void {
-    const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
-    
-    if (token && userStr) {
-      const user = JSON.parse(userStr);
-      this.currentUser.set(user);
-      this.isAuthenticated.set(true);
-    }
+  private clearSession(): void {
+    this.accessToken.set(null);
+    this.currentUser.set(null);
+    this.isAuthenticated.set(false);
+    this.router.navigate(['/']);
+  }
+  
+  private clearLegacyStorage(): void {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  }
+
+  private bootstrapSession(): void {
+    this.refreshToken().subscribe({
+      next: () => {},
+      error: () => {
+        this.clearSession();
+      }
+    });
   }
 }

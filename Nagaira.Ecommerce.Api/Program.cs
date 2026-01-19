@@ -1,8 +1,11 @@
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Threading.RateLimiting;
 using Nagaira.Ecommerce.Application.Interfaces;
 using Nagaira.Ecommerce.Application.Services;
 using Nagaira.Ecommerce.Domain.Entities;
@@ -119,10 +122,13 @@ builder.Services.AddScoped<IPaymentMethodTypeRepository, PaymentMethodTypeReposi
 builder.Services.AddScoped<IAppSettingRepository, AppSettingRepository>();
 builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
 builder.Services.AddScoped<IProductSupplierRepository, ProductSupplierRepository>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 var jwtSecret = builder.Configuration["Jwt:Secret"] ?? throw new InvalidOperationException("JWT Secret not configured");
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "Nagaira.Ecommerce.Api";
+var jwtExpirationDays = int.TryParse(builder.Configuration["Jwt:ExpirationDays"], out var expDays) ? expDays : 1;
+var refreshTokenDays = int.TryParse(builder.Configuration["Jwt:RefreshTokenDays"], out var refreshDays) ? refreshDays : 30;
 
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
@@ -145,8 +151,11 @@ builder.Services.AddScoped<IAuthService>(sp =>
     new AuthService(
         sp.GetRequiredService<IUnitOfWork>(),
         sp.GetRequiredService<IEmailService>(),
+        sp.GetRequiredService<ILogger<AuthService>>(),
         jwtSecret,
-        jwtIssuer));
+        jwtIssuer,
+        jwtExpirationDays,
+        refreshTokenDays));
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -167,11 +176,46 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:4200", "http://localhost:4201")
+        policy.WithOrigins(
+                "http://localhost:4200",
+                "http://localhost:4201",
+                "https://nagaira.com",
+                "https://www.nagaira.com")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
     });
+});
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 300,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
+    options.AddPolicy("Auth", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 20,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
 });
 
 var app = builder.Build();
@@ -180,6 +224,11 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
 }
 
 app.Use(async (context, next) =>
@@ -192,8 +241,10 @@ app.Use(async (context, next) =>
     await next();
 });
 
-// app.UseHttpsRedirection();
+app.UseForwardedHeaders();
+app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

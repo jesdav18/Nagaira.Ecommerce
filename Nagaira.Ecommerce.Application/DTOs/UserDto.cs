@@ -29,3 +29,8 @@ public record AuthResponseDto(
     string Token,
     UserDto User
 );
+
+public record AuthResultDto(
+    AuthResponseDto Response,
+    string RefreshToken
+);

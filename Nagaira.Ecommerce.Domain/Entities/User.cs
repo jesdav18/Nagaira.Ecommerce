@@ -10,9 +10,12 @@ public class User : BaseEntity
     public UserRole Role { get; set; }
     public Guid? PriceLevelId { get; set; }
     public bool IsActive { get; set; }
+    public int FailedLoginAttempts { get; set; }
+    public DateTime? LockoutEnd { get; set; }
     public PriceLevel? PriceLevel { get; set; }
     public List<Order> Orders { get; set; } = new();
     public List<Address> Addresses { get; set; } = new();
+    public List<RefreshToken> RefreshTokens { get; set; } = new();
 }
 
 public enum UserRole

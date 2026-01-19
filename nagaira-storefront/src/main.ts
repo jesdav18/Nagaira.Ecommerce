@@ -9,9 +9,15 @@ bootstrapApplication(AppComponent, appConfig)
       <div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
         <h1>Error al cargar la aplicación</h1>
         <p>Por favor, recarga la página o contacta al soporte.</p>
-        <button onclick="location.reload()" style="padding: 10px 20px; margin-top: 10px;">
+        <button id="reload-app" style="padding: 10px 20px; margin-top: 10px;">
           Recargar Página
         </button>
       </div>
     `;
+    const reloadButton = document.getElementById('reload-app');
+    if (reloadButton) {
+      reloadButton.addEventListener('click', () => location.reload());
+    }
   });
+
+

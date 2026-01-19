@@ -31,6 +31,13 @@
           },
           "configurations": {
             "production": {
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                }
+              },
               "budgets": [
                 {
                   "type": "initial",
@@ -44,10 +51,17 @@
                 }
               ],
               "outputHashing": "all",
-              "baseHref": "/ecommerce/"
+              "baseHref": "/ecommerce/",
+              "sourceMap": false
             },
             "development": {
-              "optimization": false,
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                }
+              },
               "extractLicenses": false,
               "sourceMap": true
             }
