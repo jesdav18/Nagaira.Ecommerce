@@ -138,6 +138,7 @@ input, textarea, select {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
   background: linear-gradient(135deg, #005592 0%, #035559 50%, #1A6127 100%);
+  color: var(--text-inverse);
 }
 
 .btn-secondary {
@@ -149,6 +150,7 @@ input, textarea, select {
 .btn-secondary:hover {
   background: var(--bg-tertiary);
   border-color: var(--primary-color);
+  color: var(--text-primary);
 }
 
 .btn-accent {
@@ -161,6 +163,7 @@ input, textarea, select {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
   background: linear-gradient(135deg, #4EB95D 0%, #498536 100%);
+  color: var(--text-inverse);
 }
 
 .card {

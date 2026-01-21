@@ -12,4 +12,5 @@ import { AppSettingsService } from '../../../core/services/app-settings.service'
 export class FooterComponent {
   private appSettingsService = inject(AppSettingsService);
   currencySymbol = this.appSettingsService.currencySymbol;
+  currentYear = new Date().getFullYear();
 }
