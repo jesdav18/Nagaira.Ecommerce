@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AdminService } from '../../../core/services/admin.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 interface Banner {
   id: string;
@@ -23,6 +24,7 @@ interface Banner {
 })
 export class AdminBannersComponent implements OnInit {
   private adminService = inject(AdminService);
+  private notificationService = inject(NotificationService);
 
   banners = signal<Banner[]>([]);
   loading = signal(true);
@@ -50,20 +52,20 @@ export class AdminBannersComponent implements OnInit {
       next: () => this.loadBanners(),
       error: (error: any) => {
         console.error('Error updating banner:', error);
-        alert('Error al actualizar el banner.');
+        this.notificationService.error('Error al actualizar el banner.');
       }
     });
   }
 
-  deleteBanner(id: string): void {
-    if (!confirm('Deseas eliminar este banner?')) {
-      return;
-    }
+  async deleteBanner(id: string): Promise<void> {
+    const confirmed = await this.notificationService.confirm('Deseas eliminar este banner?');
+    if (!confirmed) return;
+
     this.adminService.deleteBanner(id).subscribe({
       next: () => this.loadBanners(),
       error: (error: any) => {
         console.error('Error deleting banner:', error);
-        alert('Error al eliminar el banner.');
+        this.notificationService.error('Error al eliminar el banner.');
       }
     });
   }

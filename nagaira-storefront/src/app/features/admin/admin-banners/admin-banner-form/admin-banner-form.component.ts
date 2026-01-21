@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AdminService } from '../../../../core/services/admin.service';
+import { NotificationService } from '../../../../core/services/notification.service';
 
 @Component({
   selector: 'app-admin-banner-form',
@@ -15,6 +16,7 @@ export class AdminBannerFormComponent implements OnInit {
   private adminService = inject(AdminService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private notificationService = inject(NotificationService);
 
   bannerId = signal<string | null>(null);
   loading = signal(false);
@@ -73,7 +75,7 @@ export class AdminBannerFormComponent implements OnInit {
       error: (error: any) => {
         console.error('Error uploading image:', error);
         this.uploadingImage.set(false);
-        alert('Error al subir la imagen');
+        this.notificationService.error('Error al subir la imagen');
       }
     });
   }
@@ -84,7 +86,7 @@ export class AdminBannerFormComponent implements OnInit {
 
   save(): void {
     if (!this.formData.title.trim() || !this.formData.imageUrl.trim()) {
-      alert('Titulo e imagen son obligatorios');
+      this.notificationService.warning('Titulo e imagen son obligatorios');
       return;
     }
 
@@ -110,7 +112,7 @@ export class AdminBannerFormComponent implements OnInit {
       error: (error: any) => {
         console.error('Error saving banner:', error);
         this.saving.set(false);
-        alert('Error al guardar el banner');
+        this.notificationService.error('Error al guardar el banner');
       }
     });
   }

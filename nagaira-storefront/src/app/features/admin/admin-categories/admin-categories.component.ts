@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../../core/services/admin.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
   selector: 'app-admin-categories',
@@ -13,6 +14,7 @@ import { AdminService } from '../../../core/services/admin.service';
 })
 export class AdminCategoriesComponent implements OnInit {
   private adminService = inject(AdminService);
+  private notificationService = inject(NotificationService);
   
   categories = signal<any[]>([]);
   loading = signal(true);
@@ -61,18 +63,19 @@ export class AdminCategoriesComponent implements OnInit {
     );
   }
 
-  deleteCategory(id: string): void {
-    if (confirm('¿Estás seguro de eliminar esta categoría?')) {
-      this.adminService.deleteCategory(id).subscribe({
-        next: () => {
-          this.loadCategories();
-        },
-        error: (error) => {
-          console.error('Error deleting category:', error);
-          alert('Error al eliminar la categoría');
-        }
-      });
-    }
+  async deleteCategory(id: string): Promise<void> {
+    const confirmed = await this.notificationService.confirm('Estas seguro de eliminar esta categoria?');
+    if (!confirmed) return;
+
+    this.adminService.deleteCategory(id).subscribe({
+      next: () => {
+        this.loadCategories();
+      },
+      error: (error) => {
+        console.error('Error deleting category:', error);
+        this.notificationService.error('Error al eliminar la categoria');
+      }
+    });
   }
 
   toggleCategoryStatus(category: any): void {
@@ -86,7 +89,7 @@ export class AdminCategoriesComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error updating category:', error);
-        alert('Error al actualizar la categoría');
+        this.notificationService.error('Error al actualizar la categoria');
       }
     });
   }

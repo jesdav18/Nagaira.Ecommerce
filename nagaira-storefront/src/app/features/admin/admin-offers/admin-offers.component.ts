@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AdminService } from '../../../core/services/admin.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
   selector: 'app-admin-offers',
@@ -11,6 +12,7 @@ import { AdminService } from '../../../core/services/admin.service';
 })
 export class AdminOffersComponent implements OnInit {
   private adminService = inject(AdminService);
+  private notificationService = inject(NotificationService);
   
   offers = signal<any[]>([]);
   loading = signal(true);
@@ -44,7 +46,7 @@ export class AdminOffersComponent implements OnInit {
       },
       error: (error: any) => {
         console.error('Error updating offer:', error);
-        alert('Error al actualizar la oferta');
+        this.notificationService.error('Error al actualizar la oferta');
       }
     });
   }

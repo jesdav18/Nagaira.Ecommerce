@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../../core/services/admin.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
   selector: 'app-admin-payment-methods',
@@ -13,6 +14,7 @@ import { AdminService } from '../../../core/services/admin.service';
 })
 export class AdminPaymentMethodsComponent implements OnInit {
   private adminService = inject(AdminService);
+  private notificationService = inject(NotificationService);
   
   paymentMethods = signal<any[]>([]);
   loading = signal(true);
@@ -75,18 +77,19 @@ export class AdminPaymentMethodsComponent implements OnInit {
     );
   }
 
-  deletePaymentMethod(id: string): void {
-    if (confirm('¿Estás seguro de eliminar este medio de pago?')) {
-      this.adminService.deletePaymentMethod(id).subscribe({
-        next: () => {
-          this.loadPaymentMethods();
-        },
-        error: (error) => {
-          console.error('Error deleting payment method:', error);
-          alert('Error al eliminar el medio de pago');
-        }
-      });
-    }
+  async deletePaymentMethod(id: string): Promise<void> {
+    const confirmed = await this.notificationService.confirm('Estas seguro de eliminar este medio de pago?');
+    if (!confirmed) return;
+
+    this.adminService.deletePaymentMethod(id).subscribe({
+      next: () => {
+        this.loadPaymentMethods();
+      },
+      error: (error) => {
+        console.error('Error deleting payment method:', error);
+        this.notificationService.error('Error al eliminar el medio de pago');
+      }
+    });
   }
 
   togglePaymentMethodStatus(paymentMethod: any): void {
@@ -100,7 +103,7 @@ export class AdminPaymentMethodsComponent implements OnInit {
       },
       error: (error: any) => {
         console.error('Error updating payment method:', error);
-        alert('Error al actualizar el medio de pago');
+        this.notificationService.error('Error al actualizar el medio de pago');
       }
     });
   }

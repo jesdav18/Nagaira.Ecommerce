@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AdminService } from '../../../core/services/admin.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
   selector: 'app-admin-reports',
@@ -11,6 +12,7 @@ import { AdminService } from '../../../core/services/admin.service';
 })
 export class AdminReportsComponent {
   private adminService = inject(AdminService);
+  private notificationService = inject(NotificationService);
   
   generating = signal(false);
 
@@ -31,7 +33,7 @@ export class AdminReportsComponent {
       },
       error: (error: any) => {
         console.error('Error generating report:', error);
-        alert('Error al generar el reporte');
+        this.notificationService.error('Error al generar el reporte');
         this.generating.set(false);
       }
     });
@@ -51,7 +53,7 @@ export class AdminReportsComponent {
       },
       error: (error: any) => {
         console.error('Error generating report:', error);
-        alert('Error al generar el reporte');
+        this.notificationService.error('Error al generar el reporte');
         this.generating.set(false);
       }
     });

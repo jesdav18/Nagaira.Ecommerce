@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../../core/services/admin.service';
 import { AppSettingsService } from '../../../core/services/app-settings.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 interface AppSetting {
   id: string;
@@ -28,6 +29,7 @@ interface AppSetting {
 export class AdminSettingsComponent implements OnInit {
   private adminService = inject(AdminService);
   private appSettings = inject(AppSettingsService);
+  private notificationService = inject(NotificationService);
   
   settings = signal<AppSetting[]>([]);
   loading = signal(true);
@@ -139,7 +141,7 @@ export class AdminSettingsComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error updating setting:', error);
-        alert('Error al actualizar la configuración: ' + (error.error?.message || error.message));
+        this.notificationService.error('Error al actualizar la configuracion: ' + (error.error?.message || error.message));
         this.saving.set(false);
       }
     });

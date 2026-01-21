@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AdminService } from '../../../core/services/admin.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 interface ProductRequest {
   id: string;
@@ -27,6 +28,7 @@ interface ProductRequest {
 })
 export class AdminProductRequestsComponent implements OnInit {
   private adminService = inject(AdminService);
+  private notificationService = inject(NotificationService);
 
   requests = signal<ProductRequest[]>([]);
   loading = signal(true);
@@ -76,7 +78,7 @@ export class AdminProductRequestsComponent implements OnInit {
       },
       error: (error: any) => {
         console.error('Error updating request status:', error);
-        alert('Error al actualizar el estado.');
+        this.notificationService.error('Error al actualizar el estado.');
       }
     });
   }

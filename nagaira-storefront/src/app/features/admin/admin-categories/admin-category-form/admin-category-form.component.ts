@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../../../core/services/admin.service';
+import { NotificationService } from '../../../../core/services/notification.service';
 
 @Component({
   selector: 'app-admin-category-form',
@@ -15,6 +16,7 @@ export class AdminCategoryFormComponent implements OnInit {
   private adminService = inject(AdminService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private notificationService = inject(NotificationService);
   
   categoryId = signal<string | null>(null);
   category = signal<any>(null);
@@ -88,12 +90,12 @@ export class AdminCategoryFormComponent implements OnInit {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('El archivo debe ser una imagen');
+      this.notificationService.warning('El archivo debe ser una imagen');
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      alert('La imagen no puede ser mayor a 10MB');
+      this.notificationService.warning('La imagen no puede ser mayor a 10MB');
       return;
     }
 
@@ -105,7 +107,7 @@ export class AdminCategoryFormComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error uploading image:', error);
-        alert('Error al subir la imagen: ' + (error.error?.message || error.message));
+        this.notificationService.error('Error al subir la imagen: ' + (error.error?.message || error.message));
         this.uploadingImage.set(false);
       }
     });
@@ -117,7 +119,7 @@ export class AdminCategoryFormComponent implements OnInit {
 
   save(): void {
     if (!this.formData.name.trim()) {
-      alert('El nombre de la categoría es requerido');
+      this.notificationService.warning('El nombre de la categoria es requerido');
       return;
     }
 
@@ -126,7 +128,7 @@ export class AdminCategoryFormComponent implements OnInit {
     const isEdit = currentCategoryId !== null && currentCategoryId !== undefined;
     
     if (isEdit && !currentCategoryId) {
-      alert('Error: No se pudo obtener el ID de la categoría');
+      this.notificationService.error('Error: No se pudo obtener el ID de la categoria');
       this.saving.set(false);
       return;
     }
@@ -152,7 +154,7 @@ export class AdminCategoryFormComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error saving category:', error);
-        alert('Error al guardar la categoría: ' + (error.error?.message || error.message));
+        this.notificationService.error('Error al guardar la categoria: ' + (error.error?.message || error.message));
         this.saving.set(false);
       }
     });

@@ -6,6 +6,7 @@ import { AppSettingsService } from '../../core/services/app-settings.service';
 import { AppCurrencyPipe } from '../../core/pipes/currency.pipe';
 import { Product } from '../../core/models/models';
 import { getProductPrice, getProductStock, isVirtualStock } from '../../core/utils/product.utils';
+import { NotificationService } from '../../core/services/notification.service';
 
 @Component({
   selector: 'app-cart',
@@ -16,13 +17,15 @@ import { getProductPrice, getProductStock, isVirtualStock } from '../../core/uti
 })
 export class CartComponent {
   cartService = inject(CartService);
+  private notificationService = inject(NotificationService);
 
   updateQuantity(productId: string, quantity: number): void {
     this.cartService.updateQuantity(productId, quantity);
   }
 
-  removeItem(productId: string): void {
-    if (confirm('¿Estás seguro de eliminar este producto?')) {
+  async removeItem(productId: string): Promise<void> {
+    const confirmed = await this.notificationService.confirm('Estas seguro de eliminar este producto?');
+    if (confirmed) {
       this.cartService.removeFromCart(productId);
     }
   }

@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { SupplierService } from '../../../core/services/supplier.service';
 import { Supplier } from '../../../core/models/models';
+import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
   selector: 'app-admin-suppliers',
@@ -14,6 +15,7 @@ import { Supplier } from '../../../core/models/models';
 })
 export class AdminSuppliersComponent implements OnInit {
   private supplierService = inject(SupplierService);
+  private notificationService = inject(NotificationService);
   
   suppliers = signal<Supplier[]>([]);
   loading = signal(true);
@@ -48,13 +50,14 @@ export class AdminSuppliersComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Error toggling supplier status:', err);
-        alert('Error al cambiar el estado del proveedor');
+        this.notificationService.error('Error al cambiar el estado del proveedor');
       }
     });
   }
 
-  deleteSupplier(id: string): void {
-    if (!confirm('¿Estás seguro de eliminar este proveedor?')) return;
+  async deleteSupplier(id: string): Promise<void> {
+    const confirmed = await this.notificationService.confirm('Estas seguro de eliminar este proveedor?');
+    if (!confirmed) return;
 
     this.supplierService.deleteSupplier(id).subscribe({
       next: () => {
@@ -62,7 +65,7 @@ export class AdminSuppliersComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Error deleting supplier:', err);
-        alert('Error al eliminar el proveedor');
+        this.notificationService.error('Error al eliminar el proveedor');
       }
     });
   }

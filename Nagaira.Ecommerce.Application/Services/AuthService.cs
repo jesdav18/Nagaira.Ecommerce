@@ -74,7 +74,7 @@ public class AuthService : IAuthService
         if (user == null)
         {
             _logger.LogWarning("Login failed: user not found for {Email}", dto.Email);
-            throw new Exception("Invalid credentials");
+            throw new Exception("Credenciales inválidas");
         }
 
         if (user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTime.UtcNow)
@@ -94,7 +94,7 @@ public class AuthService : IAuthService
             await _unitOfWork.Users.UpdateAsync(user);
             await _unitOfWork.SaveChangesAsync();
             _logger.LogWarning("Login failed: invalid password for {Email}", dto.Email);
-            throw new Exception("Invalid credentials");
+            throw new Exception("Credenciales inválidas");
         }
 
         if (!user.IsActive)

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule, NgForm } from '@angular/forms';
 import { AdminService } from '../../../../core/services/admin.service';
+import { NotificationService } from '../../../../core/services/notification.service';
 
 @Component({
   selector: 'app-admin-payment-method-form',
@@ -17,6 +18,7 @@ export class AdminPaymentMethodFormComponent implements OnInit {
   private adminService = inject(AdminService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private notificationService = inject(NotificationService);
 
   paymentMethodId = signal<string | null>(null);
   paymentMethod = signal<any>(null);
@@ -133,19 +135,19 @@ export class AdminPaymentMethodFormComponent implements OnInit {
       event.preventDefault();
     }
     if (!this.formData.name?.trim()) {
-      alert('El nombre es requerido');
+      this.notificationService.warning('El nombre es requerido');
       return;
     }
 
     if (!this.formData.type) {
-      alert('El tipo de medio de pago es requerido');
+      this.notificationService.warning('El tipo de medio de pago es requerido');
       return;
     }
 
     if (this.requiresAccountNumber()) {
       const accountNumber = this.formData.accountNumber?.trim();
       if (!accountNumber) {
-        alert('El número de cuenta es requerido para cuentas bancarias');
+        this.notificationService.warning('El numero de cuenta es requerido para cuentas bancarias');
         return;
       }
     }
@@ -153,7 +155,7 @@ export class AdminPaymentMethodFormComponent implements OnInit {
     if (this.requiresWalletInfo()) {
       const walletNumber = this.formData.walletNumber?.trim();
       if (!walletNumber) {
-        alert('El número de billetera es requerido para billeteras electrónicas');
+        this.notificationService.warning('El numero de billetera es requerido para billeteras electronicas');
         return;
       }
     }
@@ -207,7 +209,7 @@ export class AdminPaymentMethodFormComponent implements OnInit {
       },
       error: (error: any) => {
         console.error('Error saving payment method:', error);
-        alert('Error al guardar el medio de pago: ' + (error.error?.message || error.message));
+        this.notificationService.error('Error al guardar el medio de pago: ' + (error.error?.message || error.message));
         this.saving.set(false);
       }
     });

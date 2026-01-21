@@ -9,6 +9,7 @@ import { AppSettingsService } from '../../../../core/services/app-settings.servi
 import { SupplierService } from '../../../../core/services/supplier.service';
 import { AppCurrencyPipe } from '../../../../core/pipes/currency.pipe';
 import { Product, ProductPrice, ProductImage, PriceLevel, Supplier, ProductSupplier, SupplierCostHistory } from '../../../../core/models/models';
+import { NotificationService } from '../../../../core/services/notification.service';
 
 @Component({
   selector: 'app-admin-product-form',
@@ -22,6 +23,7 @@ export class AdminProductFormComponent implements OnInit {
   private categoryService = inject(CategoryService);
   private appSettingsService = inject(AppSettingsService);
   private supplierService = inject(SupplierService);
+  private notificationService = inject(NotificationService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   
@@ -112,7 +114,7 @@ export class AdminProductFormComponent implements OnInit {
   saveCost(id: string): void {
     const newCost = this.editingCost();
     if (newCost <= 0) {
-      alert('El costo debe ser mayor a 0');
+      this.notificationService.warning('El costo debe ser mayor a 0');
       return;
     }
 
@@ -140,7 +142,7 @@ export class AdminProductFormComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Error updating cost:', err);
-        alert('Error al actualizar el costo: ' + (err.error?.message || err.message));
+        this.notificationService.error('Error al actualizar el costo: ' + (err.error?.message || err.message));
       }
     });
   }
@@ -159,7 +161,7 @@ export class AdminProductFormComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Error loading cost history:', err);
-        alert('Error al cargar el historial: ' + (err.error?.message || err.message));
+        this.notificationService.error('Error al cargar el historial: ' + (err.error?.message || err.message));
       }
     });
   }
@@ -324,13 +326,13 @@ export class AdminProductFormComponent implements OnInit {
 
   addPrice(): void {
     if (!this.newPrice.priceLevelId || this.newPrice.price <= 0 || this.newPrice.priceWithoutTax <= 0) {
-      alert('Por favor complete todos los campos del precio');
+      this.notificationService.warning('Por favor complete todos los campos del precio');
       return;
     }
 
     const priceExists = this.productPrices().some(p => p.priceLevelId === this.newPrice.priceLevelId);
     if (priceExists) {
-      alert('Ya existe un precio para este nivel');
+      this.notificationService.warning('Ya existe un precio para este nivel');
       return;
     }
 
@@ -355,25 +357,25 @@ export class AdminProductFormComponent implements OnInit {
 
   addProductSupplier(): void {
     if (!this.newProductSupplier.supplierId || this.newProductSupplier.supplierCost <= 0) {
-      alert('Por favor complete el proveedor y el costo');
+      this.notificationService.warning('Por favor complete el proveedor y el costo');
       return;
     }
 
     const productId = this.productId();
     if (!productId) {
-      alert('Debe guardar el producto primero');
+      this.notificationService.warning('Debe guardar el producto primero');
       return;
     }
 
     const supplierExists = this.productSuppliers().some(ps => ps.supplierId === this.newProductSupplier.supplierId);
     if (supplierExists) {
-      alert('Este proveedor ya está asignado al producto');
+      this.notificationService.warning('Este proveedor ya esta asignado al producto');
       return;
     }
 
     const priorityExists = this.productSuppliers().some(ps => ps.priority === this.newProductSupplier.priority);
     if (priorityExists) {
-      alert(`Ya existe un proveedor con prioridad ${this.newProductSupplier.priority}. Por favor use otra prioridad.`);
+      this.notificationService.warning(`Ya existe un proveedor con prioridad ${this.newProductSupplier.priority}. Por favor use otra prioridad.`);
       return;
     }
 
@@ -405,13 +407,14 @@ export class AdminProductFormComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Error adding product supplier:', err);
-        alert('Error al agregar el proveedor: ' + (err.error?.message || err.message));
+        this.notificationService.error('Error al agregar el proveedor: ' + (err.error?.message || err.message));
       }
     });
   }
 
-  removeProductSupplier(id: string): void {
-    if (!confirm('¿Estás seguro de eliminar este proveedor del producto?')) return;
+  async removeProductSupplier(id: string): Promise<void> {
+    const confirmed = await this.notificationService.confirm('Estas seguro de eliminar este proveedor del producto?');
+    if (!confirmed) return;
 
     this.supplierService.deleteProductSupplier(id).subscribe({
       next: () => {
@@ -421,8 +424,8 @@ export class AdminProductFormComponent implements OnInit {
         }
       },
       error: (err: any) => {
-        console.error('Error removing product supplier:', err);
-        alert('Error al eliminar el proveedor');
+        console.error('Error deleting product supplier:', err);
+        this.notificationService.error('Error al eliminar el proveedor');
       }
     });
   }
@@ -438,14 +441,14 @@ export class AdminProductFormComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Error setting primary supplier:', err);
-        alert('Error al establecer proveedor primario');
+        this.notificationService.error('Error al establecer proveedor primario');
       }
     });
   }
 
   addImage(): void {
     if (!this.newImage.imageUrl) {
-      alert('Por favor ingrese la URL de la imagen');
+      this.notificationService.warning('Por favor ingrese la URL de la imagen');
       return;
     }
 
@@ -484,12 +487,12 @@ export class AdminProductFormComponent implements OnInit {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Por favor seleccione un archivo de imagen');
+      this.notificationService.warning('Por favor seleccione un archivo de imagen');
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      alert('La imagen no puede ser mayor a 10MB');
+      this.notificationService.warning('La imagen no puede ser mayor a 10MB');
       return;
     }
 
@@ -500,15 +503,15 @@ export class AdminProductFormComponent implements OnInit {
         if (response.imageUrl) {
           this.newImage.imageUrl = response.imageUrl;
           this.uploadingImage.set(false);
-          alert('Imagen subida correctamente. Puede agregarla al producto.');
+          this.notificationService.success('Imagen subida correctamente. Puede agregarla al producto.');
         } else {
-          alert('Error al subir la imagen: No se recibió la URL');
+          this.notificationService.error('Error al subir la imagen: No se recibio la URL');
           this.uploadingImage.set(false);
         }
       },
       error: (error) => {
         console.error('Error al subir imagen:', error);
-        alert(error.error?.message || 'Error al subir la imagen');
+        this.notificationService.error(error.error?.message || 'Error al subir la imagen');
         this.uploadingImage.set(false);
       }
     });
@@ -516,7 +519,7 @@ export class AdminProductFormComponent implements OnInit {
 
   save(): void {
     if (!this.formData.name || !this.formData.sku || !this.formData.categoryId) {
-      alert('Por favor complete todos los campos requeridos');
+      this.notificationService.warning('Por favor complete todos los campos requeridos');
       return;
     }
 
@@ -526,7 +529,7 @@ export class AdminProductFormComponent implements OnInit {
     this.saving.set(true);
     
     if (isEdit && !currentProductId) {
-      alert('Error: No se pudo obtener el ID del producto');
+      this.notificationService.error('Error: No se pudo obtener el ID del producto');
       this.saving.set(false);
       return;
     }
@@ -596,7 +599,7 @@ export class AdminProductFormComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error saving product:', error);
-        alert('Error al guardar el producto: ' + (error.error?.message || error.message));
+        this.notificationService.error('Error al guardar el producto: ' + (error.error?.message || error.message));
         this.saving.set(false);
       }
     });
@@ -633,7 +636,7 @@ export class AdminProductFormComponent implements OnInit {
       })
       .catch(error => {
         console.error('Error saving prices/images:', error);
-        alert('Producto guardado pero hubo errores al guardar precios/imágenes: ' + (error.error?.message || error.message));
+        this.notificationService.error('Producto guardado pero hubo errores al guardar precios/imagenes: ' + (error.error?.message || error.message));
         this.saving.set(false);
         this.router.navigate(['/admin/products']);
       });

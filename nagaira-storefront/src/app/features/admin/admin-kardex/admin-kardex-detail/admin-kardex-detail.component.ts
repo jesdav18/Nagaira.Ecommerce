@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../../../core/services/admin.service';
+import { NotificationService } from '../../../../core/services/notification.service';
 
 @Component({
   selector: 'app-admin-kardex-detail',
@@ -15,6 +16,7 @@ export class AdminKardexDetailComponent implements OnInit {
   private adminService = inject(AdminService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private notificationService = inject(NotificationService);
   
   productId = signal<string | null>(null);
   product = signal<any>(null);
@@ -165,7 +167,7 @@ export class AdminKardexDetailComponent implements OnInit {
       },
       error: (error: any) => {
         console.error('Error creating movement:', error);
-        alert('Error al crear el movimiento: ' + (error.error?.message || error.message));
+        this.notificationService.error('Error al crear el movimiento: ' + (error.error?.message || error.message));
         this.saving.set(false);
       }
     });

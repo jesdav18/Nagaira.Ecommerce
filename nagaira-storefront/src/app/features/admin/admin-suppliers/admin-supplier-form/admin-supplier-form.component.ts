@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { SupplierService } from '../../../../core/services/supplier.service';
 import { Supplier } from '../../../../core/models/models';
+import { NotificationService } from '../../../../core/services/notification.service';
 
 @Component({
   selector: 'app-admin-supplier-form',
@@ -16,6 +17,7 @@ export class AdminSupplierFormComponent implements OnInit {
   private supplierService = inject(SupplierService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private notificationService = inject(NotificationService);
 
   supplierId = signal<string | null>(null);
   loading = signal(true);
@@ -77,7 +79,7 @@ export class AdminSupplierFormComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Error loading supplier:', err);
-        alert('Error al cargar el proveedor');
+        this.notificationService.error('Error al cargar el proveedor');
         this.router.navigate(['/admin/suppliers']);
       }
     });
@@ -85,7 +87,7 @@ export class AdminSupplierFormComponent implements OnInit {
 
   save(): void {
     if (!this.formData.name.trim()) {
-      alert('El nombre es requerido');
+      this.notificationService.warning('El nombre es requerido');
       return;
     }
 
@@ -101,7 +103,7 @@ export class AdminSupplierFormComponent implements OnInit {
         },
         error: (err: any) => {
           console.error('Error saving supplier:', err);
-          alert('Error al guardar el proveedor: ' + (err.error?.message || err.message));
+          this.notificationService.error('Error al guardar el proveedor: ' + (err.error?.message || err.message));
           this.saving.set(false);
         }
       });
@@ -113,7 +115,7 @@ export class AdminSupplierFormComponent implements OnInit {
         },
         error: (err: any) => {
           console.error('Error saving supplier:', err);
-          alert('Error al guardar el proveedor: ' + (err.error?.message || err.message));
+          this.notificationService.error('Error al guardar el proveedor: ' + (err.error?.message || err.message));
           this.saving.set(false);
         }
       });

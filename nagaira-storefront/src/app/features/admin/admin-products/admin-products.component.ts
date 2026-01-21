@@ -6,6 +6,7 @@ import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { AdminService } from '../../../core/services/admin.service';
 import { AppCurrencyPipe } from '../../../core/pipes/currency.pipe';
 import { PriceLevel, Product, ProductPrice } from '../../../core/models/models';
+import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
   selector: 'app-admin-products',
@@ -16,6 +17,7 @@ import { PriceLevel, Product, ProductPrice } from '../../../core/models/models';
 })
 export class AdminProductsComponent implements OnInit, OnDestroy {
   private adminService = inject(AdminService);
+  private notificationService = inject(NotificationService);
   private searchInput$ = new Subject<string>();
   private destroy$ = new Subject<void>();
   
@@ -183,18 +185,19 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
     }
   }
 
-  deleteProduct(id: string): void {
-    if (confirm('¿Estás seguro de eliminar este producto?')) {
-      this.adminService.deleteProduct(id).subscribe({
-        next: () => {
-          this.loadProducts();
-        },
-        error: (error) => {
-          console.error('Error deleting product:', error);
-          alert('Error al eliminar el producto');
-        }
-      });
-    }
+  async deleteProduct(id: string): Promise<void> {
+    const confirmed = await this.notificationService.confirm('Estas seguro de eliminar este producto?');
+    if (!confirmed) return;
+
+    this.adminService.deleteProduct(id).subscribe({
+      next: () => {
+        this.loadProducts();
+      },
+      error: (error) => {
+        console.error('Error deleting product:', error);
+        this.notificationService.error('Error al eliminar el producto');
+      }
+    });
   }
 
   toggleProductStatus(product: any): void {
@@ -208,7 +211,7 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
       },
       error: (error: any) => {
         console.error('Error updating product:', error);
-        alert('Error al actualizar el producto');
+        this.notificationService.error('Error al actualizar el producto');
       }
     });
   }
@@ -254,7 +257,7 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
     if (!product) return;
 
     if (this.movementForm.quantity <= 0) {
-      alert('La cantidad debe ser mayor a 0');
+      this.notificationService.warning('La cantidad debe ser mayor a 0');
       return;
     }
 
@@ -273,11 +276,11 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
         this.saving.set(false);
         this.closeMovementModal();
         this.loadProducts();
-        alert('Stock agregado correctamente');
+        this.notificationService.success('Stock agregado correctamente');
       },
       error: (error: any) => {
         console.error('Error creating movement:', error);
-        alert('Error al agregar stock: ' + (error.error?.message || error.message));
+        this.notificationService.error('Error al agregar stock: ' + (error.error?.message || error.message));
         this.saving.set(false);
       }
     });
