@@ -10,6 +10,7 @@ import { AppSettingsService } from '../../core/services/app-settings.service';
 import { AppCurrencyPipe } from '../../core/pipes/currency.pipe';
 import { Product } from '../../core/models/models';
 import { getProductPrice } from '../../core/utils/product.utils';
+import { AnalyticsService } from '../../core/services/analytics.service';
 
 @Component({
   selector: 'app-checkout',
@@ -24,6 +25,7 @@ export class CheckoutComponent implements OnInit {
   orderService = inject(OrderService);
   paymentMethodService = inject(PaymentMethodService);
   appSettings = inject(AppSettingsService);
+  analyticsService = inject(AnalyticsService);
   router = inject(Router);
   fb = inject(FormBuilder);
 
@@ -82,6 +84,9 @@ export class CheckoutComponent implements OnInit {
 
     this.updateSettings();
     this.loadPaymentMethods();
+    if (this.cartService.itemCount() > 0) {
+      this.analyticsService.beginCheckout(this.cartService.total(), this.cartService.itemCount());
+    }
   }
 
   private prefillFromProfile(): void {
@@ -150,6 +155,16 @@ export class CheckoutComponent implements OnInit {
         this.createdOrderId.set(order.id);
         this.success.set(true);
         this.loading.set(false);
+        const method = this.selectedPaymentMethod();
+        this.analyticsService.purchase(
+          order.id,
+          order.total,
+          this.appSettings.getCurrencySymbol(),
+          {
+            itemsCount: order.items?.length || 0,
+            paymentMethod: method ? (method.name || this.getPaymentTypeLabel(method)) : undefined
+          }
+        );
       },
       error: (err) => {
         console.error('Checkout error', err);

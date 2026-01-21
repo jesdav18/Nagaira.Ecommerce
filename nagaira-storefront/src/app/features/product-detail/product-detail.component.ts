@@ -8,6 +8,7 @@ import { Product } from '../../core/models/models';
 import { getProductPrice, getProductStock, isVirtualStock } from '../../core/utils/product.utils';
 import { SeoService } from '../../core/services/seo.service';
 import { SeoResolveService } from '../../core/services/seo-resolve.service';
+import { AnalyticsService } from '../../core/services/analytics.service';
 
 @Component({
   selector: 'app-product-detail',
@@ -23,6 +24,7 @@ export class ProductDetailComponent implements OnInit {
   private cartService = inject(CartService);
   private seoService = inject(SeoService);
   private seoResolveService = inject(SeoResolveService);
+  private analyticsService = inject(AnalyticsService);
 
   product = signal<Product | null>(null);
   loading = signal(true);
@@ -50,6 +52,7 @@ export class ProductDetailComponent implements OnInit {
         this.setMeta(product);
         const primaryIndex = product.images.findIndex(img => img.isPrimary);
         if (primaryIndex !== -1) this.selectedImageIndex.set(primaryIndex);
+        this.analyticsService.viewProduct({ id: product.id, name: product.name, price: getProductPrice(product) });
         this.loading.set(false);
       },
       error: (error) => {
@@ -66,6 +69,7 @@ export class ProductDetailComponent implements OnInit {
         this.setMeta(product);
         const primaryIndex = product.images.findIndex(img => img.isPrimary);
         if (primaryIndex !== -1) this.selectedImageIndex.set(primaryIndex);
+        this.analyticsService.viewProduct({ id: product.id, name: product.name, price: getProductPrice(product) });
         this.loading.set(false);
         if (product.slug) {
           this.router.navigate(['/p', product.slug], { replaceUrl: true });

@@ -2,12 +2,14 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { CartItem, Product } from '../models/models';
 import { getProductPrice } from '../utils/product.utils';
 import { AppSettingsService } from './app-settings.service';
+import { AnalyticsService } from './analytics.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CartService {
   private appSettings = inject(AppSettingsService);
+  private analyticsService = inject(AnalyticsService);
   private items = signal<CartItem[]>([]);
 
   cartItems = this.items.asReadonly();
@@ -41,6 +43,7 @@ export class CartService {
   addToCart(product: Product, quantity: number = 1): void {
     const currentItems = this.items();
     const existingItem = currentItems.find(item => item.product.id === product.id);
+    const price = getProductPrice(product);
 
     if (existingItem) {
       const updatedItems = currentItems.map(item =>
@@ -54,6 +57,7 @@ export class CartService {
     }
 
     this.saveCartToStorage();
+    this.analyticsService.addToCart({ id: product.id, name: product.name, price }, quantity);
   }
 
   removeFromCart(productId: string): void {

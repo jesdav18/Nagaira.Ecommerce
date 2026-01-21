@@ -39,13 +39,14 @@ public class ApplicationDbContext : DbContext
     public DbSet<Banner> Banners { get; set; }
     public DbSet<SlugHistory> SlugHistories { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
+    public DbSet<AnalyticsEvent> AnalyticsEvents { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
         
         // Entities that don't have UpdatedAt column
-        var entitiesWithoutUpdatedAt = new[] { "Offer", "AuditLog", "InventoryMovement", "OfferProduct", "OfferCategory", "User", "Product", "Category", "PaymentMethod", "PaymentMethodType", "RefreshToken" };
+        var entitiesWithoutUpdatedAt = new[] { "Offer", "AuditLog", "InventoryMovement", "OfferProduct", "OfferCategory", "User", "Product", "Category", "PaymentMethod", "PaymentMethodType", "RefreshToken", "AnalyticsEvent" };
 
         modelBuilder.Entity<User>(entity =>
         {
@@ -60,6 +61,32 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.LastName).IsRequired().HasMaxLength(100);
             entity.HasOne(e => e.PriceLevel).WithMany(e => e.Users)
                 .HasForeignKey(e => e.PriceLevelId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<AnalyticsEvent>(entity =>
+        {
+            entity.ToTable("analytics_events");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.EventName).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.AnonUserId).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.SessionId).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Path).HasMaxLength(500);
+            entity.Property(e => e.Referrer).HasMaxLength(500);
+            entity.Property(e => e.UtmSource).HasMaxLength(100);
+            entity.Property(e => e.UtmMedium).HasMaxLength(100);
+            entity.Property(e => e.UtmCampaign).HasMaxLength(100);
+            entity.Property(e => e.UtmTerm).HasMaxLength(100);
+            entity.Property(e => e.UtmContent).HasMaxLength(100);
+            entity.Property(e => e.OrderId).HasMaxLength(100);
+            entity.Property(e => e.Currency).HasMaxLength(10);
+            entity.Property(e => e.Value).HasPrecision(18, 2);
+            entity.Property(e => e.Meta).HasColumnType("jsonb");
+            entity.Property(e => e.VisitorHash).HasMaxLength(64);
+            entity.Ignore(e => e.UpdatedAt);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => e.EventName);
+            entity.HasIndex(e => e.SessionId);
+            entity.HasIndex(e => e.OrderId);
         });
 
         modelBuilder.Entity<RefreshToken>(entity =>

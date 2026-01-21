@@ -124,6 +124,6 @@ public class SitemapController : ControllerBase
             return configBase.TrimEnd('/');
         }
 
-        return $"{Request.Scheme}://{Request.Host}/ecommerce";
+        return $"{Request.Scheme}://{Request.Host}";
     }
 }

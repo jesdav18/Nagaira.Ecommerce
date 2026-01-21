@@ -16,10 +16,11 @@ export class AuthService {
   currentUser = signal<User | null>(null);
   isAuthenticated = signal<boolean>(false);
   private accessToken = signal<string | null>(null);
+  private sessionInit: Promise<void>;
 
   constructor() {
     this.clearLegacyStorage();
-    this.bootstrapSession();
+    this.sessionInit = this.bootstrapSession();
   }
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
@@ -74,12 +75,19 @@ export class AuthService {
     localStorage.removeItem('user');
   }
 
-  private bootstrapSession(): void {
-    this.refreshToken().subscribe({
-      next: () => {},
-      error: () => {
-        this.clearSession();
-      }
+  private bootstrapSession(): Promise<void> {
+    return new Promise(resolve => {
+      this.refreshToken().subscribe({
+        next: () => resolve(),
+        error: () => {
+          this.clearSession();
+          resolve();
+        }
+      });
     });
+  }
+
+  waitForSessionReady(): Promise<void> {
+    return this.sessionInit;
   }
 }

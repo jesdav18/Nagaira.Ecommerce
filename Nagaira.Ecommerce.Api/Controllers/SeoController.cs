@@ -157,7 +157,7 @@ public class SeoController : ControllerBase
             return configBase.TrimEnd('/');
         }
 
-        return $"{Request.Scheme}://{Request.Host}/ecommerce";
+        return $"{Request.Scheme}://{Request.Host}";
     }
 }
 

@@ -4,6 +4,7 @@ import { HeaderComponent } from './shared/components/header/header.component';
 import { FooterComponent } from './shared/components/footer/footer.component';
 import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs/operators';
+import { AnalyticsService } from './core/services/analytics.service';
 
 @Component({
   selector: 'app-root',
@@ -15,6 +16,7 @@ import { filter } from 'rxjs/operators';
 export class AppComponent {
   title = 'Nagaira';
   private router = inject(Router);
+  private analyticsService = inject(AnalyticsService);
   showHeader = true;
   showFooter = true;
 
@@ -22,9 +24,13 @@ export class AppComponent {
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe((event: any) => {
-        const isAdmin = event.url.startsWith('/admin');
+        const path = event.urlAfterRedirects || event.url;
+        const isAdmin = path.startsWith('/admin');
         this.showHeader = !isAdmin;
         this.showFooter = !isAdmin;
+        if (!isAdmin) {
+          this.analyticsService.pageView(path);
+        }
       });
   }
 }
