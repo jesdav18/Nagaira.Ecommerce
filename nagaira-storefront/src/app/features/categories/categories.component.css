@@ -277,20 +277,20 @@
   }
 
   .categories-grid {
-    grid-template-columns: 1fr;
-    gap: 1.25rem;
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+    gap: 0.75rem;
   }
 
   .card-content {
-    padding: 1.5rem;
+    padding: 1rem;
   }
 
   .card-title {
-    font-size: 1.375rem;
+    font-size: 1.1rem;
   }
 
   .card-count {
-    font-size: 0.875rem;
+    font-size: 0.8rem;
   }
 }
 
@@ -308,10 +308,14 @@
   }
 
   .card-image-wrapper {
-    min-height: 240px;
+    min-height: 200px;
   }
 
   .skeleton-card {
-    min-height: 240px;
+    min-height: 200px;
+  }
+
+  .category-card {
+    min-height: 200px;
   }
 }

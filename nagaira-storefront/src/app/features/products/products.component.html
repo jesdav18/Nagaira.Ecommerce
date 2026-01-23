@@ -21,6 +21,18 @@
       <aside class="filters-sidebar">
         <div class="filter-section">
           <h3 class="filter-title">Categorías</h3>
+          <div class="category-select">
+            <label class="category-select-label" for="mobile-category-select">Categorias</label>
+            <select
+              id="mobile-category-select"
+              [value]="currentCategoryId() ?? ''"
+              (change)="onCategorySelect($event)">
+              <option value="">Todas</option>
+              @for (option of getCategoryOptions(); track option.id) {
+                <option [value]="option.id">{{ option.name }}</option>
+              }
+            </select>
+          </div>
           <ul class="category-list">
             <li>
               <a 

@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { ProductService } from '../../core/services/product.service';
 import { Product, Category } from '../../core/models/models';
 import { ProductCardComponent } from '../../shared/components/product-card/product-card.component';
@@ -18,12 +18,14 @@ export class ProductsComponent {
   private productService = inject(ProductService);
   private categoryService = inject(CategoryService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
 
   products = signal<Product[]>([]);
   categories = signal<Category[]>([]);
   loading = signal(true);
   currentTitle = signal('Catálogo');
   expandedCategories = signal<Set<string>>(new Set());
+  currentCategoryId = signal<string | null>(null);
   
   constructor() {
     this.route.queryParams.subscribe(params => {
@@ -73,6 +75,7 @@ export class ProductsComponent {
   private handleFilters(params: any): void {
     const search = params['search'];
     const categoryId = params['category'];
+    this.currentCategoryId.set(categoryId ?? null);
 
     this.loading.set(true);
 
@@ -153,5 +156,30 @@ export class ProductsComponent {
     return !!(category.subCategories && category.subCategories.length > 0);
   }
 
+
+  onCategorySelect(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    const value = target.value;
+    if (!value) {
+      this.router.navigate(['/products'], { queryParams: {} });
+      return;
+    }
+    this.router.navigate(['/products'], { queryParams: { category: value, search: null } });
+  }
+
+  getCategoryOptions(): Array<{ id: string; name: string }> {
+    const options: Array<{ id: string; name: string }> = [];
+    const walk = (cats: Category[], level: number) => {
+      cats.forEach(cat => {
+        const prefix = level > 0 ? `${'-- '.repeat(level)}` : '';
+        options.push({ id: cat.id, name: `${prefix}${cat.name}` });
+        if (cat.subCategories && cat.subCategories.length > 0) {
+          walk(cat.subCategories, level + 1);
+        }
+      });
+    };
+    walk(this.categories(), 0);
+    return options;
+  }
 
 }
