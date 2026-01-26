@@ -20,6 +20,7 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
   private notificationService = inject(NotificationService);
   private searchInput$ = new Subject<string>();
   private destroy$ = new Subject<void>();
+  private readonly filterStorageKey = 'admin_products_filters';
   
   products = signal<Product[]>([]);
   priceLevels = signal<PriceLevel[]>([]);
@@ -70,6 +71,7 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
+    this.restoreFilters();
     this.loadMovementTypes();
     this.loadCategories();
     this.loadPriceLevels();
@@ -80,6 +82,7 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
       .subscribe((value) => {
         this.searchTerm.set(value.trim());
         this.pageNumber.set(1);
+        this.persistFilters();
         this.loadProducts();
       });
   }
@@ -128,6 +131,7 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
   onSearch(): void {
     this.searchTerm.set(this.searchTerm().trim());
     this.pageNumber.set(1);
+    this.persistFilters();
     this.loadProducts();
   }
 
@@ -137,7 +141,13 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
 
   onFilterChange(): void {
     this.pageNumber.set(1);
+    this.persistFilters();
     this.loadProducts();
+  }
+
+  onTogglePriceLevels(value: boolean): void {
+    this.showPriceLevels.set(value);
+    this.persistFilters();
   }
 
   loadCategories(): void {
@@ -183,6 +193,7 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
   goToPage(page: number): void {
     if (page >= 1 && page <= this.totalPages()) {
       this.pageNumber.set(page);
+      this.persistFilters();
       this.loadProducts();
     }
   }
@@ -292,6 +303,44 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
     this.searchInput$.complete();
+  }
+
+  private persistFilters(): void {
+    const payload = {
+      searchTerm: this.searchTerm(),
+      isActiveFilter: this.isActiveFilter(),
+      isFeaturedFilter: this.isFeaturedFilter(),
+      categoryFilter: this.categoryFilter(),
+      priceLevelFilter: this.priceLevelFilter(),
+      showPriceLevels: this.showPriceLevels(),
+      pageNumber: this.pageNumber()
+    };
+    sessionStorage.setItem(this.filterStorageKey, JSON.stringify(payload));
+  }
+
+  private restoreFilters(): void {
+    const raw = sessionStorage.getItem(this.filterStorageKey);
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw) as {
+        searchTerm?: string;
+        isActiveFilter?: boolean | null;
+        isFeaturedFilter?: boolean | null;
+        categoryFilter?: string | null;
+        priceLevelFilter?: string | null;
+        showPriceLevels?: boolean;
+        pageNumber?: number;
+      };
+      this.searchTerm.set(typeof data.searchTerm === 'string' ? data.searchTerm : '');
+      this.isActiveFilter.set(typeof data.isActiveFilter === 'boolean' ? data.isActiveFilter : null);
+      this.isFeaturedFilter.set(typeof data.isFeaturedFilter === 'boolean' ? data.isFeaturedFilter : null);
+      this.categoryFilter.set(typeof data.categoryFilter === 'string' ? data.categoryFilter : null);
+      this.priceLevelFilter.set(typeof data.priceLevelFilter === 'string' ? data.priceLevelFilter : null);
+      this.showPriceLevels.set(typeof data.showPriceLevels === 'boolean' ? data.showPriceLevels : false);
+      this.pageNumber.set(typeof data.pageNumber === 'number' && data.pageNumber > 0 ? data.pageNumber : 1);
+    } catch {
+      sessionStorage.removeItem(this.filterStorageKey);
+    }
   }
 }
 

@@ -116,6 +116,52 @@ public class CategoryService : ICategoryService
         return category != null ? MapToDto(category) : null;
     }
 
+    public async Task<int> SetFeaturedProductsForCategoryAsync(Guid categoryId, bool isFeatured)
+    {
+        var categories = await _unitOfWork.Repository<Category>().FindAsync(c => !c.IsDeleted);
+        var categoryList = categories.ToList();
+        if (!categoryList.Any(c => c.Id == categoryId))
+        {
+            throw new KeyNotFoundException($"Category with id {categoryId} not found");
+        }
+
+        var categoryIds = new HashSet<Guid> { categoryId };
+
+        void CollectChildren(Guid parentId)
+        {
+            var children = categoryList.Where(c => c.ParentCategoryId == parentId).ToList();
+            foreach (var child in children)
+            {
+                if (categoryIds.Add(child.Id))
+                {
+                    CollectChildren(child.Id);
+                }
+            }
+        }
+
+        CollectChildren(categoryId);
+
+        var products = await _unitOfWork.Repository<Product>()
+            .FindAsync(p => !p.IsDeleted && categoryIds.Contains(p.CategoryId));
+
+        var updated = 0;
+        foreach (var product in products)
+        {
+            if (product.IsFeatured != isFeatured)
+            {
+                product.IsFeatured = isFeatured;
+                updated++;
+            }
+        }
+
+        if (updated > 0)
+        {
+            await _unitOfWork.SaveChangesAsync();
+        }
+
+        return updated;
+    }
+
     private static CategoryDto MapToDto(Category category)
     {
         return new CategoryDto(

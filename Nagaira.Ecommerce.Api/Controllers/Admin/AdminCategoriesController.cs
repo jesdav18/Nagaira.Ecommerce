@@ -188,5 +188,36 @@ public class AdminCategoriesController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    [HttpPatch("{id:guid}/featured-products")]
+    public async Task<IActionResult> SetFeaturedProducts(Guid id, [FromBody] SetCategoryFeaturedProductsDto dto)
+    {
+        try
+        {
+            var updated = await _categoryService.SetFeaturedProductsForCategoryAsync(id, dto.IsFeatured);
+
+            await AuditHelper.LogAdminActionAsync(
+                _auditService,
+                HttpContext,
+                dto.IsFeatured ? "FEATURE_CATEGORY_PRODUCTS" : "UNFEATURE_CATEGORY_PRODUCTS",
+                "Category",
+                id,
+                null,
+                JsonSerializer.Serialize(dto)
+            );
+
+            return Ok(new { updatedCount = updated });
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }
+
+public record SetCategoryFeaturedProductsDto(bool IsFeatured);
 

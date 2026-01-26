@@ -95,6 +95,10 @@ export class AdminService {
     return this.http.patch(`${this.apiUrl}/categories/${id}/deactivate`, {});
   }
 
+  setCategoryFeaturedProducts(id: string, isFeatured: boolean) {
+    return this.http.patch(`${this.apiUrl}/categories/${id}/featured-products`, { isFeatured });
+  }
+
   getAllPriceLevels() {
     return this.http.get(`${this.apiUrl}/price-levels`);
   }

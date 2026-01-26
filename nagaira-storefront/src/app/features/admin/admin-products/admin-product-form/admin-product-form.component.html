@@ -9,7 +9,7 @@
   @if (loading()) {
   <div class="loading">Cargando...</div>
   } @else {
-  <form (ngSubmit)="save()" class="product-form">
+  <form (ngSubmit)="save()" class="product-form" [class.editing]="productId()">
     <div class="form-section">
       <h2>Información Básica</h2>
 
@@ -682,7 +682,7 @@
       }
     </div>
 
-    <div class="form-actions">
+    <div class="form-actions" [class.sticky-actions]="productId()">
       <button
         type="button"
         class="btn btn-secondary"

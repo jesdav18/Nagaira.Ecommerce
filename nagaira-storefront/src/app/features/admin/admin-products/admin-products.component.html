@@ -58,7 +58,7 @@
 
     <div class="filter-group toggle-group">
       <label>
-        <input type="checkbox" [ngModel]="showPriceLevels()" (ngModelChange)="showPriceLevels.set($event)">
+        <input type="checkbox" [ngModel]="showPriceLevels()" (ngModelChange)="onTogglePriceLevels($event)">
         Mostrar niveles de precio
       </label>
     </div>

@@ -14,4 +14,5 @@ public interface ICategoryService
     Task<CategoryDto> CreateCategoryAsync(CreateCategoryDto dto);
     Task<CategoryDto> UpdateCategoryAsync(Guid id, UpdateCategoryDto dto);
     Task DeleteCategoryAsync(Guid id);
+    Task<int> SetFeaturedProductsForCategoryAsync(Guid categoryId, bool isFeatured);
 }

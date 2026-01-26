@@ -94,6 +94,28 @@ export class AdminCategoriesComponent implements OnInit {
     });
   }
 
+  async setCategoryFeaturedProducts(category: any, isFeatured: boolean): Promise<void> {
+    const actionLabel = isFeatured ? 'destacar' : 'quitar de destacados';
+    const confirmed = await this.notificationService.confirm(
+      `Estas seguro de ${actionLabel} todos los productos de "${category.name}"?`
+    );
+    if (!confirmed) return;
+
+    this.adminService.setCategoryFeaturedProducts(category.id, isFeatured).subscribe({
+      next: (response: any) => {
+        const count = response?.updatedCount ?? 0;
+        const message = isFeatured
+          ? `Productos destacados actualizados (${count})`
+          : `Productos destacados removidos (${count})`;
+        this.notificationService.success(message);
+      },
+      error: (error) => {
+        console.error('Error updating featured products for category:', error);
+        this.notificationService.error('Error al actualizar destacados de la categoria');
+      }
+    });
+  }
+
   getParentCategoryName(categoryId: string | null): string {
     if (!categoryId) return '-';
     const parent = this.categories().find(c => c.id === categoryId);
