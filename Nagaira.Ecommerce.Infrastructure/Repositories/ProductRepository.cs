@@ -77,6 +77,18 @@ public class ProductRepository : Repository<Product>, IProductRepository
             .ToListAsync();
     }
 
+    public async Task<IEnumerable<Product>> GetFeaturedProductsAsync()
+    {
+        return await _dbSet
+            .Include(p => p.Category)
+            .Include(p => p.Images)
+            .Include(p => p.Prices)
+                .ThenInclude(pp => pp.PriceLevel)
+            .Include(p => p.InventoryBalance)
+            .Where(p => p.IsFeatured && p.IsActive && !p.IsDeleted)
+            .ToListAsync();
+    }
+
     public async Task<Product?> GetBySkuAsync(string sku)
     {
         return await _dbSet

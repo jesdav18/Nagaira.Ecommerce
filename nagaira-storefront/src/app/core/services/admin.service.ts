@@ -18,11 +18,12 @@ export class AdminService {
     return this.http.get(`${this.apiUrl}/dashboard/stats/enhanced`);
   }
 
-  getProductsPaged(pageNumber: number = 1, pageSize: number = 20, searchTerm?: string, isActive?: boolean, categoryId?: string) {
+  getProductsPaged(pageNumber: number = 1, pageSize: number = 20, searchTerm?: string, isActive?: boolean, categoryId?: string, isFeatured?: boolean) {
     let params: any = { pageNumber, pageSize };
     if (searchTerm) params.searchTerm = searchTerm;
     if (isActive !== undefined) params.isActive = isActive;
     if (categoryId) params.categoryId = categoryId;
+    if (isFeatured !== undefined) params.isFeatured = isFeatured;
     return this.http.get(`${this.apiUrl}/dashboard/products`, { params });
   }
 

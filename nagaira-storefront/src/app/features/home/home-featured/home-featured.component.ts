@@ -23,14 +23,37 @@ export class HomeFeaturedComponent implements OnInit {
   }
 
   private loadFeaturedProducts(): void {
-    this.productService.getAll().subscribe({
+    this.loading.set(true);
+    this.productService.getFeatured().subscribe({
       next: (products) => {
-        this.featuredProducts.set(products.slice(0, 8));
-        this.loading.set(false);
+        if (products && products.length > 0) {
+          this.featuredProducts.set(products.slice(0, 8));
+          this.loading.set(false);
+          return;
+        }
+        this.productService.getAll().subscribe({
+          next: (allProducts) => {
+            this.featuredProducts.set(allProducts.slice(0, 8));
+            this.loading.set(false);
+          },
+          error: (error) => {
+            console.error('Error loading products:', error);
+            this.loading.set(false);
+          }
+        });
       },
       error: (error) => {
-        console.error('Error loading products:', error);
-        this.loading.set(false);
+        console.error('Error loading featured products:', error);
+        this.productService.getAll().subscribe({
+          next: (allProducts) => {
+            this.featuredProducts.set(allProducts.slice(0, 8));
+            this.loading.set(false);
+          },
+          error: (fallbackError) => {
+            console.error('Error loading products:', fallbackError);
+            this.loading.set(false);
+          }
+        });
       }
     });
   }

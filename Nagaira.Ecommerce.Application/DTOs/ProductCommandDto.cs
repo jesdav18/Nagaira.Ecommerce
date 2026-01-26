@@ -21,7 +21,9 @@ public record CreateProductDto(
     decimal? Cost,
     
     bool HasVirtualStock,
-    
+
+    bool IsFeatured,
+
     List<CreateProductPriceDto>? Prices,
     
     List<CreateProductImageDto>? Images
@@ -43,7 +45,9 @@ public record UpdateProductDto(
     
     bool IsActive,
     
-    bool HasVirtualStock
+    bool HasVirtualStock,
+
+    bool IsFeatured
 );
 
 public record UpsertProductAssetsDto(

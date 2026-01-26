@@ -30,6 +30,7 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
   totalPages = signal(0);
   searchTerm = signal('');
   isActiveFilter = signal<boolean | null>(null);
+  isFeaturedFilter = signal<boolean | null>(null);
   categories = signal<any[]>([]);
   categoryFilter = signal<string | null>(null);
   showPriceLevels = signal(false);
@@ -108,7 +109,8 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
       this.pageSize(),
       this.searchTerm() || undefined,
       this.isActiveFilter() ?? undefined,
-      this.categoryFilter() ?? undefined
+      this.categoryFilter() ?? undefined,
+      this.isFeaturedFilter() ?? undefined
     ).subscribe({
       next: (response: any) => {
         this.products.set(response.items || []);

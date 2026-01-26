@@ -27,6 +27,10 @@ export class ProductService {
     return this.http.get<Product[]>(`${this.apiUrl}/category/${categoryId}`);
   }
 
+  getFeatured(): Observable<Product[]> {
+    return this.http.get<Product[]>(`${this.apiUrl}/featured`);
+  }
+
   search(term: string): Observable<Product[]> {
     return this.http.get<Product[]>(`${this.apiUrl}/search`, {
       params: { term }

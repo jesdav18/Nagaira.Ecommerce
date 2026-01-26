@@ -13,6 +13,7 @@ public record ProductDto(
     int ReservedQuantity,
     decimal? Cost,
     bool HasVirtualStock,
+    bool IsFeatured,
     List<ProductImageDto> Images,
     List<ProductPriceDto> Prices
 );

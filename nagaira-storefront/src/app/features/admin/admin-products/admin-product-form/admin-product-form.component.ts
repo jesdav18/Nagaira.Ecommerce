@@ -52,7 +52,8 @@ export class AdminProductFormComponent implements OnInit {
     categoryId: '',
     cost: null as number | null,
     isActive: true,
-    hasVirtualStock: false
+    hasVirtualStock: false,
+    isFeatured: false
   };
 
   newPrice = {
@@ -239,7 +240,8 @@ export class AdminProductFormComponent implements OnInit {
           categoryId: product.categoryId,
           cost: product.cost,
           isActive: product.isActive,
-          hasVirtualStock: product.hasVirtualStock || false
+          hasVirtualStock: product.hasVirtualStock || false,
+          isFeatured: product.isFeatured || false
         };
         const prices = product.prices || [];
         this.productPrices.set(prices);
@@ -561,7 +563,8 @@ export class AdminProductFormComponent implements OnInit {
         description: this.formData.description,
         cost: this.formData.cost,
         isActive: this.formData.isActive,
-        hasVirtualStock: this.formData.hasVirtualStock
+        hasVirtualStock: this.formData.hasVirtualStock,
+        isFeatured: this.formData.isFeatured
       };
     } else {
       productData = {
@@ -571,6 +574,7 @@ export class AdminProductFormComponent implements OnInit {
         categoryId: this.formData.categoryId,
         cost: this.formData.cost,
         hasVirtualStock: this.formData.hasVirtualStock,
+        isFeatured: this.formData.isFeatured,
         prices: newPrices,
         images: newImages
       };

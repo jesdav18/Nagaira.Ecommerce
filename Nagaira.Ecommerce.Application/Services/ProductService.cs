@@ -23,6 +23,12 @@ public class ProductService : IProductService
         return products.Select(MapToDto);
     }
 
+    public async Task<IEnumerable<ProductDto>> GetFeaturedProductsAsync()
+    {
+        var products = await _unitOfWork.Products.GetFeaturedProductsAsync();
+        return products.Select(MapToDto);
+    }
+
     public async Task<ProductDto?> GetProductByIdAsync(Guid id)
     {
         var product = await _unitOfWork.Products.GetByIdAsync(id);
@@ -76,6 +82,7 @@ public class ProductService : IProductService
             CategoryId = dto.CategoryId,
             Cost = dto.Cost,
             HasVirtualStock = dto.HasVirtualStock,
+            IsFeatured = dto.IsFeatured,
             IsActive = true,
             IsDeleted = false,
             CreatedAt = DateTime.UtcNow
@@ -161,6 +168,7 @@ public class ProductService : IProductService
         product.Cost = dto.Cost;
         product.IsActive = dto.IsActive;
         product.HasVirtualStock = dto.HasVirtualStock;
+        product.IsFeatured = dto.IsFeatured;
         product.UpdatedAt = DateTime.UtcNow;
 
         await _unitOfWork.Products.UpdateAsync(product);
@@ -200,6 +208,7 @@ public class ProductService : IProductService
             product.InventoryBalance?.ReservedQuantity ?? 0,
             product.Cost,
             product.HasVirtualStock,
+            product.IsFeatured,
             product.Images.Select(i => new ProductImageDto(i.Id, i.ImageUrl, i.AltText, i.IsPrimary, i.DisplayOrder)).ToList(),
             product.Prices.Select(p => new ProductPriceDto(
                 p.Id,

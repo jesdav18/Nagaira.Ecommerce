@@ -11,6 +11,7 @@ export interface Product {
   availableQuantity: number;
   reservedQuantity: number;
   hasVirtualStock: boolean;
+  isFeatured: boolean;
   images: ProductImage[];
   prices: ProductPrice[];
 }

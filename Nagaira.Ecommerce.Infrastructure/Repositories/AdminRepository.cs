@@ -135,7 +135,7 @@ public class AdminRepository : IAdminRepository
             .AverageAsync(o => (decimal?)o.Total) ?? 0;
     }
 
-    public async Task<(int TotalCount, List<Product> Products)> GetProductsPagedAsync(int pageNumber, int pageSize, string? searchTerm = null, bool? isActive = null, Guid? categoryId = null)
+    public async Task<(int TotalCount, List<Product> Products)> GetProductsPagedAsync(int pageNumber, int pageSize, string? searchTerm = null, bool? isActive = null, Guid? categoryId = null, bool? isFeatured = null)
     {
         var query = _context.Products
             .Include(p => p.Category)
@@ -159,6 +159,11 @@ public class AdminRepository : IAdminRepository
         if (isActive.HasValue)
         {
             query = query.Where(p => p.IsActive == isActive.Value);
+        }
+
+        if (isFeatured.HasValue)
+        {
+            query = query.Where(p => p.IsFeatured == isFeatured.Value);
         }
 
         if (categoryId.HasValue)

@@ -13,6 +13,8 @@ public class Product : BaseEntity
     public List<InventoryMovement> InventoryMovements { get; set; } = new();
     public InventoryBalance? InventoryBalance { get; set; }
     public List<OfferProduct> OfferProducts { get; set; } = new();
+    public bool IsFeatured { get; set; }
+
     public bool IsActive { get; set; }
     public decimal? Cost { get; set; }
     public bool HasVirtualStock { get; set; }

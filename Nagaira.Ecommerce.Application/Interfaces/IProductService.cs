@@ -5,6 +5,7 @@ namespace Nagaira.Ecommerce.Application.Interfaces;
 public interface IProductService
 {
     Task<IEnumerable<ProductDto>> GetAllProductsAsync();
+    Task<IEnumerable<ProductDto>> GetFeaturedProductsAsync();
     Task<ProductDto?> GetProductByIdAsync(Guid id);
     Task<ProductDto?> GetProductBySlugAsync(string slug);
     Task<ProductDto?> GetProductByIdWithPriceLevelAsync(Guid id, Guid? priceLevelId);

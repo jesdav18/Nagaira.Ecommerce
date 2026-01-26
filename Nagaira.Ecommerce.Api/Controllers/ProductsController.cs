@@ -23,6 +23,13 @@ public class ProductsController : ControllerBase
         return Ok(products);
     }
 
+    [HttpGet("featured")]
+    public async Task<ActionResult<IEnumerable<ProductDto>>> GetFeatured()
+    {
+        var products = await _productService.GetFeaturedProductsAsync();
+        return Ok(products);
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ProductDto>> GetById(Guid id)
     {

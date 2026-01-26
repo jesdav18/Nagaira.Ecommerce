@@ -26,6 +26,15 @@
     </div>
 
     <div class="filter-group">
+      <label>Destacados:</label>
+      <select [ngModel]="isFeaturedFilter()" (ngModelChange)="isFeaturedFilter.set($event); onFilterChange()">
+        <option [ngValue]="null">Todos</option>
+        <option [ngValue]="true">Solo destacados</option>
+        <option [ngValue]="false">No destacados</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
       <label>Categoria:</label>
       <select [ngModel]="categoryFilter()" (ngModelChange)="categoryFilter.set($event); onFilterChange()">
         <option [ngValue]="null">Todas</option>

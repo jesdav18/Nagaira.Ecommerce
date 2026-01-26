@@ -45,12 +45,13 @@ public class AdminDashboardController : ControllerBase
         [FromQuery, Range(1, 100)] int pageSize = 20,
         [FromQuery] string? searchTerm = null,
         [FromQuery] bool? isActive = null,
-        [FromQuery] Guid? categoryId = null)
+        [FromQuery] Guid? categoryId = null,
+        [FromQuery] bool? isFeatured = null)
     {
         if (pageNumber < 1) pageNumber = 1;
         if (pageSize < 1 || pageSize > 100) pageSize = 20;
 
-        var result = await _adminService.GetProductsPagedAsync(pageNumber, pageSize, searchTerm, isActive, categoryId);
+        var result = await _adminService.GetProductsPagedAsync(pageNumber, pageSize, searchTerm, isActive, categoryId, isFeatured);
         return Ok(result);
     }
 
