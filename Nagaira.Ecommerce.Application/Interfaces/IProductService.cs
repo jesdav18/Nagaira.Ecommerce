@@ -4,13 +4,13 @@ namespace Nagaira.Ecommerce.Application.Interfaces;
 
 public interface IProductService
 {
-    Task<IEnumerable<ProductDto>> GetAllProductsAsync();
-    Task<IEnumerable<ProductDto>> GetFeaturedProductsAsync();
-    Task<ProductDto?> GetProductByIdAsync(Guid id);
-    Task<ProductDto?> GetProductBySlugAsync(string slug);
+    Task<IEnumerable<ProductDto>> GetAllProductsAsync(Guid? userId = null);
+    Task<IEnumerable<ProductDto>> GetFeaturedProductsAsync(Guid? userId = null);
+    Task<ProductDto?> GetProductByIdAsync(Guid id, Guid? userId = null);
+    Task<ProductDto?> GetProductBySlugAsync(string slug, Guid? userId = null);
     Task<ProductDto?> GetProductByIdWithPriceLevelAsync(Guid id, Guid? priceLevelId);
-    Task<IEnumerable<ProductDto>> GetProductsByCategoryAsync(Guid categoryId);
-    Task<IEnumerable<ProductDto>> SearchProductsAsync(string searchTerm);
+    Task<IEnumerable<ProductDto>> GetProductsByCategoryAsync(Guid categoryId, Guid? userId = null);
+    Task<IEnumerable<ProductDto>> SearchProductsAsync(string searchTerm, Guid? userId = null);
     Task<ProductDto> CreateProductAsync(CreateProductDto dto);
     Task UpdateProductAsync(UpdateProductDto dto);
     Task DeleteProductAsync(Guid id);

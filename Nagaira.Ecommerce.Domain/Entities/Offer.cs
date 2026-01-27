@@ -20,6 +20,9 @@ public class Offer : BaseEntity
     public Guid? CreatedBy { get; set; }
     public List<OfferProduct> Products { get; set; } = new();
     public List<OfferCategory> Categories { get; set; } = new();
+    public List<OfferExcludedProduct> ExcludedProducts { get; set; } = new();
+    public List<OfferExcludedCategory> ExcludedCategories { get; set; } = new();
+    public List<OfferRule> Rules { get; set; } = new();
     public List<OfferApplication> Applications { get; set; } = new();
     public User? Creator { get; set; }
 }

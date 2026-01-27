@@ -14,6 +14,7 @@ export interface Product {
   isFeatured: boolean;
   images: ProductImage[];
   prices: ProductPrice[];
+  offerPrice?: number;
 }
 
 export interface ProductImage {

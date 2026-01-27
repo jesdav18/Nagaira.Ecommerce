@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Product } from '../../../core/models/models';
 import { CartService } from '../../../core/services/cart.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { AppCurrencyPipe } from '../../../core/pipes/currency.pipe';
 import { getProductPrice, getProductStock, getPrimaryImage, isVirtualStock } from '../../../core/utils/product.utils';
 
@@ -17,18 +18,34 @@ export class ProductCardComponent {
   @Input({ required: true }) product!: Product;
 
   cartService = inject(CartService);
+  private authService = inject(AuthService);
   addingToCart = false;
 
-  get finalPrice(): number {
+  get basePrice(): number {
     return getProductPrice(this.product);
   }
 
+  get offerPrice(): number | null {
+    return typeof this.product.offerPrice === 'number' ? this.product.offerPrice : null;
+  }
+
+  get showOffer(): boolean {
+    if (!this.authService.isAuthenticated()) return false;
+    if (this.offerPrice === null) return false;
+    return this.offerPrice < this.basePrice;
+  }
+
+  get finalPrice(): number {
+    return this.showOffer && this.offerPrice !== null ? this.offerPrice : this.basePrice;
+  }
+
   get hasDiscount(): boolean {
-    return false;
+    return this.showOffer;
   }
 
   get discountPercentage(): number {
-    return 0;
+    if (!this.showOffer || this.offerPrice === null || this.basePrice <= 0) return 0;
+    return Math.round(((this.basePrice - this.offerPrice) / this.basePrice) * 100);
   }
 
   get primaryImage(): string {

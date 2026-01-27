@@ -71,6 +71,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/info/terms-conditions.component').then(m => m.TermsConditionsComponent)
   },
   {
+    path: 'politica-privacidad',
+    loadComponent: () => import('./features/info/privacy-policy.component').then(m => m.PrivacyPolicyComponent)
+  },
+  {
     path: 'admin',
     loadComponent: () => import('./features/admin/admin-layout/admin-layout.component').then(m => m.AdminLayoutComponent),
     canActivate: [adminGuard],
@@ -102,6 +106,14 @@ export const routes: Routes = [
       {
         path: 'offers',
         loadComponent: () => import('./features/admin/admin-offers/admin-offers.component').then(m => m.AdminOffersComponent)
+      },
+      {
+        path: 'offers/new',
+        loadComponent: () => import('./features/admin/admin-offers/admin-offer-form/admin-offer-form.component').then(m => m.AdminOfferFormComponent)
+      },
+      {
+        path: 'offers/:id',
+        loadComponent: () => import('./features/admin/admin-offers/admin-offer-form/admin-offer-form.component').then(m => m.AdminOfferFormComponent)
       },
       {
         path: 'banners',

@@ -20,6 +20,9 @@
     <h3 class="product-name">{{ product.name }}</h3>
     
     <div class="product-pricing">
+      @if (hasDiscount) {
+        <span class="price-original">{{ basePrice | appCurrency:'1.2-2' }}</span>
+      }
       <span class="price-current">{{ finalPrice | appCurrency:'1.2-2' }}</span>
     </div>
 

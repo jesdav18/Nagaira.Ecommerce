@@ -52,6 +52,9 @@
         </div>
 
         <div class="product-price">
+          @if (showOffer) {
+            <span class="original-price">{{ basePrice | appCurrency : "1.2-2" }}</span>
+          }
           <span class="current-price">{{
             finalPrice | appCurrency : "1.2-2"
           }}</span>

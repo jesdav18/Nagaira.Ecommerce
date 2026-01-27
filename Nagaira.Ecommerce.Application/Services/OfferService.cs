@@ -94,6 +94,55 @@ public class OfferService : IOfferService
             }
         }
 
+        if (dto.ExcludedProductIds != null && dto.ExcludedProductIds.Any())
+        {
+            foreach (var productId in dto.ExcludedProductIds)
+            {
+                var excludedProduct = new OfferExcludedProduct
+                {
+                    Id = Guid.NewGuid(),
+                    OfferId = offer.Id,
+                    ProductId = productId,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _unitOfWork.Repository<OfferExcludedProduct>().AddAsync(excludedProduct);
+            }
+        }
+
+        if (dto.ExcludedCategoryIds != null && dto.ExcludedCategoryIds.Any())
+        {
+            foreach (var categoryId in dto.ExcludedCategoryIds)
+            {
+                var excludedCategory = new OfferExcludedCategory
+                {
+                    Id = Guid.NewGuid(),
+                    OfferId = offer.Id,
+                    CategoryId = categoryId,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _unitOfWork.Repository<OfferExcludedCategory>().AddAsync(excludedCategory);
+            }
+        }
+
+        if (dto.Rules != null && dto.Rules.Any())
+        {
+            foreach (var rule in dto.Rules)
+            {
+                if (string.IsNullOrWhiteSpace(rule.RuleType)) continue;
+                if (rule.Value <= 0) continue;
+
+                var offerRule = new OfferRule
+                {
+                    Id = Guid.NewGuid(),
+                    OfferId = offer.Id,
+                    RuleType = rule.RuleType.Trim().ToLowerInvariant(),
+                    Value = rule.Value,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _unitOfWork.Repository<OfferRule>().AddAsync(offerRule);
+            }
+        }
+
         await _unitOfWork.SaveChangesAsync();
         return MapToDto(offer);
     }
@@ -184,6 +233,96 @@ public class OfferService : IOfferService
             await _unitOfWork.Repository<OfferCategory>().AddAsync(offerCategory);
         }
 
+        var existingExcludedProducts = (await _unitOfWork.Repository<OfferExcludedProduct>()
+            .FindAsync(ep => ep.OfferId == offer.Id && !ep.IsDeleted)).Cast<OfferExcludedProduct>();
+        var existingExcludedProductIds = existingExcludedProducts.Select(ep => ep.ProductId).ToList();
+        var newExcludedProductIds = dto.ExcludedProductIds ?? new List<Guid>();
+
+        var excludedProductsToRemove = existingExcludedProductIds.Except(newExcludedProductIds).ToList();
+        var excludedProductsToAdd = newExcludedProductIds.Except(existingExcludedProductIds).ToList();
+
+        foreach (var productId in excludedProductsToRemove)
+        {
+            var excludedProduct = existingExcludedProducts.FirstOrDefault(ep => ep.ProductId == productId);
+            if (excludedProduct != null)
+            {
+                await _unitOfWork.Repository<OfferExcludedProduct>().DeleteAsync(excludedProduct.Id);
+            }
+        }
+
+        foreach (var productId in excludedProductsToAdd)
+        {
+            var excludedProduct = new OfferExcludedProduct
+            {
+                Id = Guid.NewGuid(),
+                OfferId = offer.Id,
+                ProductId = productId,
+                CreatedAt = DateTime.UtcNow
+            };
+            await _unitOfWork.Repository<OfferExcludedProduct>().AddAsync(excludedProduct);
+        }
+
+        var existingExcludedCategories = (await _unitOfWork.Repository<OfferExcludedCategory>()
+            .FindAsync(ec => ec.OfferId == offer.Id && !ec.IsDeleted)).Cast<OfferExcludedCategory>();
+        var existingExcludedCategoryIds = existingExcludedCategories.Select(ec => ec.CategoryId).ToList();
+        var newExcludedCategoryIds = dto.ExcludedCategoryIds ?? new List<Guid>();
+
+        var excludedCategoriesToRemove = existingExcludedCategoryIds.Except(newExcludedCategoryIds).ToList();
+        var excludedCategoriesToAdd = newExcludedCategoryIds.Except(existingExcludedCategoryIds).ToList();
+
+        foreach (var categoryId in excludedCategoriesToRemove)
+        {
+            var excludedCategory = existingExcludedCategories.FirstOrDefault(ec => ec.CategoryId == categoryId);
+            if (excludedCategory != null)
+            {
+                await _unitOfWork.Repository<OfferExcludedCategory>().DeleteAsync(excludedCategory.Id);
+            }
+        }
+
+        foreach (var categoryId in excludedCategoriesToAdd)
+        {
+            var excludedCategory = new OfferExcludedCategory
+            {
+                Id = Guid.NewGuid(),
+                OfferId = offer.Id,
+                CategoryId = categoryId,
+                CreatedAt = DateTime.UtcNow
+            };
+            await _unitOfWork.Repository<OfferExcludedCategory>().AddAsync(excludedCategory);
+        }
+
+        if (dto.Rules != null)
+        {
+            var existingRules = (await _unitOfWork.Repository<OfferRule>()
+                .FindAsync(r => r.OfferId == offer.Id && !r.IsDeleted)).Cast<OfferRule>().ToList();
+
+            var incomingRules = dto.Rules
+                .Where(r => !string.IsNullOrWhiteSpace(r.RuleType) && r.Value > 0)
+                .Select(r => new OfferRuleDto(r.RuleType.Trim().ToLowerInvariant(), r.Value))
+                .ToList();
+
+            var incomingKeys = new HashSet<string>(incomingRules.Select(r => $"{r.RuleType}|{r.Value}"));
+            var existingKeys = new HashSet<string>(existingRules.Select(r => $"{r.RuleType.ToLowerInvariant()}|{r.Value}"));
+
+            foreach (var rule in existingRules.Where(r => !incomingKeys.Contains($"{r.RuleType.ToLowerInvariant()}|{r.Value}")))
+            {
+                await _unitOfWork.Repository<OfferRule>().DeleteAsync(rule.Id);
+            }
+
+            foreach (var rule in incomingRules.Where(r => !existingKeys.Contains($"{r.RuleType}|{r.Value}")))
+            {
+                var offerRule = new OfferRule
+                {
+                    Id = Guid.NewGuid(),
+                    OfferId = offer.Id,
+                    RuleType = rule.RuleType,
+                    Value = rule.Value,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _unitOfWork.Repository<OfferRule>().AddAsync(offerRule);
+            }
+        }
+
         await _unitOfWork.Offers.UpdateAsync(offer);
         await _unitOfWork.SaveChangesAsync();
     }
@@ -256,7 +395,10 @@ public class OfferService : IOfferService
             offer.Priority,
             offer.IsActive,
             offer.Products.Where(p => !p.IsDeleted).Select(p => p.ProductId).ToList(),
-            offer.Categories.Where(c => !c.IsDeleted).Select(c => c.CategoryId).ToList()
+            offer.Categories.Where(c => !c.IsDeleted).Select(c => c.CategoryId).ToList(),
+            offer.ExcludedProducts.Where(p => !p.IsDeleted).Select(p => p.ProductId).ToList(),
+            offer.ExcludedCategories.Where(c => !c.IsDeleted).Select(c => c.CategoryId).ToList(),
+            offer.Rules.Where(r => !r.IsDeleted).Select(r => new OfferRuleDto(r.RuleType, r.Value)).ToList()
         );
     }
 }

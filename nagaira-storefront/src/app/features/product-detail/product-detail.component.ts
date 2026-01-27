@@ -9,6 +9,7 @@ import { getProductPrice, getProductStock, isVirtualStock } from '../../core/uti
 import { SeoService } from '../../core/services/seo.service';
 import { SeoResolveService } from '../../core/services/seo-resolve.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-product-detail',
@@ -25,6 +26,7 @@ export class ProductDetailComponent implements OnInit {
   private seoService = inject(SeoService);
   private seoResolveService = inject(SeoResolveService);
   private analyticsService = inject(AnalyticsService);
+  private authService = inject(AuthService);
 
   product = signal<Product | null>(null);
   loading = signal(true);
@@ -117,13 +119,30 @@ export class ProductDetailComponent implements OnInit {
     this.seoService.setCanonical(url);
   }
 
-  get finalPrice(): number {
+  get basePrice(): number {
     const p = this.product();
     return p ? getProductPrice(p) : 0;
   }
 
+  get offerPrice(): number | null {
+    const p = this.product();
+    if (!p) return null;
+    return typeof p.offerPrice === 'number' ? p.offerPrice : null;
+  }
+
+  get showOffer(): boolean {
+    if (!this.authService.isAuthenticated()) return false;
+    if (this.offerPrice === null) return false;
+    return this.offerPrice < this.basePrice;
+  }
+
+  get finalPrice(): number {
+    return this.showOffer && this.offerPrice !== null ? this.offerPrice : this.basePrice;
+  }
+
   get discountPercentage(): number {
-    return 0;
+    if (!this.showOffer || this.offerPrice === null || this.basePrice <= 0) return 0;
+    return Math.round(((this.basePrice - this.offerPrice) / this.basePrice) * 100);
   }
 
   get stock(): number | null {

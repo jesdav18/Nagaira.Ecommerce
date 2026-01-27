@@ -17,29 +17,34 @@ public class ProductService : IProductService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<IEnumerable<ProductDto>> GetAllProductsAsync()
+    public async Task<IEnumerable<ProductDto>> GetAllProductsAsync(Guid? userId = null)
     {
         var products = await _unitOfWork.Products.GetActiveProductsAsync();
-        return products.Select(MapToDto);
+        var user = userId.HasValue ? await _unitOfWork.Users.GetByIdAsync(userId.Value) : null;
+        return await MapToDtosAsync(products, user);
     }
 
-    public async Task<IEnumerable<ProductDto>> GetFeaturedProductsAsync()
+    public async Task<IEnumerable<ProductDto>> GetFeaturedProductsAsync(Guid? userId = null)
     {
         var products = await _unitOfWork.Products.GetFeaturedProductsAsync();
-        return products.Select(MapToDto);
+        var user = userId.HasValue ? await _unitOfWork.Users.GetByIdAsync(userId.Value) : null;
+        return await MapToDtosAsync(products, user);
     }
 
-    public async Task<ProductDto?> GetProductByIdAsync(Guid id)
+    public async Task<ProductDto?> GetProductByIdAsync(Guid id, Guid? userId = null)
     {
         var product = await _unitOfWork.Products.GetByIdAsync(id);
         if (product == null || !product.IsActive) return null;
-        return MapToDto(product);
+        var user = userId.HasValue ? await _unitOfWork.Users.GetByIdAsync(userId.Value) : null;
+        return await MapToDtoAsync(product, user);
     }
 
-    public async Task<ProductDto?> GetProductBySlugAsync(string slug)
+    public async Task<ProductDto?> GetProductBySlugAsync(string slug, Guid? userId = null)
     {
         var product = await _unitOfWork.Products.GetBySlugAsync(slug);
-        return product != null ? MapToDto(product) : null;
+        if (product == null) return null;
+        var user = userId.HasValue ? await _unitOfWork.Users.GetByIdAsync(userId.Value) : null;
+        return await MapToDtoAsync(product, user);
     }
 
     public async Task<ProductDto?> GetProductByIdWithPriceLevelAsync(Guid id, Guid? priceLevelId)
@@ -48,16 +53,18 @@ public class ProductService : IProductService
         return product != null ? MapToDto(product) : null;
     }
 
-    public async Task<IEnumerable<ProductDto>> GetProductsByCategoryAsync(Guid categoryId)
+    public async Task<IEnumerable<ProductDto>> GetProductsByCategoryAsync(Guid categoryId, Guid? userId = null)
     {
         var products = await _unitOfWork.Products.GetByCategoryAsync(categoryId);
-        return products.Select(MapToDto);
+        var user = userId.HasValue ? await _unitOfWork.Users.GetByIdAsync(userId.Value) : null;
+        return await MapToDtosAsync(products, user);
     }
 
-    public async Task<IEnumerable<ProductDto>> SearchProductsAsync(string searchTerm)
+    public async Task<IEnumerable<ProductDto>> SearchProductsAsync(string searchTerm, Guid? userId = null)
     {
         var products = await _unitOfWork.Products.SearchAsync(searchTerm);
-        return products.Select(MapToDto);
+        var user = userId.HasValue ? await _unitOfWork.Users.GetByIdAsync(userId.Value) : null;
+        return await MapToDtosAsync(products, user);
     }
 
     public async Task<ProductDto> CreateProductAsync(CreateProductDto dto)
@@ -209,6 +216,7 @@ public class ProductService : IProductService
             product.Cost,
             product.HasVirtualStock,
             product.IsFeatured,
+            null,
             product.Images.Select(i => new ProductImageDto(i.Id, i.ImageUrl, i.AltText, i.IsPrimary, i.DisplayOrder)).ToList(),
             product.Prices.Select(p => new ProductPriceDto(
                 p.Id,
@@ -221,6 +229,164 @@ public class ProductService : IProductService
                 p.IsActive
             )).ToList()
         );
+    }
+
+    private async Task<List<ProductDto>> MapToDtosAsync(IEnumerable<Product> products, User? user)
+    {
+        var result = new List<ProductDto>();
+        foreach (var product in products)
+        {
+            result.Add(await MapToDtoAsync(product, user));
+        }
+        return result;
+    }
+
+    private async Task<ProductDto> MapToDtoAsync(Product product, User? user)
+    {
+        var offerPrice = user != null ? await GetOfferPriceAsync(product, user) : null;
+
+        return new ProductDto(
+            product.Id,
+            product.Name,
+            product.Description,
+            product.Sku,
+            product.Slug,
+            product.IsActive,
+            product.CategoryId,
+            product.Category?.Name ?? string.Empty,
+            product.InventoryBalance?.AvailableQuantity ?? 0,
+            product.InventoryBalance?.ReservedQuantity ?? 0,
+            product.Cost,
+            product.HasVirtualStock,
+            product.IsFeatured,
+            offerPrice,
+            product.Images.Select(i => new ProductImageDto(i.Id, i.ImageUrl, i.AltText, i.IsPrimary, i.DisplayOrder)).ToList(),
+            product.Prices.Select(p => new ProductPriceDto(
+                p.Id,
+                p.ProductId,
+                p.PriceLevelId,
+                p.PriceLevel?.Name ?? string.Empty,
+                p.Price,
+                p.PriceWithoutTax,
+                p.MinQuantity,
+                p.IsActive
+            )).ToList()
+        );
+    }
+
+    private async Task<decimal?> GetOfferPriceAsync(Product product, User user)
+    {
+        var basePrice = GetBasePrice(product, user.PriceLevelId);
+        if (basePrice <= 0)
+        {
+            return null;
+        }
+
+        var offers = await _unitOfWork.Offers.GetOffersForProductAsync(product.Id, DateTime.UtcNow);
+        if (!offers.Any())
+        {
+            return null;
+        }
+
+        var quantity = 1;
+        var cartTotal = basePrice;
+        var finalPrice = basePrice;
+        var hasDiscount = false;
+
+        foreach (var offer in offers.OrderByDescending(o => o.Priority))
+        {
+            if (offer.TotalMaxUses.HasValue && offer.CurrentUses >= offer.TotalMaxUses.Value)
+                continue;
+
+            if (offer.MaxUsesPerCustomer.HasValue)
+            {
+                var userUsage = await _unitOfWork.Offers.GetUsageCountAsync(offer.Id, user.Id);
+                if (userUsage >= offer.MaxUsesPerCustomer.Value)
+                    continue;
+            }
+
+            if (offer.MinQuantity.HasValue && quantity < offer.MinQuantity.Value)
+                continue;
+
+            if (!OfferRulesSatisfied(offer, finalPrice, quantity, cartTotal))
+                continue;
+
+            decimal discount = 0;
+            if (offer.OfferType == OfferType.Percentage && offer.DiscountPercentage.HasValue)
+            {
+                discount = finalPrice * (offer.DiscountPercentage.Value / 100);
+            }
+            else if (offer.OfferType == OfferType.FixedAmount && offer.DiscountAmount.HasValue)
+            {
+                discount = offer.DiscountAmount.Value;
+            }
+
+            if (discount <= 0)
+                continue;
+
+            finalPrice -= discount;
+            if (finalPrice < 0)
+                finalPrice = 0;
+
+            hasDiscount = true;
+        }
+
+        return hasDiscount && finalPrice < basePrice ? finalPrice : null;
+    }
+
+    private static decimal GetBasePrice(Product product, Guid? priceLevelId)
+    {
+        var activePrices = product.Prices.Where(p => p.IsActive).ToList();
+        if (activePrices.Count == 0)
+        {
+            return 0;
+        }
+
+        if (priceLevelId.HasValue)
+        {
+            var priceForLevel = activePrices.FirstOrDefault(p => p.PriceLevelId == priceLevelId.Value);
+            if (priceForLevel != null)
+            {
+                return priceForLevel.Price;
+            }
+        }
+
+        return activePrices.OrderBy(p => p.MinQuantity).First().Price;
+    }
+
+    private static bool OfferRulesSatisfied(Offer offer, decimal itemUnitPrice, int quantity, decimal cartTotal)
+    {
+        if (offer.Rules == null || offer.Rules.Count == 0) return true;
+
+        var itemSubtotal = itemUnitPrice * quantity;
+        foreach (var rule in offer.Rules.Where(r => !r.IsDeleted))
+        {
+            var type = rule.RuleType?.Trim().ToLowerInvariant();
+            if (string.IsNullOrEmpty(type)) return false;
+
+            switch (type)
+            {
+                case "min_item_price":
+                    if (itemUnitPrice < rule.Value) return false;
+                    break;
+                case "max_item_price":
+                    if (itemUnitPrice > rule.Value) return false;
+                    break;
+                case "min_item_subtotal":
+                    if (itemSubtotal < rule.Value) return false;
+                    break;
+                case "max_item_subtotal":
+                    if (itemSubtotal > rule.Value) return false;
+                    break;
+                case "min_cart_total":
+                    if (cartTotal < rule.Value) return false;
+                    break;
+                default:
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     private async Task<string> GenerateUniqueSlugAsync(string name, Guid? excludeId = null)

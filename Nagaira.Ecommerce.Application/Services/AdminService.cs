@@ -120,6 +120,7 @@ public class AdminService : IAdminService
             p.Cost,
             p.HasVirtualStock,
             p.IsFeatured,
+            null,
             p.Images.Select(i => new ProductImageDto(i.Id, i.ImageUrl, i.AltText, i.IsPrimary, i.DisplayOrder)).ToList(),
             p.Prices.Select(pp => new ProductPriceDto(
                 pp.Id,
@@ -165,7 +166,10 @@ public class AdminService : IAdminService
             o.Priority,
             o.IsActive,
             o.Products.Where(p => !p.IsDeleted).Select(p => p.ProductId).ToList(),
-            o.Categories.Where(c => !c.IsDeleted).Select(c => c.CategoryId).ToList()
+            o.Categories.Where(c => !c.IsDeleted).Select(c => c.CategoryId).ToList(),
+            o.ExcludedProducts.Where(p => !p.IsDeleted).Select(p => p.ProductId).ToList(),
+            o.ExcludedCategories.Where(c => !c.IsDeleted).Select(c => c.CategoryId).ToList(),
+            o.Rules.Where(r => !r.IsDeleted).Select(r => new OfferRuleDto(r.RuleType, r.Value)).ToList()
         ));
 
         return new PagedResultDto<OfferDto>(

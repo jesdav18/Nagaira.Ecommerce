@@ -20,7 +20,15 @@ public record OfferDto(
     int Priority,
     bool IsActive,
     List<Guid> ProductIds,
-    List<Guid> CategoryIds
+    List<Guid> CategoryIds,
+    List<Guid> ExcludedProductIds,
+    List<Guid> ExcludedCategoryIds,
+    List<OfferRuleDto> Rules
+);
+
+public record OfferRuleDto(
+    string RuleType,
+    decimal Value
 );
 
 public record CreateOfferDto(
@@ -62,7 +70,10 @@ public record CreateOfferDto(
     int Priority,
     
     List<Guid>? ProductIds,
-    List<Guid>? CategoryIds
+    List<Guid>? CategoryIds,
+    List<Guid>? ExcludedProductIds,
+    List<Guid>? ExcludedCategoryIds,
+    List<OfferRuleDto>? Rules
 );
 
 public record UpdateOfferDto(
@@ -81,7 +92,10 @@ public record UpdateOfferDto(
     int Priority,
     bool IsActive,
     List<Guid>? ProductIds,
-    List<Guid>? CategoryIds
+    List<Guid>? CategoryIds,
+    List<Guid>? ExcludedProductIds,
+    List<Guid>? ExcludedCategoryIds,
+    List<OfferRuleDto>? Rules
 );
 
 public record OfferApplicationDto(

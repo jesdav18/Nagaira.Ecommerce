@@ -16,6 +16,9 @@ public class OfferRepository : Repository<Offer>, IOfferRepository
         return await _dbSet
             .Include(o => o.Products)
             .Include(o => o.Categories)
+            .Include(o => o.ExcludedProducts)
+            .Include(o => o.ExcludedCategories)
+            .Include(o => o.Rules)
             .Include(o => o.Creator)
             .FirstOrDefaultAsync(o => o.Id == id && !o.IsDeleted);
     }
@@ -25,6 +28,9 @@ public class OfferRepository : Repository<Offer>, IOfferRepository
         var query = _dbSet
             .Include(o => o.Products)
             .Include(o => o.Categories)
+            .Include(o => o.ExcludedProducts)
+            .Include(o => o.ExcludedCategories)
+            .Include(o => o.Rules)
             .Include(o => o.Creator)
             .Where(o => !o.IsDeleted)
             .OrderByDescending(o => o.CreatedAt);
@@ -39,6 +45,9 @@ public class OfferRepository : Repository<Offer>, IOfferRepository
         return await _dbSet
             .Include(o => o.Products)
             .Include(o => o.Categories)
+            .Include(o => o.ExcludedProducts)
+            .Include(o => o.ExcludedCategories)
+            .Include(o => o.Rules)
             .Where(o => o.IsActive 
                 && o.Status == OfferStatus.Active
                 && o.StartDate <= date 
@@ -53,13 +62,21 @@ public class OfferRepository : Repository<Offer>, IOfferRepository
         return await _dbSet
             .Include(o => o.Products)
             .Include(o => o.Categories)
+            .Include(o => o.ExcludedProducts)
+            .Include(o => o.ExcludedCategories)
+            .Include(o => o.Rules)
             .Where(o => o.IsActive 
                 && o.Status == OfferStatus.Active
                 && o.StartDate <= date 
                 && o.EndDate >= date
                 && !o.IsDeleted
-                && (o.Products.Any(p => p.ProductId == productId && !p.IsDeleted)
-                    || o.Categories.Any(c => !c.IsDeleted && c.Category.Products.Any(p => p.Id == productId))))
+                && (
+                    (!o.Products.Any(p => !p.IsDeleted) && !o.Categories.Any(c => !c.IsDeleted))
+                    || o.Products.Any(p => p.ProductId == productId && !p.IsDeleted)
+                    || o.Categories.Any(c => !c.IsDeleted && c.Category.Products.Any(p => p.Id == productId))
+                )
+                && !o.ExcludedProducts.Any(p => p.ProductId == productId && !p.IsDeleted)
+                && !o.ExcludedCategories.Any(c => !c.IsDeleted && c.Category.Products.Any(p => p.Id == productId)))
             .OrderByDescending(o => o.Priority)
             .ToListAsync();
     }
@@ -68,12 +85,18 @@ public class OfferRepository : Repository<Offer>, IOfferRepository
     {
         return await _dbSet
             .Include(o => o.Categories)
+            .Include(o => o.ExcludedCategories)
+            .Include(o => o.Rules)
             .Where(o => o.IsActive 
                 && o.Status == OfferStatus.Active
                 && o.StartDate <= date 
                 && o.EndDate >= date
                 && !o.IsDeleted
-                && o.Categories.Any(c => c.CategoryId == categoryId && !c.IsDeleted))
+                && (
+                    (!o.Products.Any(p => !p.IsDeleted) && !o.Categories.Any(c => !c.IsDeleted))
+                    || o.Categories.Any(c => c.CategoryId == categoryId && !c.IsDeleted)
+                )
+                && !o.ExcludedCategories.Any(c => c.CategoryId == categoryId && !c.IsDeleted))
             .OrderByDescending(o => o.Priority)
             .ToListAsync();
     }
@@ -83,6 +106,9 @@ public class OfferRepository : Repository<Offer>, IOfferRepository
         return await _dbSet
             .Include(o => o.Products)
             .Include(o => o.Categories)
+            .Include(o => o.ExcludedProducts)
+            .Include(o => o.ExcludedCategories)
+            .Include(o => o.Rules)
             .Where(o => o.IsActive 
                 && o.Status == OfferStatus.Active
                 && o.StartDate <= date 

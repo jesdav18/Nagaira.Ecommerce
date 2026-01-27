@@ -1,0 +1,54 @@
+.policy-page {
+    background: var(--bg-primary);
+}
+
+.policy-hero {
+    padding: 2.5rem 0 1.5rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.policy-eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.policy-intro {
+    color: var(--text-secondary);
+    max-width: 680px;
+}
+
+.policy-content {
+    padding: 2rem 0 3rem;
+    display: grid;
+    gap: 1.5rem;
+}
+
+.policy-section h2 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.policy-section p {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.policy-section a {
+    color: var(--primary-color);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.policy-section a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .policy-hero {
+        padding: 2rem 0 1rem;
+    }
+}

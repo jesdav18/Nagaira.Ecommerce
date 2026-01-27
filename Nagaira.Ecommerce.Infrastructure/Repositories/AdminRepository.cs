@@ -206,6 +206,7 @@ public class AdminRepository : IAdminRepository
         var query = _context.Offers
             .Include(o => o.Products)
             .Include(o => o.Categories)
+            .Include(o => o.Rules)
             .Where(o => !o.IsDeleted);
 
         if (!string.IsNullOrWhiteSpace(status) && Enum.TryParse<OfferStatus>(status, true, out var offerStatus))

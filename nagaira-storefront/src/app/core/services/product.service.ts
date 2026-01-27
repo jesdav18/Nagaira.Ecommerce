@@ -12,27 +12,28 @@ export class ProductService {
   private apiUrl = `${environment.apiUrl}/products`;
 
   getAll(): Observable<Product[]> {
-    return this.http.get<Product[]>(this.apiUrl);
+    return this.http.get<Product[]>(this.apiUrl, { withCredentials: true });
   }
 
   getById(id: string): Observable<Product> {
-    return this.http.get<Product>(`${this.apiUrl}/${id}`);
+    return this.http.get<Product>(`${this.apiUrl}/${id}`, { withCredentials: true });
   }
 
   getBySlug(slug: string): Observable<Product> {
-    return this.http.get<Product>(`${this.apiUrl}/slug/${slug}`);
+    return this.http.get<Product>(`${this.apiUrl}/slug/${slug}`, { withCredentials: true });
   }
 
   getByCategory(categoryId: string): Observable<Product[]> {
-    return this.http.get<Product[]>(`${this.apiUrl}/category/${categoryId}`);
+    return this.http.get<Product[]>(`${this.apiUrl}/category/${categoryId}`, { withCredentials: true });
   }
 
   getFeatured(): Observable<Product[]> {
-    return this.http.get<Product[]>(`${this.apiUrl}/featured`);
+    return this.http.get<Product[]>(`${this.apiUrl}/featured`, { withCredentials: true });
   }
 
   search(term: string): Observable<Product[]> {
     return this.http.get<Product[]>(`${this.apiUrl}/search`, {
+      withCredentials: true,
       params: { term }
     });
   }

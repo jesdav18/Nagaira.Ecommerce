@@ -43,8 +43,10 @@ public class OrderService : IOrderService
                     CreatedAt = DateTime.UtcNow
                 };
 
-                var availableOffers = await _unitOfWork.Offers.GetActiveOffersAsync(DateTime.UtcNow);
                 decimal totalDiscount = 0;
+
+                var itemInfos = new List<(Product Product, int Quantity, decimal BaseUnitPrice)>();
+                decimal cartBaseTotal = 0;
 
                 foreach (var item in dto.Items)
                 {
@@ -65,8 +67,17 @@ public class OrderService : IOrderService
                     if (!basePrice.HasValue)
                         throw new Exception($"No price found for product {product.Name}");
 
-                    var unitPrice = basePrice.Value;
-                    var applicableOffers = await _unitOfWork.Offers.GetOffersForProductAsync(item.ProductId, DateTime.UtcNow);
+                    itemInfos.Add((product, item.Quantity, basePrice.Value));
+                    cartBaseTotal += basePrice.Value * item.Quantity;
+                }
+
+                foreach (var info in itemInfos)
+                {
+                    var product = info.Product;
+                    var quantity = info.Quantity;
+                    var unitPrice = info.BaseUnitPrice;
+
+                    var applicableOffers = await _unitOfWork.Offers.GetOffersForProductAsync(product.Id, DateTime.UtcNow);
                     
                     foreach (var offer in applicableOffers.OrderByDescending(o => o.Priority))
                     {
@@ -80,7 +91,10 @@ public class OrderService : IOrderService
                                 continue;
                         }
 
-                        if (offer.MinQuantity.HasValue && item.Quantity < offer.MinQuantity.Value)
+                        if (offer.MinQuantity.HasValue && quantity < offer.MinQuantity.Value)
+                            continue;
+
+                        if (!OfferRulesSatisfied(offer, unitPrice, quantity, cartBaseTotal))
                             continue;
 
                         decimal discount = 0;
@@ -96,7 +110,7 @@ public class OrderService : IOrderService
                         if (discount > 0)
                         {
                             unitPrice -= discount;
-                            totalDiscount += discount * item.Quantity;
+                            totalDiscount += discount * quantity;
 
                             var offerApplication = new OfferApplication
                             {
@@ -104,9 +118,9 @@ public class OrderService : IOrderService
                                 OfferId = offer.Id,
                                 OrderId = order.Id,
                                 OrderItemId = null,
-                                ProductId = item.ProductId,
+                                ProductId = product.Id,
                                 UserId = userId,
-                                DiscountAmount = discount * item.Quantity,
+                                DiscountAmount = discount * quantity,
                                 AppliedAt = DateTime.UtcNow,
                                 CreatedAt = DateTime.UtcNow
                             };
@@ -117,21 +131,21 @@ public class OrderService : IOrderService
                         }
                     }
 
-                    var itemSubtotal = unitPrice * item.Quantity;
+                    var itemSubtotal = unitPrice * quantity;
                     subtotal += itemSubtotal;
 
                     var orderItem = new OrderItem
                     {
                         Id = Guid.NewGuid(),
                         OrderId = order.Id,
-                        ProductId = item.ProductId,
-                        Quantity = item.Quantity,
+                        ProductId = product.Id,
+                        Quantity = quantity,
                         UnitPrice = unitPrice,
                         Subtotal = itemSubtotal,
                         CreatedAt = DateTime.UtcNow
                     };
 
-                    var supplierDistribution = await DistributeQuantityAmongSuppliersAsync(item.ProductId, item.Quantity);
+                    var supplierDistribution = await DistributeQuantityAmongSuppliersAsync(product.Id, quantity);
                     decimal totalCost = 0;
 
                     foreach (var dist in supplierDistribution)
@@ -152,7 +166,7 @@ public class OrderService : IOrderService
 
                     if (supplierDistribution.Any())
                     {
-                        var averageCost = totalCost / item.Quantity;
+                        var averageCost = totalCost / quantity;
                         product.Cost = averageCost;
                         await _unitOfWork.Products.UpdateAsync(product);
                     }
@@ -162,9 +176,9 @@ public class OrderService : IOrderService
                     var inventoryMovement = new InventoryMovement
                     {
                         Id = Guid.NewGuid(),
-                        ProductId = item.ProductId,
+                        ProductId = product.Id,
                         MovementType = InventoryMovementType.Sale,
-                        Quantity = item.Quantity,
+                        Quantity = quantity,
                         ReferenceType = "Order",
                         ReferenceId = order.Id,
                         ReferenceNumber = orderNumber,
@@ -286,6 +300,41 @@ public class OrderService : IOrderService
                 order.ShippingAddress.IsDefault
             ) : null
         );
+    }
+
+    private static bool OfferRulesSatisfied(Offer offer, decimal itemUnitPrice, int quantity, decimal cartTotal)
+    {
+        if (offer.Rules == null || offer.Rules.Count == 0) return true;
+
+        var itemSubtotal = itemUnitPrice * quantity;
+        foreach (var rule in offer.Rules.Where(r => !r.IsDeleted))
+        {
+            var type = rule.RuleType?.Trim().ToLowerInvariant();
+            if (string.IsNullOrEmpty(type)) return false;
+
+            switch (type)
+            {
+                case "min_item_price":
+                    if (itemUnitPrice < rule.Value) return false;
+                    break;
+                case "max_item_price":
+                    if (itemUnitPrice > rule.Value) return false;
+                    break;
+                case "min_item_subtotal":
+                    if (itemSubtotal < rule.Value) return false;
+                    break;
+                case "max_item_subtotal":
+                    if (itemSubtotal > rule.Value) return false;
+                    break;
+                case "min_cart_total":
+                    if (cartTotal < rule.Value) return false;
+                    break;
+                default:
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     private static string GenerateOrderNumber()

@@ -1,7 +1,7 @@
 <div class="admin-offers">
   <div class="page-header">
     <h1>Gestión de Ofertas</h1>
-    <button class="btn btn-primary">+ Nueva Oferta</button>
+    <button class="btn btn-primary" routerLink="/admin/offers/new">+ Nueva Oferta</button>
   </div>
 
   @if (loading()) {
@@ -22,8 +22,49 @@
             </span>
             <span class="offer-type">{{ offer.offerType }}</span>
           </div>
+          <div class="offer-rules">
+            <h4>Reglas</h4>
+            @if (offer.rules?.length > 0) {
+              <ul class="rules-list">
+                @for (rule of offer.rules; track rule.ruleType + '-' + rule.value; let i = $index) {
+                  <li>
+                    <span class="rule-label">{{ getRuleLabel(rule.ruleType) }}</span>
+                    <span class="rule-value">{{ rule.value }}</span>
+                    <button type="button" class="btn-link" (click)="removeRule(offer, i)">
+                      Quitar
+                    </button>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="rules-empty">Sin reglas configuradas.</p>
+            }
+
+            <div class="rule-editor">
+              <select
+                [ngModel]="getRuleDraft(offer.id).ruleType"
+                (ngModelChange)="setRuleDraft(offer.id, { ruleType: $event })">
+                @for (option of ruleTypeOptions; track option.value) {
+                  <option [value]="option.value">{{ option.label }}</option>
+                }
+              </select>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Valor"
+                [ngModel]="getRuleDraft(offer.id).value"
+                (ngModelChange)="setRuleDraft(offer.id, { value: $event })">
+              <button type="button" class="btn btn-sm btn-secondary" (click)="addRule(offer)">
+                Agregar regla
+              </button>
+            </div>
+            <button type="button" class="btn btn-sm btn-primary" (click)="saveRules(offer)">
+              Guardar reglas
+            </button>
+          </div>
           <div class="offer-actions">
-            <button class="btn btn-sm btn-secondary">Editar</button>
+            <button class="btn btn-sm btn-secondary" [routerLink]="['/admin/offers', offer.id]">Editar</button>
             <button 
               class="btn btn-sm"
               [class.btn-success]="!offer.isActive"

@@ -26,7 +26,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<Offer> Offers { get; set; }
     public DbSet<OfferProduct> OfferProducts { get; set; }
     public DbSet<OfferCategory> OfferCategories { get; set; }
+    public DbSet<OfferExcludedProduct> OfferExcludedProducts { get; set; }
+    public DbSet<OfferExcludedCategory> OfferExcludedCategories { get; set; }
     public DbSet<OfferApplication> OfferApplications { get; set; }
+    public DbSet<OfferRule> OfferRules { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
     public DbSet<PaymentMethod> PaymentMethods { get; set; }
     public DbSet<PaymentMethodType> PaymentMethodTypes { get; set; }
@@ -46,7 +49,7 @@ public class ApplicationDbContext : DbContext
         base.OnModelCreating(modelBuilder);
         
         // Entities that don't have UpdatedAt column
-        var entitiesWithoutUpdatedAt = new[] { "Offer", "AuditLog", "InventoryMovement", "OfferProduct", "OfferCategory", "User", "Product", "Category", "PaymentMethod", "PaymentMethodType", "RefreshToken", "AnalyticsEvent" };
+        var entitiesWithoutUpdatedAt = new[] { "Offer", "AuditLog", "InventoryMovement", "OfferProduct", "OfferCategory", "OfferExcludedProduct", "OfferExcludedCategory", "OfferRule", "User", "Product", "Category", "PaymentMethod", "PaymentMethodType", "RefreshToken", "AnalyticsEvent" };
 
         modelBuilder.Entity<User>(entity =>
         {
@@ -254,6 +257,44 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.Category).WithMany()
                 .HasForeignKey(e => e.CategoryId).OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(e => new { e.OfferId, e.CategoryId }).IsUnique();
+        });
+
+        modelBuilder.Entity<OfferExcludedProduct>(entity =>
+        {
+            entity.ToTable("offer_excluded_products");
+            entity.HasKey(e => e.Id);
+            entity.Ignore(e => e.UpdatedAt);
+            entity.HasOne(e => e.Offer).WithMany(e => e.ExcludedProducts)
+                .HasForeignKey(e => e.OfferId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Product).WithMany()
+                .HasForeignKey(e => e.ProductId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => new { e.OfferId, e.ProductId }).IsUnique();
+        });
+
+        modelBuilder.Entity<OfferExcludedCategory>(entity =>
+        {
+            entity.ToTable("offer_excluded_categories");
+            entity.HasKey(e => e.Id);
+            entity.Ignore(e => e.UpdatedAt);
+            entity.HasOne(e => e.Offer).WithMany(e => e.ExcludedCategories)
+                .HasForeignKey(e => e.OfferId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Category).WithMany()
+                .HasForeignKey(e => e.CategoryId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => new { e.OfferId, e.CategoryId }).IsUnique();
+        });
+
+        modelBuilder.Entity<OfferRule>(entity =>
+        {
+            entity.ToTable("offer_rules");
+            entity.HasKey(e => e.Id);
+            entity.Ignore(e => e.UpdatedAt);
+            entity.Property(e => e.RuleType).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Value).HasPrecision(18, 2);
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+            entity.HasOne(e => e.Offer).WithMany(e => e.Rules)
+                .HasForeignKey(e => e.OfferId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => e.OfferId);
+            entity.HasIndex(e => e.RuleType);
         });
 
         modelBuilder.Entity<OfferApplication>(entity =>

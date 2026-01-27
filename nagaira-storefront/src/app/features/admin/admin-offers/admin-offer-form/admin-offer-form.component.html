@@ -1,0 +1,341 @@
+<div class="admin-offer-form">
+  <div class="page-header">
+    <h1>{{ offerId() ? 'Editar Oferta' : 'Nueva Oferta' }}</h1>
+    <button class="btn btn-secondary" routerLink="/admin/offers">Volver</button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">Cargando...</div>
+  } @else {
+    <form (ngSubmit)="save()" class="offer-form">
+      <div class="form-section">
+        <h2>Informacion basica</h2>
+        <div class="form-group">
+          <label>Nombre *</label>
+          <input type="text" [(ngModel)]="formData.name" name="name" required>
+        </div>
+
+        <div class="form-group">
+          <label>Descripcion</label>
+          <textarea [(ngModel)]="formData.description" name="description" rows="3"></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tipo de oferta *</label>
+            <select [(ngModel)]="formData.offerType" name="offerType" required>
+              <option value="Percentage">Porcentaje</option>
+              <option value="FixedAmount">Monto fijo</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Prioridad</label>
+            <input type="number" [(ngModel)]="formData.priority" name="priority" min="0">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2>Condiciones de descuento</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Descuento %</label>
+            <input type="number" [(ngModel)]="formData.discountPercentage" name="discountPercentage" min="0" max="100" step="0.01" placeholder="Ej: 15">
+          </div>
+          <div class="form-group">
+            <label>Descuento fijo</label>
+            <input type="number" [(ngModel)]="formData.discountAmount" name="discountAmount" min="0" step="0.01" placeholder="Ej: 50.00">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Minimo compra</label>
+            <input type="number" [(ngModel)]="formData.minPurchaseAmount" name="minPurchaseAmount" min="0" step="0.01" placeholder="Ej: 500.00">
+          </div>
+          <div class="form-group">
+            <label>Minimo cantidad</label>
+            <input type="number" [(ngModel)]="formData.minQuantity" name="minQuantity" min="1" placeholder="Ej: 2">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2>Uso y vigencia</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Inicio *</label>
+            <input type="datetime-local" [(ngModel)]="formData.startDate" name="startDate" required>
+          </div>
+          <div class="form-group">
+            <label>Fin *</label>
+            <input type="datetime-local" [(ngModel)]="formData.endDate" name="endDate" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Max usos por cliente</label>
+            <input type="number" [(ngModel)]="formData.maxUsesPerCustomer" name="maxUsesPerCustomer" min="1" placeholder="Ej: 1">
+          </div>
+          <div class="form-group">
+            <label>Max usos total</label>
+            <input type="number" [(ngModel)]="formData.totalMaxUses" name="totalMaxUses" min="1" placeholder="Ej: 200">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Estado</label>
+            <select [(ngModel)]="formData.status" name="status">
+              <option value="Draft">Borrador</option>
+              <option value="Active">Activa</option>
+              <option value="Paused">Pausada</option>
+              <option value="Expired">Expirada</option>
+              <option value="Cancelled">Cancelada</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" [(ngModel)]="formData.isActive" name="isActive">
+              Oferta activa
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2>Aplica a</h2>
+        <p class="selection-summary">
+          @if (formData.productIds.length === 0 && formData.categoryIds.length === 0) {
+            Oferta global (aplica a todos los productos).
+          } @else {
+            Aplica a {{ formData.productIds.length }} producto(s) y {{ formData.categoryIds.length }} categor\u00eda(s).
+          }
+        </p>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Categorias</label>
+            <input
+              type="text"
+              [ngModel]="applyCategoryQuery()"
+              (ngModelChange)="applyCategoryQuery.set($event)"
+              placeholder="Buscar categor\u00eda..."
+              name="applyCategoryQuery">
+            <div class="selection-actions">
+              <button type="button" class="btn-link" (click)="formData.categoryIds = selectAllCategories(formData.categoryIds, categories())">
+                Seleccionar todo
+              </button>
+              <button type="button" class="btn-link" (click)="formData.categoryIds = clearAll()">
+                Quitar todo
+              </button>
+            </div>
+            @if (formData.categoryIds.length > 0) {
+              <div class="selection-chips">
+                @for (id of formData.categoryIds; track id) {
+                  <button type="button" class="chip" (click)="formData.categoryIds = removeId(formData.categoryIds, id)">
+                    {{ getCategoryName(id) }} <span>\u00d7</span>
+                  </button>
+                }
+              </div>
+            }
+            <div class="selection-list">
+              @for (category of filteredCategories(categories(), applyCategoryQuery(), formData.categoryIds); track category.id) {
+                <label class="selection-item">
+                  <input
+                    type="checkbox"
+                    [checked]="formData.categoryIds.includes(category.id)"
+                    (change)="formData.categoryIds = toggleId(formData.categoryIds, category.id)">
+                  <span>{{ category.name }}</span>
+                </label>
+              }
+              @if (filteredCategories(categories(), applyCategoryQuery(), formData.categoryIds).length === 0) {
+                <span class="selection-empty">Sin resultados</span>
+              }
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Productos</label>
+            <input
+              type="text"
+              [ngModel]="applyProductQuery()"
+              (ngModelChange)="applyProductQuery.set($event)"
+              placeholder="Buscar producto..."
+              name="applyProductQuery">
+            <div class="selection-actions">
+              <button type="button" class="btn-link" (click)="formData.productIds = selectAllProducts(formData.productIds, products())">
+                Seleccionar todo
+              </button>
+              <button type="button" class="btn-link" (click)="formData.productIds = clearAll()">
+                Quitar todo
+              </button>
+            </div>
+            @if (formData.productIds.length > 0) {
+              <div class="selection-chips">
+                @for (id of formData.productIds; track id) {
+                  <button type="button" class="chip" (click)="formData.productIds = removeId(formData.productIds, id)">
+                    {{ getProductName(id) }} <span>\u00d7</span>
+                  </button>
+                }
+              </div>
+            }
+            <div class="selection-list">
+              @for (product of filteredProducts(products(), applyProductQuery(), formData.productIds); track product.id) {
+                <label class="selection-item">
+                  <input
+                    type="checkbox"
+                    [checked]="formData.productIds.includes(product.id)"
+                    (change)="formData.productIds = toggleId(formData.productIds, product.id)">
+                  <span>{{ product.name }}</span>
+                </label>
+              }
+              @if (filteredProducts(products(), applyProductQuery(), formData.productIds).length === 0) {
+                <span class="selection-empty">Sin resultados</span>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2>Exclusiones (si es global)</h2>
+        <p class="selection-summary">
+          Estas exclusiones solo aplican cuando la oferta es global.
+        </p>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Excluir categorias</label>
+            <input
+              type="text"
+              [ngModel]="excludeCategoryQuery()"
+              (ngModelChange)="excludeCategoryQuery.set($event)"
+              placeholder="Buscar categor\u00eda..."
+              name="excludeCategoryQuery">
+            <div class="selection-actions">
+              <button type="button" class="btn-link" (click)="formData.excludedCategoryIds = selectAllCategories(formData.excludedCategoryIds, categories())">
+                Seleccionar todo
+              </button>
+              <button type="button" class="btn-link" (click)="formData.excludedCategoryIds = clearAll()">
+                Quitar todo
+              </button>
+            </div>
+            @if (formData.excludedCategoryIds.length > 0) {
+              <div class="selection-chips">
+                @for (id of formData.excludedCategoryIds; track id) {
+                  <button type="button" class="chip" (click)="formData.excludedCategoryIds = removeId(formData.excludedCategoryIds, id)">
+                    {{ getCategoryName(id) }} <span>\u00d7</span>
+                  </button>
+                }
+              </div>
+            }
+            <div class="selection-list">
+              @for (category of filteredCategories(categories(), excludeCategoryQuery(), formData.excludedCategoryIds); track category.id) {
+                <label class="selection-item">
+                  <input
+                    type="checkbox"
+                    [checked]="formData.excludedCategoryIds.includes(category.id)"
+                    (change)="formData.excludedCategoryIds = toggleId(formData.excludedCategoryIds, category.id)">
+                  <span>{{ category.name }}</span>
+                </label>
+              }
+              @if (filteredCategories(categories(), excludeCategoryQuery(), formData.excludedCategoryIds).length === 0) {
+                <span class="selection-empty">Sin resultados</span>
+              }
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Excluir productos</label>
+            <input
+              type="text"
+              [ngModel]="excludeProductQuery()"
+              (ngModelChange)="excludeProductQuery.set($event)"
+              placeholder="Buscar producto..."
+              name="excludeProductQuery">
+            <div class="selection-actions">
+              <button type="button" class="btn-link" (click)="formData.excludedProductIds = selectAllProducts(formData.excludedProductIds, products())">
+                Seleccionar todo
+              </button>
+              <button type="button" class="btn-link" (click)="formData.excludedProductIds = clearAll()">
+                Quitar todo
+              </button>
+            </div>
+            @if (formData.excludedProductIds.length > 0) {
+              <div class="selection-chips">
+                @for (id of formData.excludedProductIds; track id) {
+                  <button type="button" class="chip" (click)="formData.excludedProductIds = removeId(formData.excludedProductIds, id)">
+                    {{ getProductName(id) }} <span>\u00d7</span>
+                  </button>
+                }
+              </div>
+            }
+            <div class="selection-list">
+              @for (product of filteredProducts(products(), excludeProductQuery(), formData.excludedProductIds); track product.id) {
+                <label class="selection-item">
+                  <input
+                    type="checkbox"
+                    [checked]="formData.excludedProductIds.includes(product.id)"
+                    (change)="formData.excludedProductIds = toggleId(formData.excludedProductIds, product.id)">
+                  <span>{{ product.name }}</span>
+                </label>
+              }
+              @if (filteredProducts(products(), excludeProductQuery(), formData.excludedProductIds).length === 0) {
+                <span class="selection-empty">Sin resultados</span>
+              }
+            </div>
+          </div>
+        </div>
+        <small class="form-hint">
+          Si la oferta no tiene productos ni categorias asignadas, aplica a todo; estas listas excluyen items.
+        </small>
+      </div>
+
+      <div class="form-section">
+        <h2>Reglas opcionales (todas deben cumplirse)</h2>
+        @if (formData.rules.length > 0) {
+          <ul class="rules-list">
+            @for (rule of formData.rules; track rule.ruleType + '-' + rule.value; let i = $index) {
+              <li>
+                <span class="rule-label">{{ rule.ruleType }}</span>
+                <span class="rule-value">{{ rule.value }}</span>
+                <button type="button" class="btn-link" (click)="removeRule(i)">Quitar</button>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="rules-empty">Sin reglas configuradas.</p>
+        }
+
+        <div class="rule-editor">
+          <select
+            [ngModel]="ruleDraft().ruleType"
+            (ngModelChange)="setRuleDraft({ ruleType: $event })"
+            name="ruleType">
+            @for (option of ruleTypeOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="Ej: 100.00 (minimo) o 500.00 (maximo)"
+            [ngModel]="ruleDraft().value"
+            (ngModelChange)="setRuleDraft({ value: $event })"
+            name="ruleValue">
+          <button type="button" class="btn btn-secondary" (click)="addRule()">Agregar regla</button>
+        </div>
+        <small class="form-hint">
+          Ejemplos: precio minimo 100, precio maximo 500, subtotal minimo 300, subtotal maximo 900, carrito minimo 1500.
+        </small>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" routerLink="/admin/offers">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">
+          {{ saving() ? 'Guardando...' : 'Guardar oferta' }}
+        </button>
+      </div>
+    </form>
+  }
+</div>

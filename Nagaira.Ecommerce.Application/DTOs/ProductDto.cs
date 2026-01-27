@@ -14,6 +14,7 @@ public record ProductDto(
     decimal? Cost,
     bool HasVirtualStock,
     bool IsFeatured,
+    decimal? OfferPrice,
     List<ProductImageDto> Images,
     List<ProductPriceDto> Prices
 );
