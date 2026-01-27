@@ -51,6 +51,30 @@ export class CheckoutComponent implements OnInit {
     const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
     return fullName || 'Cliente';
   });
+  discountTotal = computed(() => {
+    if (!this.isAuthenticated()) return 0;
+    return this.cartService.cartItems().reduce((total, item) => {
+      const base = getProductPrice(item.product);
+      const offer = this.getItemOfferPrice(item.product);
+      if (offer === null || offer >= base) return total;
+      return total + ((base - offer) * item.quantity);
+    }, 0);
+  });
+
+  discountedTotal = computed(() => {
+    const total = this.cartService.total();
+    const discount = this.discountTotal();
+    return Math.max(total - discount, 0);
+  });
+
+  discountedSubtotal = computed(() => {
+    const rate = this.appSettings.taxRate();
+    const divisor = 1 + rate;
+    if (divisor <= 0) return this.discountedTotal();
+    return this.discountedTotal() / divisor;
+  });
+
+  discountedTax = computed(() => this.discountedTotal() - this.discountedSubtotal());
 
   shippingForm = this.fb.group({
     fullName: ['', Validators.required],
@@ -176,6 +200,19 @@ export class CheckoutComponent implements OnInit {
 
   getItemPrice(product: Product): number {
     return getProductPrice(product);
+  }
+
+  getItemOfferPrice(product: Product): number | null {
+    if (!this.isAuthenticated()) return null;
+    if (typeof product.offerPrice !== 'number') return null;
+    return product.offerPrice;
+  }
+
+  getItemDisplayPrice(product: Product): number {
+    const base = getProductPrice(product);
+    const offer = this.getItemOfferPrice(product);
+    if (offer !== null && offer < base) return offer;
+    return base;
   }
 
   getTaxLabel(): string {

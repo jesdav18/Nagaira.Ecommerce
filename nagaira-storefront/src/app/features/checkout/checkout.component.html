@@ -184,7 +184,16 @@
                   <span class="item-quantity">{{ item.quantity }}x</span>
                   <span class="item-name">{{ item.product.name }}</span>
                 </div>
-                <span class="item-price">{{ (getItemPrice(item.product) * item.quantity) | appCurrency:'1.2-2' }}</span>
+                <div class="item-price">
+                  @if (getItemOfferPrice(item.product) !== null && getItemOfferPrice(item.product)! < getItemPrice(item.product)) {
+                    <span class="item-price-original">
+                      {{ (getItemPrice(item.product) * item.quantity) | appCurrency:'1.2-2' }}
+                    </span>
+                  }
+                  <span class="item-price-current">
+                    {{ (getItemDisplayPrice(item.product) * item.quantity) | appCurrency:'1.2-2' }}
+                  </span>
+                </div>
               </div>
             }
           </div>
@@ -192,21 +201,30 @@
           <div class="summary-totals">
             <div class="summary-row">
               <span>Subtotal</span>
-              <span>{{ cartService.subtotal() | appCurrency:'1.2-2' }}</span>
+              <span>{{ discountedSubtotal() | appCurrency:'1.2-2' }}</span>
             </div>
             <div class="summary-row">
               <span>Envío</span>
               <span>{{ getShippingFreeLabel() }}</span>
             </div>
+            @if (discountTotal() > 0) {
+              <div class="summary-row discount-row">
+                <span>Descuento</span>
+                <span>-{{ discountTotal() | appCurrency:'1.2-2' }}</span>
+              </div>
+            }
             <div class="summary-row">
               <span>{{ getTaxLabel() }}</span>
-              <span>{{ cartService.tax() | appCurrency:'1.2-2' }}</span>
+              <span>{{ discountedTax() | appCurrency:'1.2-2' }}</span>
             </div>
             <div class="summary-divider"></div>
             <div class="summary-row total">
               <span>Total</span>
-              <span>{{ cartService.total() | appCurrency:'1.2-2' }}</span>
+              <span>{{ discountedTotal() | appCurrency:'1.2-2' }}</span>
             </div>
+            @if (discountTotal() > 0) {
+              <small class="summary-note">Descuento estimado; el total final se confirma al pagar.</small>
+            }
           </div>
 
           @if (error()) {

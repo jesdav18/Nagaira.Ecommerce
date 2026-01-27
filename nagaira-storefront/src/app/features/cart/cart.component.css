@@ -69,6 +69,18 @@
 }
 
 .item-price {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.item-price-original {
+    font-size: 0.85rem;
+    color: var(--text-tertiary);
+    text-decoration: line-through;
+}
+
+.item-price-current {
     font-weight: 600;
     color: var(--primary-color);
 }
@@ -159,6 +171,18 @@
     font-size: 1.5rem;
     color: var(--text-primary);
     margin-bottom: 2rem;
+}
+
+.summary-row.discount-row {
+    color: #15803d;
+    font-weight: 600;
+}
+
+.summary-note {
+    display: block;
+    margin-top: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
 }
 
 .checkout-btn {
