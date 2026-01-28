@@ -561,6 +561,8 @@ export class AdminProductFormComponent implements OnInit {
         id: currentProductId,
         name: this.formData.name,
         description: this.formData.description,
+        sku: this.formData.sku,
+        categoryId: this.formData.categoryId,
         cost: this.formData.cost,
         isActive: this.formData.isActive,
         hasVirtualStock: this.formData.hasVirtualStock,

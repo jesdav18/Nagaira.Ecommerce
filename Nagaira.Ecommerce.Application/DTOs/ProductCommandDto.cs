@@ -40,6 +40,13 @@ public record UpdateProductDto(
     [StringLength(2000, ErrorMessage = "La descripción no puede exceder 2000 caracteres")]
     string Description,
     
+    [Required(ErrorMessage = "El SKU es requerido")]
+    [StringLength(50, ErrorMessage = "El SKU no puede exceder 50 caracteres")]
+    string Sku,
+    
+    [Required(ErrorMessage = "La categoría es requerida")]
+    Guid CategoryId,
+    
     [Range(0, double.MaxValue, ErrorMessage = "El costo debe ser mayor o igual a 0")]
     decimal? Cost,
     
@@ -64,3 +71,4 @@ public record CreateProductImageDto(
     bool IsPrimary,
     int DisplayOrder
 );
+

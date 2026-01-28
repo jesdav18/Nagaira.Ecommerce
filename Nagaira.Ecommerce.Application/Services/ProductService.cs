@@ -160,6 +160,26 @@ public class ProductService : IProductService
         var product = await _unitOfWork.Products.GetByIdAsync(dto.Id);
         if (product == null) throw new Exception("Product not found");
 
+        if (!string.Equals(product.Sku, dto.Sku, StringComparison.OrdinalIgnoreCase))
+        {
+            var existing = await _unitOfWork.Products.GetBySkuIncludingDeletedAsync(dto.Sku);
+            if (existing != null && existing.Id != product.Id && !existing.IsDeleted)
+            {
+                throw new Exception($"El SKU '{dto.Sku}' ya existe. Por favor, use un SKU diferente.");
+            }
+            product.Sku = dto.Sku;
+        }
+
+        if (product.CategoryId != dto.CategoryId)
+        {
+            var category = await _unitOfWork.Repository<Category>().GetByIdAsync(dto.CategoryId);
+            if (category == null || category.IsDeleted)
+            {
+                throw new Exception("Category not found or is deleted");
+            }
+            product.CategoryId = dto.CategoryId;
+        }
+
         if (!string.Equals(product.Name, dto.Name, StringComparison.OrdinalIgnoreCase))
         {
             var newSlug = await GenerateUniqueSlugAsync(dto.Name, product.Id);
