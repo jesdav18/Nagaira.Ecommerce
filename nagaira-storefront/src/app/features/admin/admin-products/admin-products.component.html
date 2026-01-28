@@ -1,7 +1,11 @@
 <div class="admin-products">
   <div class="page-header">
     <h1>Gestión de Productos</h1>
-    <button class="btn btn-primary" routerLink="/admin/products/new">+ Nuevo Producto</button>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="downloadCatalog('a4')">Descargar catálogo A4</button>
+      <button class="btn btn-secondary" (click)="downloadCatalog('cards')">Descargar fichas</button>
+      <button class="btn btn-primary" routerLink="/admin/products/new">+ Nuevo Producto</button>
+    </div>
   </div>
 
   <div class="filters">
