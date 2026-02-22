@@ -137,6 +137,46 @@ export interface CreateOrderRequest {
   shippingAddressId?: string;
 }
 
+export interface Quote {
+  id: string;
+  quoteNumber: string;
+  createdAt: string;
+  customerName: string;
+  customerTaxId?: string | null;
+  customerType: 'named' | 'consumer_final';
+  subtotal: number;
+  tax: number;
+  discount: number;
+  total: number;
+  currencySymbol: string;
+  taxLabel: string;
+  items: QuoteItem[];
+}
+
+export interface QuoteItem {
+  productId: string;
+  productName: string;
+  sku: string;
+  quantity: number;
+  unitPrice: number;
+  unitPriceOriginal?: number | null;
+  subtotal: number;
+}
+
+export interface CreateQuoteRequest {
+  customerName: string;
+  customerTaxId?: string | null;
+  customerType: 'named' | 'consumer_final';
+  currencySymbol: string;
+  taxLabel: string;
+  taxRate: number;
+  subtotal: number;
+  tax: number;
+  discount: number;
+  total: number;
+  items: QuoteItem[];
+}
+
 export interface Supplier {
   id: string;
   name: string;

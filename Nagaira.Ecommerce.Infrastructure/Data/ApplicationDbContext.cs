@@ -43,13 +43,15 @@ public class ApplicationDbContext : DbContext
     public DbSet<SlugHistory> SlugHistories { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<AnalyticsEvent> AnalyticsEvents { get; set; }
+    public DbSet<Quote> Quotes { get; set; }
+    public DbSet<QuoteItem> QuoteItems { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
         
         // Entities that don't have UpdatedAt column
-        var entitiesWithoutUpdatedAt = new[] { "Offer", "AuditLog", "InventoryMovement", "OfferProduct", "OfferCategory", "OfferExcludedProduct", "OfferExcludedCategory", "OfferRule", "User", "Product", "Category", "PaymentMethod", "PaymentMethodType", "RefreshToken", "AnalyticsEvent" };
+        var entitiesWithoutUpdatedAt = new[] { "Offer", "AuditLog", "InventoryMovement", "OfferProduct", "OfferCategory", "OfferExcludedProduct", "OfferExcludedCategory", "OfferRule", "User", "Product", "Category", "PaymentMethod", "PaymentMethodType", "RefreshToken", "AnalyticsEvent", "Quote", "QuoteItem" };
 
         modelBuilder.Entity<User>(entity =>
         {
@@ -90,6 +92,50 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.EventName);
             entity.HasIndex(e => e.SessionId);
             entity.HasIndex(e => e.OrderId);
+        });
+
+        modelBuilder.Entity<Quote>(entity =>
+        {
+            entity.ToTable("quotes");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.QuoteNumber).IsRequired().HasMaxLength(30);
+            entity.HasIndex(e => e.QuoteNumber).IsUnique();
+            entity.Property(e => e.CustomerName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.CustomerTaxId).HasMaxLength(50);
+            entity.Property(e => e.CustomerType).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.CurrencySymbol).IsRequired().HasMaxLength(10);
+            entity.Property(e => e.TaxLabel).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.TaxRate).HasPrecision(10, 4);
+            entity.Property(e => e.Subtotal).HasPrecision(18, 2);
+            entity.Property(e => e.Tax).HasPrecision(18, 2);
+            entity.Property(e => e.Discount).HasPrecision(18, 2);
+            entity.Property(e => e.Total).HasPrecision(18, 2);
+            entity.Property(e => e.Status).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+            entity.Ignore(e => e.UpdatedAt);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => e.CustomerName);
+            entity.HasIndex(e => e.Status);
+        });
+
+        modelBuilder.Entity<QuoteItem>(entity =>
+        {
+            entity.ToTable("quote_items");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ProductName).IsRequired().HasMaxLength(300);
+            entity.Property(e => e.Sku).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Quantity).IsRequired();
+            entity.Property(e => e.UnitPrice).HasPrecision(18, 2);
+            entity.Property(e => e.UnitPriceOriginal).HasPrecision(18, 2);
+            entity.Property(e => e.Subtotal).HasPrecision(18, 2);
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+            entity.Ignore(e => e.UpdatedAt);
+            entity.HasOne(e => e.Quote).WithMany(e => e.Items)
+                .HasForeignKey(e => e.QuoteId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Product).WithMany()
+                .HasForeignKey(e => e.ProductId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(e => e.QuoteId);
+            entity.HasIndex(e => e.ProductId);
         });
 
         modelBuilder.Entity<RefreshToken>(entity =>

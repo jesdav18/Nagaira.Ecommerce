@@ -98,6 +98,9 @@
           <a routerLink="/checkout" class="btn btn-primary btn-block checkout-btn">
             Finalizar Compra
           </a>
+          <button type="button" class="btn btn-outline btn-block quote-btn" (click)="generateQuotePdf()" [disabled]="generatingQuote()">
+            {{ generatingQuote() ? 'Generando cotizacion...' : 'Generar cotizacion PDF' }}
+          </button>
 
 
         </div>

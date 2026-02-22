@@ -194,6 +194,25 @@
     margin-bottom: 1rem;
 }
 
+.quote-btn {
+    width: 100%;
+    display: block;
+    text-align: center;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.quote-btn:hover {
+    background: var(--bg-secondary);
+}
+
+.quote-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
 .secure-checkout {
     text-align: center;
     font-size: 0.875rem;
