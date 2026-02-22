@@ -60,6 +60,12 @@
           }}</span>
         </div>
 
+        @if (showWholesalePrice) {
+          <div class="wholesale-price">
+            Precio mayorista: {{ wholesalePrice | appCurrency : "1.2-2" }}
+          </div>
+        }
+
         <div class="product-description">
           <h3>Descripción</h3>
           <p>{{ product()?.description }}</p>

@@ -1,6 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { CartItem, Product } from '../models/models';
-import { getProductPrice } from '../utils/product.utils';
+import { getProductPriceByQuantity } from '../utils/product.utils';
 import { AppSettingsService } from './app-settings.service';
 import { AnalyticsService } from './analytics.service';
 
@@ -24,7 +24,7 @@ export class CartService {
 
   private grossSubtotal = computed(() =>
     this.items().reduce((total, item) => {
-      const price = getProductPrice(item.product);
+      const price = getProductPriceByQuantity(item.product, item.quantity);
       return total + (price * item.quantity);
     }, 0)
   );
@@ -43,7 +43,8 @@ export class CartService {
   addToCart(product: Product, quantity: number = 1): void {
     const currentItems = this.items();
     const existingItem = currentItems.find(item => item.product.id === product.id);
-    const price = getProductPrice(product);
+    const resultingQuantity = existingItem ? existingItem.quantity + quantity : quantity;
+    const price = getProductPriceByQuantity(product, resultingQuantity);
 
     if (existingItem) {
       const updatedItems = currentItems.map(item =>

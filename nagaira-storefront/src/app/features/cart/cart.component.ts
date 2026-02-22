@@ -6,7 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { AppSettingsService } from '../../core/services/app-settings.service';
 import { AppCurrencyPipe } from '../../core/pipes/currency.pipe';
 import { Product } from '../../core/models/models';
-import { getProductPrice, getProductStock, isVirtualStock } from '../../core/utils/product.utils';
+import { getProductPriceByQuantity, getProductStock, isVirtualStock } from '../../core/utils/product.utils';
 import { NotificationService } from '../../core/services/notification.service';
 
 @Component({
@@ -40,7 +40,7 @@ export class CartComponent {
   get discountTotal(): number {
     if (!this.authService.isAuthenticated()) return 0;
     return this.cartService.cartItems().reduce((total, item) => {
-      const base = getProductPrice(item.product);
+      const base = getProductPriceByQuantity(item.product, item.quantity);
       const offer = this.getItemOfferPrice(item.product);
       if (offer === null || offer >= base) return total;
       return total + ((base - offer) * item.quantity);
@@ -62,8 +62,8 @@ export class CartComponent {
     return this.discountedTotal - this.discountedSubtotal;
   }
 
-  getItemPrice(product: Product): number {
-    return getProductPrice(product);
+  getItemPrice(product: Product, quantity: number): number {
+    return getProductPriceByQuantity(product, quantity);
   }
 
   getItemOfferPrice(product: Product): number | null {
@@ -72,8 +72,8 @@ export class CartComponent {
     return product.offerPrice;
   }
 
-  getItemDisplayPrice(product: Product): number {
-    const base = getProductPrice(product);
+  getItemDisplayPrice(product: Product, quantity: number): number {
+    const base = getProductPriceByQuantity(product, quantity);
     const offer = this.getItemOfferPrice(product);
     if (offer !== null && offer < base) return offer;
     return base;

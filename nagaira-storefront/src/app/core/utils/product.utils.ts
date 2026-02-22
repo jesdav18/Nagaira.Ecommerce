@@ -1,6 +1,10 @@
 import { Product, ProductPrice } from '../models/models';
 
 export function getProductPrice(product: Product, priceLevelId?: string): number {
+  return getProductPriceByQuantity(product, 1, priceLevelId);
+}
+
+export function getProductPriceByQuantity(product: Product, quantity: number, priceLevelId?: string): number {
   if (!product.prices || product.prices.length === 0) {
     return 0;
   }
@@ -17,7 +21,31 @@ export function getProductPrice(product: Product, priceLevelId?: string): number
     return 0;
   }
 
-  const sortedPrices = activePrices.sort((a, b) => a.minQuantity - b.minQuantity);
+  const retailPrice = getRetailPrice(activePrices);
+  if (quantity >= 3) {
+    const wholesalePrice = getWholesalePrice(product);
+    if (wholesalePrice !== null) {
+      return wholesalePrice;
+    }
+  }
+
+  return retailPrice;
+}
+
+export function getWholesalePrice(product: Product): number | null {
+  if (!product.prices || product.prices.length === 0) {
+    return null;
+  }
+
+  const wholesale = product.prices.find(p =>
+    p.isActive && (p.priceLevelName || '').trim().toLowerCase().includes('mayorista')
+  );
+
+  return wholesale ? wholesale.price : null;
+}
+
+function getRetailPrice(activePrices: ProductPrice[]): number {
+  const sortedPrices = [...activePrices].sort((a, b) => a.minQuantity - b.minQuantity);
   return sortedPrices[0].price;
 }
 

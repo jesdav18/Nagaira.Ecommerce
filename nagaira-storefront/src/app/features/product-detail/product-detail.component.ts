@@ -5,7 +5,7 @@ import { ProductService } from '../../core/services/product.service';
 import { CartService } from '../../core/services/cart.service';
 import { AppCurrencyPipe } from '../../core/pipes/currency.pipe';
 import { Product } from '../../core/models/models';
-import { getProductPrice, getProductStock, isVirtualStock } from '../../core/utils/product.utils';
+import { getProductPrice, getProductStock, getWholesalePrice, isVirtualStock } from '../../core/utils/product.utils';
 import { SeoService } from '../../core/services/seo.service';
 import { SeoResolveService } from '../../core/services/seo-resolve.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
@@ -143,6 +143,15 @@ export class ProductDetailComponent implements OnInit {
   get discountPercentage(): number {
     if (!this.showOffer || this.offerPrice === null || this.basePrice <= 0) return 0;
     return Math.round(((this.basePrice - this.offerPrice) / this.basePrice) * 100);
+  }
+
+  get wholesalePrice(): number | null {
+    const p = this.product();
+    return p ? getWholesalePrice(p) : null;
+  }
+
+  get showWholesalePrice(): boolean {
+    return this.wholesalePrice !== null && this.wholesalePrice !== this.finalPrice;
   }
 
   get stock(): number | null {

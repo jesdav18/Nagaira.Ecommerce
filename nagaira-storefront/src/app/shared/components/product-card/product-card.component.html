@@ -26,6 +26,12 @@
       <span class="price-current">{{ finalPrice | appCurrency:'1.2-2' }}</span>
     </div>
 
+    @if (showWholesalePrice) {
+      <div class="product-wholesale-price">
+        Mayorista: {{ wholesalePrice | appCurrency:'1.2-2' }}
+      </div>
+    }
+
     <button 
       class="btn-add-cart" 
       (click)="addToCart($event)"

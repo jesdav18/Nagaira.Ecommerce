@@ -347,18 +347,34 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
     .catalog-title { font-size: 18px; font-weight: 700; margin: 0; color: #111827; }
     .grid-a4 { display: grid; grid-template-columns: 1fr; gap: 14px; }
     .grid-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
-    .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; display: grid; grid-template-columns: 120px 1fr; gap: 12px; }
+    .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; display: grid; grid-template-columns: 120px 1fr; gap: 12px; break-inside: avoid; page-break-inside: avoid; -webkit-column-break-inside: avoid; }
     .card-img { width: 120px; height: 120px; border-radius: 8px; background: #f3f4f6; overflow: hidden; }
     .card-img img { width: 100%; height: 100%; object-fit: cover; }
     .card-title { font-size: 14px; font-weight: 700; margin: 0 0 6px 0; }
     .card-sku { font-size: 12px; color: #6b7280; margin-bottom: 6px; }
     .card-desc { font-size: 12px; color: #374151; margin-bottom: 8px; line-height: 1.4; }
     .card-meta { font-size: 12px; color: #6b7280; margin-bottom: 6px; }
-    .card-price { font-size: 14px; font-weight: 700; color: #8b4513; }
+    .card-prices { margin-top: 10px; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; }
+    .card-price-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; }
+    .card-price-row + .card-price-row { border-top: 1px solid #e5e7eb; }
+    .card-price-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
+    .card-price-value { font-size: 14px; font-weight: 800; line-height: 1; }
+    .card-price-retail { background: #f9fafb; }
+    .card-price-retail .card-price-label { color: #6b7280; }
+    .card-price-retail .card-price-value { color: #111111; }
+    .card-price-wholesale { background: #fff1f2; }
+    .card-price-wholesale .card-price-label { color: #9f1239; }
+    .card-price-wholesale .card-price-value { color: #dc2626; }
+    .layout-cards .card { grid-template-columns: 96px 1fr; gap: 10px; padding: 10px; }
+    .layout-cards .card-img { width: 96px; height: 96px; }
+    .layout-cards .card-desc { margin-bottom: 6px; }
+    .layout-cards .card-price-row { align-items: flex-start; flex-direction: column; gap: 2px; padding: 7px 8px; }
+    .layout-cards .card-price-label { font-size: 10px; }
+    .layout-cards .card-price-value { font-size: 13px; }
     .page { padding: 18px; }
   </style>
 </head>
-<body>
+<body class="layout-${layout}">
   <div class="page">
     <div class="catalog-header">
       <img class="catalog-logo" src="${this.escapeHtml(logoUrl)}" alt="Nagaira" />
@@ -448,8 +464,16 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
 
   private renderProductCard(product: Product, layout: 'a4' | 'cards'): string {
     const imageUrl = this.getPrimaryImage(product);
-    const price = this.getMinoristaPrice(product);
-    const priceText = price !== null ? this.formatCurrency(price) : 'Sin precio';
+    const retailPrice = this.getMinoristaPrice(product);
+    const wholesalePrice = this.getMayoristaPrice(product);
+    const retailText = retailPrice !== null ? this.formatCurrency(retailPrice) : 'Sin precio';
+    const wholesaleText = wholesalePrice !== null ? this.formatCurrency(wholesalePrice) : '';
+    const wholesaleRow = wholesalePrice !== null
+      ? `<div class="card-price-row card-price-wholesale">
+           <span class="card-price-label">Mayorista</span>
+           <span class="card-price-value">${this.escapeHtml(wholesaleText)}</span>
+         </div>`
+      : '';
     const desc = this.truncate(product.description || '', layout === 'a4' ? 220 : 140);
     return `
       <div class="card">
@@ -461,7 +485,13 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
           <div class="card-sku">SKU: ${this.escapeHtml(product.sku)}</div>
           <div class="card-meta">Categor&iacute;a: ${this.escapeHtml(product.categoryName || '-')}</div>
           <div class="card-desc">${this.escapeHtml(desc)}</div>
-          <div class="card-price">${this.escapeHtml(priceText)}</div>
+          <div class="card-prices">
+            <div class="card-price-row card-price-retail">
+              <span class="card-price-label">Precio</span>
+              <span class="card-price-value">${this.escapeHtml(retailText)}</span>
+            </div>
+            ${wholesaleRow}
+          </div>
         </div>
       </div>
     `;
@@ -485,6 +515,14 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
     const active = product.prices.filter(p => p.isActive);
     if (active.length === 0) return null;
     return active.sort((a, b) => a.minQuantity - b.minQuantity)[0].price;
+  }
+
+  private getMayoristaPrice(product: Product): number | null {
+    if (!product.prices || product.prices.length === 0) return null;
+    const mayorista = product.prices.find(p =>
+      p.isActive && (p.priceLevelName || '').toLowerCase().includes('mayorista')
+    );
+    return mayorista ? mayorista.price : null;
   }
 
   private formatCurrency(value: number): string {
