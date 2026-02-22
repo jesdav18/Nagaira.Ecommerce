@@ -12,6 +12,7 @@ using Nagaira.Ecommerce.Domain.Entities;
 using Nagaira.Ecommerce.Domain.Interfaces;
 using Nagaira.Ecommerce.Infrastructure.Data;
 using Nagaira.Ecommerce.Infrastructure.Repositories;
+using Nagaira.Ecommerce.Api.WhatsApp;
 
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
@@ -156,6 +157,13 @@ builder.Services.AddScoped<IAuthService>(sp =>
         jwtIssuer,
         jwtExpirationDays,
         refreshTokenDays));
+
+builder.Services.Configure<WhatsAppOptions>(builder.Configuration.GetSection("WhatsApp"));
+builder.Services.AddSingleton<IWhatsAppBotState, InMemoryWhatsAppBotState>();
+builder.Services.AddScoped<IWhatsAppBot, WhatsAppBot>();
+builder.Services.AddHttpClient<MetaWhatsAppClient>();
+builder.Services.AddHttpClient<TwilioWhatsAppClient>();
+builder.Services.AddScoped<IWhatsAppClient, WhatsAppClientSelector>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
