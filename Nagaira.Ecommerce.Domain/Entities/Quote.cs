@@ -11,9 +11,9 @@ public class Quote : BaseEntity
     public decimal TaxRate { get; set; }
     public decimal Subtotal { get; set; }
     public decimal Tax { get; set; }
+    public decimal ShippingAmount { get; set; }
     public decimal Discount { get; set; }
     public decimal Total { get; set; }
     public string Status { get; set; } = "draft";
     public List<QuoteItem> Items { get; set; } = new();
 }
-

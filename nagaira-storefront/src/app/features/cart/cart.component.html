@@ -85,12 +85,51 @@
             </div>
           }
 
+          <div class="quote-shipping-box">
+            <label class="quote-shipping-toggle">
+              <input
+                type="checkbox"
+                [checked]="includeShippingInQuote()"
+                (change)="onShippingToggle($any($event.target).checked)"
+              >
+              <span>Agregar envio a la cotizacion</span>
+            </label>
+
+            @if (includeShippingInQuote()) {
+              <div class="quote-shipping-input-group">
+                <label for="quoteShippingAmount">Valor del envio</label>
+                <input
+                  id="quoteShippingAmount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  [value]="quoteShippingAmount()"
+                  (input)="updateQuoteShippingAmount($any($event.target).value)"
+                  placeholder="Ejemplo: 85.00"
+                >
+              </div>
+
+              @if (quoteShippingTotal > 0) {
+                <div class="summary-row quote-shipping-row">
+                  <span>Envio cotizacion</span>
+                  <span>{{ quoteShippingTotal | appCurrency:'1.2-2' }}</span>
+                </div>
+              }
+            }
+          </div>
+
           <div class="summary-divider"></div>
 
           <div class="summary-row total">
             <span>Total</span>
             <span>{{ discountedTotal | appCurrency:'1.2-2' }}</span>
           </div>
+          @if (quoteShippingTotal > 0) {
+            <div class="summary-row quote-total-row">
+              <span>Total cotizacion</span>
+              <span>{{ quoteGrandTotal | appCurrency:'1.2-2' }}</span>
+            </div>
+          }
           @if (discountTotal > 0) {
             <small class="summary-note">Descuento estimado; el total final se confirma al pagar.</small>
           }

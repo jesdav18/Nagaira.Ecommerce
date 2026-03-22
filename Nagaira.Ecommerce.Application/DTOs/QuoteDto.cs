@@ -9,6 +9,7 @@ public record QuoteDto(
     string CustomerType,
     decimal Subtotal,
     decimal Tax,
+    decimal ShippingAmount,
     decimal Discount,
     decimal Total,
     string CurrencySymbol,
@@ -35,6 +36,7 @@ public record CreateQuoteDto(
     decimal TaxRate,
     decimal Subtotal,
     decimal Tax,
+    decimal ShippingAmount,
     decimal Discount,
     decimal Total,
     List<CreateQuoteItemDto> Items
@@ -49,4 +51,3 @@ public record CreateQuoteItemDto(
     decimal? UnitPriceOriginal,
     decimal Subtotal
 );
-

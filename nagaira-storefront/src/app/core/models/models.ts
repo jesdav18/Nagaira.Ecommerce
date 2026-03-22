@@ -62,6 +62,7 @@ export interface User {
   firstName: string;
   lastName: string;
   phoneNumber: string;
+  taxId?: string;
   role: string;
 }
 
@@ -146,6 +147,7 @@ export interface Quote {
   customerType: 'named' | 'consumer_final';
   subtotal: number;
   tax: number;
+  shippingAmount: number;
   discount: number;
   total: number;
   currencySymbol: string;
@@ -172,6 +174,7 @@ export interface CreateQuoteRequest {
   taxRate: number;
   subtotal: number;
   tax: number;
+  shippingAmount: number;
   discount: number;
   total: number;
   items: QuoteItem[];

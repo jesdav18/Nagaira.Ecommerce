@@ -1,8 +1,8 @@
 using Nagaira.Ecommerce.Application.DTOs;
 using Nagaira.Ecommerce.Application.Interfaces;
+using Nagaira.Ecommerce.Application.Pricing;
 using Nagaira.Ecommerce.Domain.Entities;
 using Nagaira.Ecommerce.Domain.Interfaces;
-using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore;
 
 namespace Nagaira.Ecommerce.Application.Services;
@@ -31,7 +31,7 @@ public class OrderService : IOrderService
                 if (user == null) throw new Exception("User not found");
 
                 var orderNumber = GenerateOrderNumber();
-                decimal subtotal = 0;
+                decimal orderTotal = 0;
 
                 var order = new Order
                 {
@@ -43,8 +43,8 @@ public class OrderService : IOrderService
                     CreatedAt = DateTime.UtcNow
                 };
 
+                var taxRate = 0.16m;
                 decimal totalDiscount = 0;
-
                 var itemInfos = new List<(Product Product, int Quantity, decimal BaseUnitPrice)>();
                 decimal cartBaseTotal = 0;
 
@@ -57,13 +57,12 @@ public class OrderService : IOrderService
                     {
                         var balance = await _unitOfWork.InventoryBalances.GetByProductIdAsync(item.ProductId);
                         var availableQuantity = balance?.AvailableQuantity ?? 0;
-                        if (availableQuantity < item.Quantity) 
+                        if (availableQuantity < item.Quantity)
                             throw new Exception($"Insufficient stock for {product.Name}. Available: {availableQuantity}");
                     }
 
-                    var basePrice = await _unitOfWork.ProductPrices
-                        .GetPriceForProductAndLevelAsync(item.ProductId, user.PriceLevelId);
-                    
+                    var prices = await _unitOfWork.ProductPrices.GetByProductIdAsync(item.ProductId);
+                    var basePrice = ProductPriceResolver.ResolveUnitPrice(prices, item.Quantity);
                     if (!basePrice.HasValue)
                         throw new Exception($"No price found for product {product.Name}");
 
@@ -78,7 +77,7 @@ public class OrderService : IOrderService
                     var unitPrice = info.BaseUnitPrice;
 
                     var applicableOffers = await _unitOfWork.Offers.GetOffersForProductAsync(product.Id, DateTime.UtcNow);
-                    
+
                     foreach (var offer in applicableOffers.OrderByDescending(o => o.Priority))
                     {
                         if (offer.TotalMaxUses.HasValue && offer.CurrentUses >= offer.TotalMaxUses.Value)
@@ -131,8 +130,8 @@ public class OrderService : IOrderService
                         }
                     }
 
-                    var itemSubtotal = unitPrice * quantity;
-                    subtotal += itemSubtotal;
+                    var itemTotal = unitPrice * quantity;
+                    orderTotal += itemTotal;
 
                     var orderItem = new OrderItem
                     {
@@ -141,7 +140,7 @@ public class OrderService : IOrderService
                         ProductId = product.Id,
                         Quantity = quantity,
                         UnitPrice = unitPrice,
-                        Subtotal = itemSubtotal,
+                        Subtotal = itemTotal,
                         CreatedAt = DateTime.UtcNow
                     };
 
@@ -188,10 +187,10 @@ public class OrderService : IOrderService
                     await _unitOfWork.InventoryMovements.AddAsync(inventoryMovement);
                 }
 
-                order.Subtotal = subtotal;
-                order.Tax = (subtotal - totalDiscount) * 0.16m;
+                order.Total = orderTotal;
+                order.Subtotal = orderTotal / (1 + taxRate);
+                order.Tax = orderTotal - order.Subtotal;
                 order.ShippingCost = 0;
-                order.Total = order.Subtotal + order.Tax + order.ShippingCost;
 
                 await _unitOfWork.Orders.AddAsync(order);
                 await _unitOfWork.SaveChangesAsync();
@@ -263,7 +262,7 @@ public class OrderService : IOrderService
             order.ShippingCost,
             order.Total,
             order.Status.ToString(),
-            order.Items.Select(i => 
+            order.Items.Select(i =>
             {
                 var suppliers = i.OrderItemSuppliers?.Select(ois => new OrderItemSupplierDto(
                     ois.ProductSupplierId,

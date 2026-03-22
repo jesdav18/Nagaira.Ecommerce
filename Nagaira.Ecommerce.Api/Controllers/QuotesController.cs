@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nagaira.Ecommerce.Application.DTOs;
+using Nagaira.Ecommerce.Application.Pricing;
 using Nagaira.Ecommerce.Domain.Entities;
 using Nagaira.Ecommerce.Domain.Interfaces;
 
@@ -68,15 +69,15 @@ public class QuotesController : ControllerBase
                 {
                     await using var tx = await dbContext.Database.BeginTransactionAsync(ct);
 
-                var sanitizedName = customerType == "consumer_final"
-                    ? "Consumidor final"
-                    : dto.CustomerName.Trim();
-                var sanitizedTaxId = customerType == "consumer_final"
-                    ? null
-                    : dto.CustomerTaxId?.Trim();
+                    var sanitizedName = customerType == "consumer_final"
+                        ? "Consumidor final"
+                        : dto.CustomerName.Trim();
+                    var sanitizedTaxId = customerType == "consumer_final"
+                        ? null
+                        : dto.CustomerTaxId?.Trim();
 
                     var items = new List<QuoteItem>();
-                    decimal subtotal = 0m;
+                    decimal orderTotal = 0m;
 
                     foreach (var item in dto.Items)
                     {
@@ -85,41 +86,52 @@ public class QuotesController : ControllerBase
                             throw new InvalidOperationException("La cantidad debe ser mayor a cero.");
                         }
 
-                        if (item.UnitPrice < 0)
-                        {
-                            throw new InvalidOperationException("El precio unitario no puede ser negativo.");
-                        }
-
                         var product = await _unitOfWork.Products.GetByIdAsync(item.ProductId);
                         if (product == null || product.IsDeleted || !product.IsActive)
                         {
                             throw new InvalidOperationException($"Producto no valido: {item.ProductId}");
                         }
 
-                        var unitPrice = Math.Round(item.UnitPrice, 2);
-                        var lineSubtotal = Math.Round(unitPrice * item.Quantity, 2);
-                        subtotal += lineSubtotal;
+                        var prices = await _unitOfWork.ProductPrices.GetByProductIdAsync(item.ProductId);
+                        var unitPrice = ProductPriceResolver.ResolveUnitPrice(prices, item.Quantity);
+                        if (!unitPrice.HasValue)
+                        {
+                            throw new InvalidOperationException($"No price found for product {product.Name}");
+                        }
+
+                        var originalUnitPrice = prices
+                            .Where(p => p.IsActive && !p.IsDeleted)
+                            .OrderBy(p => p.MinQuantity)
+                            .Select(p => (decimal?)p.Price)
+                            .FirstOrDefault();
+
+                        var lineSubtotal = Math.Round(unitPrice.Value * item.Quantity, 2);
+                        orderTotal += lineSubtotal;
 
                         items.Add(new QuoteItem
                         {
                             Id = Guid.NewGuid(),
                             ProductId = product.Id,
-                            ProductName = string.IsNullOrWhiteSpace(item.ProductName) ? product.Name : item.ProductName.Trim(),
-                            Sku = string.IsNullOrWhiteSpace(item.Sku) ? product.Sku : item.Sku.Trim(),
+                            ProductName = product.Name,
+                            Sku = product.Sku,
                             Quantity = item.Quantity,
-                            UnitPrice = unitPrice,
-                            UnitPriceOriginal = item.UnitPriceOriginal,
+                            UnitPrice = Math.Round(unitPrice.Value, 2),
+                            UnitPriceOriginal = originalUnitPrice.HasValue && originalUnitPrice.Value > unitPrice.Value
+                                ? Math.Round(originalUnitPrice.Value, 2)
+                                : null,
                             Subtotal = lineSubtotal,
                             CreatedAt = DateTime.UtcNow,
                             IsDeleted = false
                         });
                     }
 
-                    var discount = dto.Discount < 0 ? 0 : Math.Round(dto.Discount, 2);
-                    var taxableSubtotal = Math.Max(subtotal - discount, 0);
                     var taxRate = dto.TaxRate < 0 ? 0 : dto.TaxRate;
-                    var tax = Math.Round(taxableSubtotal * taxRate, 2);
-                    var total = Math.Round(taxableSubtotal + tax, 2);
+                    var shippingAmount = dto.ShippingAmount < 0 ? 0 : Math.Round(dto.ShippingAmount, 2);
+                    var discount = dto.Discount < 0 ? 0 : Math.Round(dto.Discount, 2);
+                    var taxableBase = Math.Max(orderTotal - discount, 0);
+                    var subtotal = Math.Round(taxableBase / (1 + taxRate), 2);
+                    var tax = Math.Round(taxableBase - subtotal, 2);
+                    var total = Math.Round(subtotal + tax + shippingAmount, 2);
 
                     var quote = new Quote
                     {
@@ -133,6 +145,7 @@ public class QuotesController : ControllerBase
                         TaxRate = taxRate,
                         Subtotal = subtotal,
                         Tax = tax,
+                        ShippingAmount = shippingAmount,
                         Discount = discount,
                         Total = total,
                         Status = "draft",
@@ -179,6 +192,7 @@ public class QuotesController : ControllerBase
             quote.CustomerType,
             quote.Subtotal,
             quote.Tax,
+            quote.ShippingAmount,
             quote.Discount,
             quote.Total,
             quote.CurrencySymbol,

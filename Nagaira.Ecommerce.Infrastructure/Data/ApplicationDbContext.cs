@@ -108,6 +108,7 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.TaxRate).HasPrecision(10, 4);
             entity.Property(e => e.Subtotal).HasPrecision(18, 2);
             entity.Property(e => e.Tax).HasPrecision(18, 2);
+            entity.Property(e => e.ShippingAmount).HasPrecision(18, 2);
             entity.Property(e => e.Discount).HasPrecision(18, 2);
             entity.Property(e => e.Total).HasPrecision(18, 2);
             entity.Property(e => e.Status).IsRequired().HasMaxLength(20);

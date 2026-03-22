@@ -185,6 +185,64 @@
     font-size: 0.85rem;
 }
 
+.quote-shipping-box {
+    margin-top: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    background: var(--bg-secondary);
+}
+
+.quote-shipping-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.quote-shipping-toggle input {
+    width: 16px;
+    height: 16px;
+}
+
+.quote-shipping-input-group {
+    margin-top: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.quote-shipping-input-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.quote-shipping-input-group input {
+    width: 100%;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding: 0.7rem 0.85rem;
+}
+
+.summary-row.quote-shipping-row {
+    margin-top: 0.9rem;
+    margin-bottom: 0;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.summary-row.quote-total-row {
+    margin-top: -1rem;
+    margin-bottom: 1.5rem;
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
 .checkout-btn {
     padding: 1rem;
     font-size: 1.125rem;

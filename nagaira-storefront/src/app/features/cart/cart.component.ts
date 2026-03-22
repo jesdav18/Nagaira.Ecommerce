@@ -26,6 +26,8 @@ export class CartComponent {
   private notificationService = inject(NotificationService);
   private quoteService = inject(QuoteService);
   generatingQuote = signal(false);
+  includeShippingInQuote = signal(false);
+  quoteShippingAmount = signal(0);
 
   updateQuantity(productId: string, quantity: number): void {
     this.cartService.updateQuantity(productId, quantity);
@@ -67,6 +69,19 @@ export class CartComponent {
     return this.discountedTotal - this.discountedSubtotal;
   }
 
+  get quoteShippingTotal(): number {
+    if (!this.includeShippingInQuote()) {
+      return 0;
+    }
+
+    const amount = this.quoteShippingAmount();
+    return amount > 0 ? amount : 0;
+  }
+
+  get quoteGrandTotal(): number {
+    return this.discountedTotal + this.quoteShippingTotal;
+  }
+
   getItemPrice(product: Product, quantity: number): number {
     return getProductPriceByQuantity(product, quantity);
   }
@@ -100,6 +115,23 @@ export class CartComponent {
     return stock !== null && currentQuantity < stock;
   }
 
+  onShippingToggle(enabled: boolean): void {
+    this.includeShippingInQuote.set(enabled);
+    if (!enabled) {
+      this.quoteShippingAmount.set(0);
+    }
+  }
+
+  updateQuoteShippingAmount(rawValue: string): void {
+    const parsed = Number(rawValue);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      this.quoteShippingAmount.set(0);
+      return;
+    }
+
+    this.quoteShippingAmount.set(Math.round(parsed * 100) / 100);
+  }
+
   async generateQuotePdf(): Promise<void> {
     if (this.generatingQuote()) {
       return;
@@ -112,6 +144,7 @@ export class CartComponent {
     this.generatingQuote.set(true);
 
     try {
+      const shippingAmount = this.quoteShippingTotal;
       const customer = await this.resolveQuoteCustomer();
       if (!customer) {
         return;
@@ -141,8 +174,9 @@ export class CartComponent {
       taxRate: this.appSettings.getTaxRate(),
       subtotal: this.discountedSubtotal,
       tax: this.discountedTax,
+      shippingAmount,
       discount: this.discountTotal,
-      total: this.discountedTotal,
+      total: this.discountedTotal + shippingAmount,
       items: quoteItems
     };
 
@@ -174,6 +208,9 @@ export class CartComponent {
       const logoUrl = this.toAbsoluteUrl('/assets/images/NagairaLogoNombre.png');
       const discountSection = this.discountTotal > 0
         ? `<div class="summary-row"><span>Descuento</span><span>-${this.formatCurrency(this.discountTotal)}</span></div>`
+        : '';
+      const shippingSection = shippingAmount > 0
+        ? `<div class="summary-row"><span>Envio</span><span>${this.formatCurrency(shippingAmount)}</span></div>`
         : '';
     const taxIdSection = customer.customerTaxId
       ? `<strong>RTN:</strong> ${this.escapeHtml(customer.customerTaxId)}`
@@ -242,10 +279,11 @@ export class CartComponent {
   </table>
 
   <div class="summary">
-    <div class="summary-row"><span>Subtotal</span><span>${this.formatCurrency(this.discountedSubtotal)}</span></div>
+    <div class="summary-row"><span>Subtotal</span><span>${this.formatCurrency(persistedQuote.subtotal)}</span></div>
     ${discountSection}
-    <div class="summary-row"><span>${this.escapeHtml(this.appSettings.getTaxLabel())}</span><span>${this.formatCurrency(this.discountedTax)}</span></div>
-    <div class="summary-row summary-total"><span>Total</span><span>${this.formatCurrency(this.discountedTotal)}</span></div>
+    <div class="summary-row"><span>${this.escapeHtml(this.appSettings.getTaxLabel())}</span><span>${this.formatCurrency(persistedQuote.tax)}</span></div>
+    ${shippingSection}
+    <div class="summary-row summary-total"><span>Total</span><span>${this.formatCurrency(persistedQuote.total)}</span></div>
   </div>
 
   <div class="note">Cotizacion sujeta a cambios de precio y disponibilidad.</div>
@@ -287,12 +325,61 @@ export class CartComponent {
   private async resolveQuoteCustomer(): Promise<{ customerName: string; customerTaxId: string | null; customerType: 'named' | 'consumer_final' } | null> {
     const user = this.authService.currentUser();
     const userName = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() : '';
+    const userTaxId = user?.taxId?.trim() || '';
     const hasDefinedCustomer = this.authService.isAuthenticated() && userName.length > 0;
 
     if (hasDefinedCustomer) {
+      if (userTaxId) {
+        return {
+          customerName: userName,
+          customerTaxId: userTaxId,
+          customerType: 'named'
+        };
+      }
+
+      const result = await Swal.fire({
+        title: 'RTN para cotizacion',
+        html: `
+          <div style="text-align:left;font-size:14px;margin:0 0 8px 0;">Completa los datos para generar la cotizacion con nombre.</div>
+          <label for="quote-customer-name" style="display:block;text-align:left;font-size:13px;font-weight:600;margin:10px 0 4px;">Nombre</label>
+          <input id="quote-customer-name" class="swal2-input" placeholder="Ejemplo: Juan Perez" value="${this.escapeHtml(userName)}" style="margin:0;width:100%;" />
+          <label for="quote-customer-taxid" style="display:block;text-align:left;font-size:13px;font-weight:600;margin:10px 0 4px;">RTN</label>
+          <input id="quote-customer-taxid" class="swal2-input" placeholder="Ejemplo: 08011999123456" style="margin:0;width:100%;" />
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        showDenyButton: true,
+        confirmButtonText: 'Guardar con nombre',
+        denyButtonText: 'Consumidor final',
+        cancelButtonText: 'Cancelar',
+        preConfirm: () => {
+          const nameInput = document.getElementById('quote-customer-name') as HTMLInputElement | null;
+          const taxIdInput = document.getElementById('quote-customer-taxid') as HTMLInputElement | null;
+          const name = nameInput?.value?.trim() || '';
+          const taxId = taxIdInput?.value?.trim() || '';
+          if (!name || !taxId) {
+            Swal.showValidationMessage('Nombre y RTN son obligatorios');
+            return null;
+          }
+          return { name, taxId };
+        }
+      });
+
+      if (result.isDenied) {
+        return {
+          customerName: 'Consumidor final',
+          customerTaxId: null,
+          customerType: 'consumer_final'
+        };
+      }
+
+      if (!result.isConfirmed || !result.value) {
+        return null;
+      }
+
       return {
-        customerName: userName,
-        customerTaxId: null,
+        customerName: result.value.name,
+        customerTaxId: result.value.taxId,
         customerType: 'named'
       };
     }
@@ -312,8 +399,11 @@ export class CartComponent {
     const result = await Swal.fire({
       title: 'Datos para cotizacion',
       html: `
-        <input id="quote-customer-name" class="swal2-input" placeholder="Nombre completo" />
-        <input id="quote-customer-taxid" class="swal2-input" placeholder="RTN" />
+        <div style="text-align:left;font-size:14px;margin:0 0 8px 0;">Ingresa los datos del cliente para la cotizacion.</div>
+        <label for="quote-customer-name" style="display:block;text-align:left;font-size:13px;font-weight:600;margin:10px 0 4px;">Nombre</label>
+        <input id="quote-customer-name" class="swal2-input" placeholder="Ejemplo: Juan Perez" style="margin:0;width:100%;" />
+        <label for="quote-customer-taxid" style="display:block;text-align:left;font-size:13px;font-weight:600;margin:10px 0 4px;">RTN</label>
+        <input id="quote-customer-taxid" class="swal2-input" placeholder="Ejemplo: 08011999123456" style="margin:0;width:100%;" />
       `,
       focusConfirm: false,
       showCancelButton: true,
