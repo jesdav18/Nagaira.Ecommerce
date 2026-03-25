@@ -63,11 +63,13 @@ export class AuthService {
     this.isAuthenticated.set(true);
   }
 
-  private clearSession(): void {
+  private clearSession(redirect = true): void {
     this.accessToken.set(null);
     this.currentUser.set(null);
     this.isAuthenticated.set(false);
-    this.router.navigate(['/']);
+    if (redirect) {
+      this.router.navigate(['/']);
+    }
   }
   
   private clearLegacyStorage(): void {
@@ -80,7 +82,7 @@ export class AuthService {
       this.refreshToken().subscribe({
         next: () => resolve(),
         error: () => {
-          this.clearSession();
+          this.clearSession(false);
           resolve();
         }
       });

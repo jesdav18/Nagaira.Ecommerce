@@ -30,6 +30,7 @@ export class CheckoutComponent implements OnInit {
   fb = inject(FormBuilder);
 
   loading = signal(false);
+  sessionReady = signal(false);
   error = signal('');
   success = signal(false);
   createdOrderId = signal('');
@@ -40,10 +41,8 @@ export class CheckoutComponent implements OnInit {
   hasProfileContact = computed(() => {
     const user = this.currentUser();
     if (!user) return false;
-    const hasName = Boolean((user.firstName || '').trim() || (user.lastName || '').trim());
-    const hasEmail = Boolean((user.email || '').trim());
     const hasPhone = Boolean((user.phoneNumber || '').trim());
-    return hasName && hasEmail && hasPhone;
+    return hasPhone;
   });
   displayName = computed(() => {
     const user = this.currentUser();
@@ -77,13 +76,13 @@ export class CheckoutComponent implements OnInit {
   discountedTax = computed(() => this.discountedTotal() - this.discountedSubtotal());
 
   shippingForm = this.fb.group({
-    fullName: ['', Validators.required],
-    email: ['', [Validators.required, Validators.email]],
+    fullName: [''],
+    email: ['', Validators.email],
     phone: ['', Validators.required],
-    address: ['', Validators.required],
-    city: ['', Validators.required],
-    zipCode: ['', Validators.required],
-    country: ['', Validators.required]
+    address: [''],
+    city: [''],
+    zipCode: [''],
+    country: ['']
   });
 
   constructor() {
@@ -101,9 +100,13 @@ export class CheckoutComponent implements OnInit {
     });
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
+    await this.authService.waitForSessionReady();
+    this.sessionReady.set(true);
+
     if (this.cartService.itemCount() === 0) {
       this.router.navigate(['/cart']);
+      return;
     }
 
     this.updateSettings();
@@ -157,6 +160,11 @@ export class CheckoutComponent implements OnInit {
   }
 
   onSubmit(): void {
+    if (!this.sessionReady()) {
+      this.error.set('Estamos validando tu sesion. Intenta nuevamente en unos segundos.');
+      return;
+    }
+
     if (this.shippingForm.invalid) {
       this.shippingForm.markAllAsTouched();
       return;
@@ -164,6 +172,7 @@ export class CheckoutComponent implements OnInit {
 
     this.loading.set(true);
     this.error.set('');
+    const shipping = this.shippingForm.getRawValue();
 
     const items = this.cartService.cartItems().map(item => ({
       productId: item.product.id,
@@ -172,7 +181,14 @@ export class CheckoutComponent implements OnInit {
 
     this.orderService.createOrder({ 
       items,
-      shippingAddressId: undefined
+      shippingAddressId: undefined,
+      customerName: shipping.fullName!,
+      customerEmail: shipping.email!,
+      customerPhone: shipping.phone!,
+      shippingStreet: shipping.address!,
+      shippingCity: shipping.city!,
+      shippingPostalCode: shipping.zipCode!,
+      shippingCountry: shipping.country!
     }).subscribe({
       next: (order) => {
         this.cartService.clearCart();

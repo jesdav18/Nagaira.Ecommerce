@@ -194,6 +194,13 @@ public class ApplicationDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.OrderNumber).IsRequired().HasMaxLength(50);
             entity.HasIndex(e => e.OrderNumber).IsUnique();
+            entity.Property(e => e.CustomerName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.CustomerEmail).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.CustomerPhone).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.ShippingStreet).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.ShippingCity).IsRequired().HasMaxLength(120);
+            entity.Property(e => e.ShippingPostalCode).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.ShippingCountry).IsRequired().HasMaxLength(120);
             entity.Property(e => e.Subtotal).HasPrecision(18, 2);
             entity.Ignore(e => e.UpdatedAt);
             entity.Property(e => e.Tax).HasPrecision(18, 2);
@@ -201,7 +208,7 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Total).HasPrecision(18, 2);
             entity.Property(e => e.Status)
                 .HasColumnName("status");
-            entity.HasOne(e => e.User).WithMany(e => e.Orders).HasForeignKey(e => e.UserId);
+            entity.HasOne(e => e.User).WithMany(e => e.Orders).HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<OrderItem>(entity =>

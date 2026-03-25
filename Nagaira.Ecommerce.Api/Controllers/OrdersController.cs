@@ -8,7 +8,6 @@ namespace Nagaira.Ecommerce.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 public class OrdersController : ControllerBase
 {
     private readonly IOrderService _orderService;
@@ -19,6 +18,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize]
     public async Task<ActionResult<IEnumerable<OrderDto>>> GetMyOrders()
     {
         var userId = GetUserId();
@@ -27,6 +27,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [Authorize]
     public async Task<ActionResult<OrderDto>> GetById(Guid id)
     {
         var order = await _orderService.GetOrderByIdAsync(id);
@@ -35,20 +36,21 @@ public class OrdersController : ControllerBase
         var userId = GetUserId();
         var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
         
-        if (!isAdmin && order.Id != userId)
+        if (!isAdmin && order.UserId != userId)
             return Forbid();
         
         return Ok(order);
     }
 
     [HttpPost]
+    [AllowAnonymous]
     public async Task<ActionResult<OrderDto>> Create([FromBody] CreateOrderDto dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
         
         try
         {
-            var userId = GetUserId();
+            var userId = GetOptionalUserId();
             var order = await _orderService.CreateOrderAsync(userId, dto);
             return CreatedAtAction(nameof(GetById), new { id = order.Id }, order);
         }
@@ -79,6 +81,12 @@ public class OrdersController : ControllerBase
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException());
+    }
+
+    private Guid? GetOptionalUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return Guid.TryParse(userIdClaim, out var userId) ? userId : null;
     }
 }
 

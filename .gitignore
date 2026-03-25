@@ -364,3 +364,4 @@ FodyWeavers.xsd
 /Nagaira.Ecommerce.Api/appsettings.Development.json
 /Nagaira.Ecommerce.Api/appsettings.Production.json
 /Nagaira.Ecommerce.Api/appsettings.QAS.json
+/tmp-obj

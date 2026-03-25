@@ -88,6 +88,9 @@ export interface Order {
   id: string;
   orderNumber: string;
   createdAt: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
   subtotal: number;
   tax: number;
   shippingCost: number;
@@ -136,6 +139,13 @@ export interface CreateOrderRequest {
     quantity: number;
   }>;
   shippingAddressId?: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  shippingStreet: string;
+  shippingCity: string;
+  shippingPostalCode: string;
+  shippingCountry: string;
 }
 
 export interface Quote {

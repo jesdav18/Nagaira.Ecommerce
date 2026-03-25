@@ -18,19 +18,19 @@ public class SmtpEmailService : IEmailService
         _logger = logger;
     }
 
-    public async Task SendOrderConfirmationAsync(Order order, User user)
+    public async Task SendOrderConfirmationAsync(Order order, string recipientEmail, string recipientName)
     {
-        if (string.IsNullOrWhiteSpace(user.Email))
+        if (string.IsNullOrWhiteSpace(recipientEmail))
         {
             return;
         }
 
         var subject = $"Confirmacion de pedido {order.OrderNumber}";
-        var body = BuildOrderHtml(order, user);
+        var body = BuildOrderHtml(order, recipientName);
 
         try
         {
-            await SendEmailAsync(user.Email, subject, body);
+            await SendEmailAsync(recipientEmail, subject, body);
         }
         catch (Exception ex)
         {
@@ -108,11 +108,14 @@ public class SmtpEmailService : IEmailService
         await client.SendMailAsync(message);
     }
 
-    private static string BuildOrderHtml(Order order, User user)
+    private static string BuildOrderHtml(Order order, string recipientName)
     {
         var sb = new StringBuilder();
+        var greetingName = string.IsNullOrWhiteSpace(recipientName)
+            ? "cliente"
+            : WebUtility.HtmlEncode(recipientName);
         sb.Append("<h2>Gracias por tu pedido</h2>");
-        sb.Append($"<p>Hola {WebUtility.HtmlEncode(user.FirstName)} {WebUtility.HtmlEncode(user.LastName)},</p>");
+        sb.Append($"<p>Hola {greetingName},</p>");
         sb.Append($"<p>Tu pedido <strong>{order.OrderNumber}</strong> fue recibido.</p>");
 
         sb.Append("<table style=\"width:100%;border-collapse:collapse;\">");

@@ -1,0 +1,139 @@
+<div class="admin-orders">
+  <div class="orders-header">
+    <div>
+      <h1>Ordenes</h1>
+      <p>Consulta las ordenes nuevas o pendientes y actualiza su estado.</p>
+    </div>
+
+    <div class="filter-group">
+      <label for="orderStatusFilter">Filtro</label>
+      <select
+        id="orderStatusFilter"
+        [ngModel]="selectedStatus()"
+        (ngModelChange)="onFilterChange($event)">
+        @for (option of filterOptions; track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="orders-state">Cargando ordenes...</div>
+  } @else if (orders().length === 0) {
+    <div class="orders-state empty">No hay ordenes para este filtro.</div>
+  } @else {
+    <div class="orders-table-wrap">
+      <table class="orders-table">
+        <thead>
+          <tr>
+            <th>Orden</th>
+            <th>Fecha</th>
+            <th>Cliente</th>
+            <th>Contacto</th>
+            <th>Direccion</th>
+            <th>Total</th>
+            <th>Estado</th>
+            <th>Detalle</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (order of orders(); track order.id) {
+            <tr>
+              <td class="order-number-cell">#{{ order.orderNumber }}</td>
+              <td>{{ order.createdAt | date:'medium' }}</td>
+              <td>{{ getCustomerLabel(order) }}</td>
+              <td>{{ getContactLine(order) }}</td>
+              <td>
+                @if (order.shippingAddress) {
+                  {{ order.shippingAddress.street }}, {{ order.shippingAddress.city }}, {{ order.shippingAddress.country }}
+                } @else {
+                  <span class="muted-cell">Sin direccion</span>
+                }
+              </td>
+              <td class="order-total-cell">{{ order.total | appCurrency:'1.2-2' }}</td>
+              <td>
+                <span class="status-badge" [class]="getStatusClass(order.status)">{{ order.status }}</span>
+                <select
+                  [id]="'status-' + order.id"
+                  [disabled]="updatingOrderId() === order.id"
+                  [ngModel]="order.status"
+                  (ngModelChange)="updateStatus(order, $event)">
+                  @for (status of statusOptions; track status.value) {
+                    <option [value]="status.value">{{ status.label }}</option>
+                  }
+                </select>
+              </td>
+              <td>
+                <button type="button" class="detail-btn" (click)="openOrderDetail(order)" aria-label="Ver detalle">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" class="detail-icon">
+                    <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Z"></path>
+                    <circle cx="12" cy="12" r="3.2"></circle>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (selectedOrder(); as order) {
+    <div class="modal-backdrop" (click)="closeOrderDetail()">
+      <div class="order-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h2>Detalle de orden</h2>
+            <p>#{{ order.orderNumber }} · {{ order.createdAt | date:'medium' }}</p>
+          </div>
+          <button type="button" class="modal-close" (click)="closeOrderDetail()" aria-label="Cerrar detalle">
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="modal-close-icon">
+              <path d="M6 6l12 12"></path>
+              <path d="M18 6l-12 12"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="modal-grid">
+          <section class="modal-card">
+            <h3>Cliente</h3>
+            <p><strong>Nombre:</strong> {{ getCustomerLabel(order) }}</p>
+            <p><strong>Contacto:</strong> {{ getContactLine(order) }}</p>
+            <p><strong>Total:</strong> {{ order.total | appCurrency:'1.2-2' }}</p>
+            <p><strong>Estado:</strong> <span class="status-badge" [class]="getStatusClass(order.status)">{{ order.status }}</span></p>
+          </section>
+
+          <section class="modal-card">
+            <h3>Entrega</h3>
+            @if (order.shippingAddress) {
+              <p>{{ order.shippingAddress.street }}</p>
+              <p>{{ order.shippingAddress.city }}, {{ order.shippingAddress.country }}</p>
+              <p>CP: {{ order.shippingAddress.postalCode || 'N/A' }}</p>
+            } @else {
+              <p class="muted-cell">Sin direccion registrada.</p>
+            }
+          </section>
+        </div>
+
+        <section class="modal-card modal-items">
+          <h3>Items</h3>
+          <div class="modal-items-table">
+            <div class="modal-items-head">
+              <span>Producto</span>
+              <span>Cant.</span>
+              <span>Subtotal</span>
+            </div>
+            @for (item of order.items; track item.productId) {
+              <div class="modal-items-row">
+                <span>{{ item.productName }}</span>
+                <span>{{ item.quantity }}</span>
+                <span>{{ item.subtotal | appCurrency:'1.2-2' }}</span>
+              </div>
+            }
+          </div>
+        </section>
+      </div>
+    </div>
+  }
+</div>

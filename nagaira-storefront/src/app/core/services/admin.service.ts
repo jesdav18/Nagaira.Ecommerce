@@ -346,6 +346,16 @@ export class AdminService {
     return this.http.get(`${this.apiUrl}/banners`);
   }
 
+  getAdminOrders(status?: string, take: number = 100) {
+    let params: any = { take };
+    if (status) params.status = status;
+    return this.http.get(`${this.apiUrl}/orders`, { params });
+  }
+
+  updateOrderStatus(id: string, status: string) {
+    return this.http.patch(`${environment.apiUrl}/orders/${id}/status`, { status });
+  }
+
   getBannerById(id: string) {
     return this.http.get(`${this.apiUrl}/banners/${id}`);
   }

@@ -29,6 +29,11 @@ export class CartComponent {
   includeShippingInQuote = signal(false);
   quoteShippingAmount = signal(0);
 
+  get canManageQuoteShipping(): boolean {
+    const role = this.authService.currentUser()?.role;
+    return role === 'Admin' || role === 'SuperAdmin';
+  }
+
   updateQuantity(productId: string, quantity: number): void {
     this.cartService.updateQuantity(productId, quantity);
   }
@@ -70,7 +75,7 @@ export class CartComponent {
   }
 
   get quoteShippingTotal(): number {
-    if (!this.includeShippingInQuote()) {
+    if (!this.canManageQuoteShipping || !this.includeShippingInQuote()) {
       return 0;
     }
 
@@ -116,6 +121,12 @@ export class CartComponent {
   }
 
   onShippingToggle(enabled: boolean): void {
+    if (!this.canManageQuoteShipping) {
+      this.includeShippingInQuote.set(false);
+      this.quoteShippingAmount.set(0);
+      return;
+    }
+
     this.includeShippingInQuote.set(enabled);
     if (!enabled) {
       this.quoteShippingAmount.set(0);
@@ -123,6 +134,11 @@ export class CartComponent {
   }
 
   updateQuoteShippingAmount(rawValue: string): void {
+    if (!this.canManageQuoteShipping) {
+      this.quoteShippingAmount.set(0);
+      return;
+    }
+
     const parsed = Number(rawValue);
     if (!Number.isFinite(parsed) || parsed <= 0) {
       this.quoteShippingAmount.set(0);
@@ -144,7 +160,7 @@ export class CartComponent {
     this.generatingQuote.set(true);
 
     try {
-      const shippingAmount = this.quoteShippingTotal;
+      const shippingAmount = this.canManageQuoteShipping ? this.quoteShippingTotal : 0;
       const customer = await this.resolveQuoteCustomer();
       if (!customer) {
         return;

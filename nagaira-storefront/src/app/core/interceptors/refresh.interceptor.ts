@@ -16,13 +16,18 @@ export const refreshInterceptor: HttpInterceptorFn = (req, next) => {
         return throwError(() => error);
       }
 
+      const token = authService.getToken();
+      if (!token) {
+        return throwError(() => error);
+      }
+
       return authService.refreshToken().pipe(
         switchMap(() => {
-          const token = authService.getToken();
-          if (!token) return throwError(() => error);
+          const refreshedToken = authService.getToken();
+          if (!refreshedToken) return throwError(() => error);
           const cloned = req.clone({
             setHeaders: {
-              Authorization: `Bearer ${token}`
+              Authorization: `Bearer ${refreshedToken}`
             }
           });
           return next(cloned);

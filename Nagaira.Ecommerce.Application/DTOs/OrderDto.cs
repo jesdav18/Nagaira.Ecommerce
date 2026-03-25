@@ -2,8 +2,12 @@ namespace Nagaira.Ecommerce.Application.DTOs;
 
 public record OrderDto(
     Guid Id,
+    Guid? UserId,
     string OrderNumber,
     DateTime CreatedAt,
+    string CustomerName,
+    string CustomerEmail,
+    string CustomerPhone,
     decimal Subtotal,
     decimal Tax,
     decimal ShippingCost,
@@ -33,7 +37,14 @@ public record OrderItemSupplierDto(
 
 public record CreateOrderDto(
     List<CreateOrderItemDto> Items,
-    Guid? ShippingAddressId
+    Guid? ShippingAddressId,
+    string CustomerName,
+    string CustomerEmail,
+    string CustomerPhone,
+    string ShippingStreet,
+    string ShippingCity,
+    string ShippingPostalCode,
+    string ShippingCountry
 );
 
 public record CreateOrderItemDto(

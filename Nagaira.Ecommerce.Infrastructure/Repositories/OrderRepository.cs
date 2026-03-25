@@ -39,6 +39,29 @@ public class OrderRepository : Repository<Order>, IOrderRepository
             .FirstOrDefaultAsync(o => o.OrderNumber == orderNumber && !o.IsDeleted);
     }
 
+    public async Task<IEnumerable<Order>> GetForAdminAsync(OrderStatus? status = null, int take = 100)
+    {
+        var query = _dbSet
+            .Include(o => o.Items)
+            .ThenInclude(i => i.Product)
+            .Include(o => o.Items)
+            .ThenInclude(i => i.OrderItemSuppliers)
+            .ThenInclude(ois => ois.ProductSupplier)
+            .ThenInclude(ps => ps.Supplier)
+            .Include(o => o.ShippingAddress)
+            .Where(o => !o.IsDeleted);
+
+        if (status.HasValue)
+        {
+            query = query.Where(o => o.Status == status.Value);
+        }
+
+        return await query
+            .OrderByDescending(o => o.CreatedAt)
+            .Take(take)
+            .ToListAsync();
+    }
+
     public override async Task<Order?> GetByIdAsync(Guid id)
     {
         return await _dbSet

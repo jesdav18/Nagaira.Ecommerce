@@ -14,7 +14,7 @@
         <div>
           <span class="hero-eyebrow">Checkout</span>
           <h1 class="page-title">Finalizar compra</h1>
-          <p class="hero-subtitle">Compra rapida, clara y sin fricciones. Solo necesitas tu direccion y metodo de pago.</p>
+          <p class="hero-subtitle">Compra rapida, clara y sin fricciones. Solo necesitamos tu numero de telefono y tu metodo de pago.</p>
         </div>
         <div class="hero-steps">
           <span class="step-chip active">1. Direccion</span>
@@ -53,17 +53,9 @@
 
           <form [formGroup]="shippingForm" class="shipping-form">
             <div class="section-card">
-              <h2>Datos de contacto</h2>
+              <h2>Contacto</h2>
               @if (isAuthenticated() && hasProfileContact()) {
                 <div class="profile-summary">
-                  <div>
-                    <span class="summary-label">Nombre</span>
-                    <span class="summary-value">{{ shippingForm.get('fullName')?.value }}</span>
-                  </div>
-                  <div>
-                    <span class="summary-label">Correo</span>
-                    <span class="summary-value">{{ shippingForm.get('email')?.value }}</span>
-                  </div>
                   <div>
                     <span class="summary-label">Telefono</span>
                     <span class="summary-value">{{ shippingForm.get('phone')?.value }}</span>
@@ -71,27 +63,24 @@
                 </div>
               } @else {
                 <div class="form-group">
-                  <label>Nombre completo</label>
-                  <input type="text" formControlName="fullName" class="form-input" placeholder="Escribe tu nombre completo">
+                  <label>Telefono</label>
+                  <input type="tel" formControlName="phone" class="form-input" placeholder="0000-0000">
                 </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label>Correo electronico</label>
-                    <input type="email" formControlName="email" class="form-input" placeholder="correo@ejemplo.com">
-                  </div>
-                  <div class="form-group">
-                    <label>Telefono</label>
-                    <input type="tel" formControlName="phone" class="form-input" placeholder="0000-0000">
-                  </div>
-                </div>
-                @if (isAuthenticated() && !hasProfileContact()) {
-                  <p class="hint-text">Completa estos datos para agilizar futuras compras.</p>
-                }
+                <p class="hint-text">Este es el unico dato obligatorio para poder contactarte por tu pedido.</p>
               }
             </div>
 
             <div class="section-card">
-              <h2>Direccion de envío</h2>
+              <h2>Datos opcionales</h2>
+              <p class="hint-text">Si quieres, puedes dejar nombre, correo y direccion para agilizar la entrega.</p>
+              <div class="form-group">
+                <label>Nombre completo</label>
+                <input type="text" formControlName="fullName" class="form-input" placeholder="Escribe tu nombre completo">
+              </div>
+              <div class="form-group">
+                <label>Correo electronico</label>
+                <input type="email" formControlName="email" class="form-input" placeholder="correo@ejemplo.com">
+              </div>
               <div class="form-group">
                 <label>Direccion</label>
                 <input type="text" formControlName="address" class="form-input" placeholder="Escribe tu direccion">
@@ -110,7 +99,7 @@
 
               <div class="form-group">
                 <label>Pais</label>
-                <input type="text" formControlName="country" class="form-input" readonly>
+                <input type="text" formControlName="country" class="form-input" placeholder="Pais">
               </div>
             </div>
           </form>
@@ -236,8 +225,8 @@
           <button
             class="btn btn-primary btn-block place-order-btn"
             (click)="onSubmit()"
-            [disabled]="loading() || shippingForm.invalid">
-            {{ loading() ? 'Procesando...' : 'Ejecutar compra' }}
+            [disabled]="loading() || !sessionReady() || shippingForm.invalid">
+            {{ loading() ? 'Procesando...' : (!sessionReady() ? 'Validando sesion...' : 'Ejecutar compra') }}
           </button>
         </div>
       </div>

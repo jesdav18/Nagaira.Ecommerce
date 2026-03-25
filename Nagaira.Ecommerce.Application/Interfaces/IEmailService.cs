@@ -4,6 +4,6 @@ namespace Nagaira.Ecommerce.Application.Interfaces;
 
 public interface IEmailService
 {
-    Task SendOrderConfirmationAsync(Order order, User user);
+    Task SendOrderConfirmationAsync(Order order, string recipientEmail, string recipientName);
     Task SendWelcomeAsync(User user);
 }

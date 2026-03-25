@@ -18,7 +18,7 @@ public class OrderService : IOrderService
         _emailService = emailService;
     }
 
-    public async Task<OrderDto> CreateOrderAsync(Guid userId, CreateOrderDto dto)
+    public async Task<OrderDto> CreateOrderAsync(Guid? userId, CreateOrderDto dto)
     {
         var strategy = _unitOfWork.GetExecutionStrategy();
         return await strategy.ExecuteAsync(async () =>
@@ -27,8 +27,26 @@ public class OrderService : IOrderService
             await using var transaction = await dbContext.Database.BeginTransactionAsync();
             try
             {
-                var user = await _unitOfWork.Users.GetByIdAsync(userId);
-                if (user == null) throw new Exception("User not found");
+                if (dto.Items == null || dto.Items.Count == 0)
+                    throw new Exception("La orden debe incluir al menos un producto");
+
+                var customerName = dto.CustomerName?.Trim() ?? string.Empty;
+                var customerEmail = dto.CustomerEmail?.Trim() ?? string.Empty;
+                var customerPhone = dto.CustomerPhone?.Trim() ?? string.Empty;
+                var shippingStreet = dto.ShippingStreet?.Trim() ?? string.Empty;
+                var shippingCity = dto.ShippingCity?.Trim() ?? string.Empty;
+                var shippingPostalCode = dto.ShippingPostalCode?.Trim() ?? string.Empty;
+                var shippingCountry = dto.ShippingCountry?.Trim() ?? string.Empty;
+
+                if (string.IsNullOrWhiteSpace(customerPhone))
+                    throw new Exception("El telefono del cliente es obligatorio");
+
+                User? user = null;
+                if (userId.HasValue)
+                {
+                    user = await _unitOfWork.Users.GetByIdAsync(userId.Value);
+                    if (user == null) throw new Exception("User not found");
+                }
 
                 var orderNumber = GenerateOrderNumber();
                 decimal orderTotal = 0;
@@ -38,6 +56,13 @@ public class OrderService : IOrderService
                     Id = Guid.NewGuid(),
                     OrderNumber = orderNumber,
                     UserId = userId,
+                    CustomerName = customerName,
+                    CustomerEmail = customerEmail,
+                    CustomerPhone = customerPhone,
+                    ShippingStreet = shippingStreet,
+                    ShippingCity = shippingCity,
+                    ShippingPostalCode = shippingPostalCode,
+                    ShippingCountry = shippingCountry,
                     ShippingAddressId = dto.ShippingAddressId,
                     Status = OrderStatus.Pending,
                     CreatedAt = DateTime.UtcNow
@@ -85,7 +110,10 @@ public class OrderService : IOrderService
 
                         if (offer.MaxUsesPerCustomer.HasValue)
                         {
-                            var userUsage = await _unitOfWork.Offers.GetUsageCountAsync(offer.Id, userId);
+                            if (!userId.HasValue)
+                                continue;
+
+                            var userUsage = await _unitOfWork.Offers.GetUsageCountAsync(offer.Id, userId.Value);
                             if (userUsage >= offer.MaxUsesPerCustomer.Value)
                                 continue;
                         }
@@ -201,7 +229,11 @@ public class OrderService : IOrderService
                     var savedOrder = await _unitOfWork.Orders.GetByIdAsync(order.Id);
                     if (savedOrder != null)
                     {
-                        await _emailService.SendOrderConfirmationAsync(savedOrder, user);
+                        var recipientName = user == null
+                            ? customerName
+                            : $"{user.FirstName} {user.LastName}".Trim();
+                        var recipientEmail = user?.Email ?? customerEmail;
+                        await _emailService.SendOrderConfirmationAsync(savedOrder, recipientEmail, recipientName);
                     }
                 }
                 catch
@@ -255,8 +287,12 @@ public class OrderService : IOrderService
     {
         return new OrderDto(
             order.Id,
+            order.UserId,
             order.OrderNumber,
             order.CreatedAt,
+            order.CustomerName,
+            order.CustomerEmail,
+            order.CustomerPhone,
             order.Subtotal,
             order.Tax,
             order.ShippingCost,
@@ -297,7 +333,15 @@ public class OrderService : IOrderService
                 order.ShippingAddress.PostalCode,
                 order.ShippingAddress.Country,
                 order.ShippingAddress.IsDefault
-            ) : null
+            ) : (!string.IsNullOrWhiteSpace(order.ShippingStreet) ? new AddressDto(
+                Guid.Empty,
+                order.ShippingStreet,
+                order.ShippingCity,
+                order.ShippingCity,
+                order.ShippingPostalCode,
+                order.ShippingCountry,
+                false
+            ) : null)
         );
     }
 
