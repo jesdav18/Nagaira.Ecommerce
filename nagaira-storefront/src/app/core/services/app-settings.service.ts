@@ -22,11 +22,11 @@ export interface AppSetting {
 export class AppSettingsService {
   private http = inject(HttpClient);
   private apiUrl = environment.apiUrl;
-  
+
   private settingsLoaded = signal(false);
   private settings: Map<string, string> = new Map();
-  
-  public currencySymbol = signal<string>('$');
+
+  public currencySymbol = signal<string>('Lps');
   public currencyPosition = signal<'before' | 'after'>('before');
   public taxRate = signal<number>(0.16);
   public taxLabel = signal<string>('Impuestos');
@@ -57,7 +57,7 @@ export class AppSettingsService {
   }
 
   private updatePublicValues(): void {
-    this.currencySymbol.set(this.settings.get('currency_symbol') || '$');
+    this.currencySymbol.set(this.settings.get('currency_symbol') || '');
     const position = this.settings.get('currency_position') || 'before';
     this.currencyPosition.set(position === 'after' ? 'after' : 'before');
     const taxRateValue = parseFloat(this.settings.get('tax_rate') || '0.16');
