@@ -228,6 +228,18 @@
             [disabled]="loading() || !sessionReady() || shippingForm.invalid">
             {{ loading() ? 'Procesando...' : (!sessionReady() ? 'Validando sesion...' : 'Ejecutar compra') }}
           </button>
+
+          <div class="checkout-option-divider">
+            <span>o</span>
+          </div>
+
+          <a
+            class="btn btn-block whatsapp-order-btn"
+            [href]="whatsAppCheckoutUrl()"
+            target="_blank"
+            rel="noopener">
+            Completar mi pedido en WhatsApp
+          </a>
         </div>
       </div>
     }

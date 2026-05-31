@@ -403,6 +403,40 @@
     cursor: not-allowed;
 }
 
+.checkout-option-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0.85rem 0;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.checkout-option-divider::before,
+.checkout-option-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border-color);
+}
+
+.whatsapp-order-btn {
+    padding: 1rem;
+    width: 100%;
+    background: #25d366;
+    color: #ffffff;
+    border: 1px solid #1fbe5d;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.whatsapp-order-btn:hover {
+    background: #1fbe5d;
+    color: #ffffff;
+}
+
 .secure-text {
     text-align: center;
     font-size: 0.8rem;

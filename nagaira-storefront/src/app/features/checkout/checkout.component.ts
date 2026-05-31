@@ -11,6 +11,7 @@ import { AppCurrencyPipe } from '../../core/pipes/currency.pipe';
 import { Product } from '../../core/models/models';
 import { getProductPriceByQuantity } from '../../core/utils/product.utils';
 import { AnalyticsService } from '../../core/services/analytics.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-checkout',
@@ -74,6 +75,7 @@ export class CheckoutComponent implements OnInit {
   });
 
   discountedTax = computed(() => this.discountedTotal() - this.discountedSubtotal());
+  whatsAppCheckoutUrl = computed(() => this.buildWhatsAppCheckoutUrl());
 
   shippingForm = this.fb.group({
     fullName: [''],
@@ -157,6 +159,44 @@ export class CheckoutComponent implements OnInit {
 
   selectPaymentMethod(method: PaymentMethod): void {
     this.selectedPaymentMethod.set(method);
+  }
+
+  private buildWhatsAppCheckoutUrl(): string {
+    const shipping = this.shippingForm.getRawValue();
+    const customerName = (shipping.fullName || this.displayName()).trim();
+    const customerPhone = (shipping.phone || '').trim();
+    const paymentMethod = this.selectedPaymentMethod();
+
+    const lines = [
+      'Hola, quiero completar mi pedido por WhatsApp.',
+      '',
+      'Productos:',
+      ...this.cartService.cartItems().map(item => {
+        const unitPrice = this.getItemDisplayPrice(item.product, item.quantity);
+        const lineTotal = unitPrice * item.quantity;
+        return `- ${item.quantity}x ${item.product.name} (${this.formatMoney(lineTotal)})`;
+      }),
+      '',
+      `Total: ${this.formatMoney(this.discountedTotal())}`
+    ];
+
+    if (customerName) {
+      lines.push(`Nombre: ${customerName}`);
+    }
+
+    if (customerPhone) {
+      lines.push(`Telefono: ${customerPhone}`);
+    }
+
+    if (paymentMethod) {
+      lines.push(`Metodo de pago seleccionado: ${paymentMethod.name}`);
+    }
+
+    return `https://wa.me/${environment.whatsappCheckoutPhone}?text=${encodeURIComponent(lines.join('\n'))}`;
+  }
+
+  private formatMoney(amount: number): string {
+    return `${this.appSettings.getCurrencySymbol()}${amount.toFixed(2)}`;
   }
 
   onSubmit(): void {
