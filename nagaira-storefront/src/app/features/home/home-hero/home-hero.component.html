@@ -19,10 +19,14 @@
 
   @if (slides().length > 1) {
     <button type="button" class="hero-nav prev" (click)="prevSlide()" aria-label="Anterior">
-      &lt;
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M15 18l-6-6 6-6" />
+      </svg>
     </button>
     <button type="button" class="hero-nav next" (click)="nextSlide()" aria-label="Siguiente">
-      &gt;
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9 6l6 6-6 6" />
+      </svg>
     </button>
 
     <div class="hero-dots">
