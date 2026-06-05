@@ -97,7 +97,7 @@ export class AdminBannerFormComponent implements OnInit {
     this.saving.set(true);
     const payload = {
       title: this.formData.title.trim(),
-      subtitle: this.formData.subtitle.trim() || null,
+      subtitle: this.formData.subtitle.trim(),
       imageUrl: this.formData.imageUrl.trim(),
       linkUrl: this.formData.linkUrl.trim() || null,
       displayOrder: this.formData.displayOrder,

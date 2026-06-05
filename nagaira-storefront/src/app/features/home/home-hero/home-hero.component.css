@@ -6,7 +6,7 @@
 }
 
 .hero-carousel {
-    height: clamp(300px, 36vw, 440px);
+    height: clamp(180px, 15.625vw, 300px);
     padding: 0;
     display: flex;
     align-items: center;
@@ -137,7 +137,7 @@
 
 @media (max-width: 768px) {
     .hero-carousel {
-        height: 320px;
+        height: 180px;
         padding: 0;
     }
 
@@ -148,7 +148,7 @@
 
 @media (max-width: 640px) {
     .hero-carousel {
-        height: 280px;
+        height: 180px;
         padding: 0;
     }
 
