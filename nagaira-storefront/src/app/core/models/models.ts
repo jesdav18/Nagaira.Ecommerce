@@ -243,7 +243,7 @@ export interface SupplierCostHistory {
 
 export interface Banner {
   id: string;
-  title: string;
+  title?: string | null;
   subtitle?: string | null;
   imageUrl: string;
   linkUrl?: string | null;

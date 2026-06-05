@@ -86,6 +86,10 @@ export class HomeHeroComponent implements OnInit, OnDestroy {
     this.currentIndex.set(index);
   }
 
+  displayText(value?: string | null): string {
+    return value || '';
+  }
+
   private startAutoPlay(): void {
     if (this.intervalId) return;
     this.intervalId = window.setInterval(() => {

@@ -6,7 +6,7 @@ import { NotificationService } from '../../../core/services/notification.service
 
 interface Banner {
   id: string;
-  title: string;
+  title?: string | null;
   subtitle?: string | null;
   imageUrl: string;
   linkUrl?: string | null;
@@ -68,5 +68,9 @@ export class AdminBannersComponent implements OnInit {
         this.notificationService.error('Error al eliminar el banner.');
       }
     });
+  }
+
+  displayText(value?: string | null): string {
+    return value || '';
   }
 }

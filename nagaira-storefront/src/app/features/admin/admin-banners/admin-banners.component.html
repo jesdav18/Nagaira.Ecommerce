@@ -26,10 +26,12 @@
           @for (banner of banners(); track banner.id) {
             <tr>
               <td>
-                <img [src]="banner.imageUrl" [alt]="banner.title" class="banner-image">
+                <img [src]="banner.imageUrl" [alt]="displayText(banner.title) || 'Banner'" class="banner-image">
               </td>
               <td>
-                <strong>{{ banner.title }}</strong>
+                @if (displayText(banner.title)) {
+                  <strong>{{ displayText(banner.title) }}</strong>
+                }
                 @if (banner.subtitle) {
                   <span class="banner-subtitle">{{ banner.subtitle }}</span>
                 }
