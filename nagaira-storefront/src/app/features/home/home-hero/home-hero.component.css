@@ -2,11 +2,11 @@
     position: relative;
     overflow: hidden;
     padding: 3.5rem 0;
-    background: var(--gradient-primary);
+    background: transparent;
 }
 
 .hero-carousel {
-    height: clamp(180px, 15.625vw, 300px);
+    height: clamp(180px, 15.625vw, 400px);
     padding: 0;
     display: flex;
     align-items: center;
@@ -139,11 +139,6 @@
     .hero-carousel {
         height: 180px;
         padding: 0;
-    }
-
-    .hero-media img {
-        object-fit: cover;
-        object-position: center center;
     }
 
     .hero-nav {
