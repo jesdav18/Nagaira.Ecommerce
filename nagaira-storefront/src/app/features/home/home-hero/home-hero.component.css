@@ -5,6 +5,13 @@
     background: var(--gradient-primary);
 }
 
+.hero-carousel {
+    height: clamp(300px, 36vw, 440px);
+    padding: 0;
+    display: flex;
+    align-items: center;
+}
+
 .hero-media {
     position: absolute;
     inset: 0;
@@ -109,8 +116,9 @@
 }
 
 @media (max-width: 768px) {
-    .hero {
-        padding: 2.75rem 0;
+    .hero-carousel {
+        height: 320px;
+        padding: 0;
     }
 
     .hero-nav {
@@ -119,8 +127,9 @@
 }
 
 @media (max-width: 640px) {
-    .hero {
-        padding: 1.5rem 0;
+    .hero-carousel {
+        height: 280px;
+        padding: 0;
     }
 
     .hero-title {
