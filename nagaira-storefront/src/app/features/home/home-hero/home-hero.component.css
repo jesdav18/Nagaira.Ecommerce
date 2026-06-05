@@ -21,8 +21,8 @@
 .hero-media img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    object-position: left center;
+    object-fit: contain;
+    object-position: center center;
 }
 
 .hero-overlay {
@@ -139,6 +139,11 @@
     .hero-carousel {
         height: 180px;
         padding: 0;
+    }
+
+    .hero-media img {
+        object-fit: cover;
+        object-position: center center;
     }
 
     .hero-nav {
