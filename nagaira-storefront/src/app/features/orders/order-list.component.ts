@@ -73,8 +73,11 @@ export class OrderListComponent implements OnInit {
   private formatCurrency(value: number): string {
     const symbol = this.appSettingsService.currencySymbol();
     const position = this.appSettingsService.currencyPosition();
-    const formatted = value.toFixed(2);
-    return position === 'after' ? `${formatted}${symbol}` : `${symbol}${formatted}`;
+    const formatted = new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
+    return position === 'after' ? `${formatted} ${symbol}` : `${symbol} ${formatted}`;
   }
 
 }

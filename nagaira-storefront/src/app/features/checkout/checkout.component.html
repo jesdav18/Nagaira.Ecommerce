@@ -2,24 +2,33 @@
   <div class="container">
     @if (success()) {
       <div class="success-card">
-        <div class="success-icon">OK</div>
+        <div class="success-icon" aria-hidden="true"></div>
         <h1>Orden confirmada</h1>
         <p>Tu pedido ha sido recibido exitosamente.</p>
         <div class="order-id">Orden #{{ createdOrderId() }}</div>
-        <p class="success-message">Te hemos enviado un correo de confirmacion.</p>
+        @if (selectedPaymentIsTransfer()) {
+          <p class="success-message">Cuando tengas el comprobante de la transferencia, envíalo por WhatsApp para confirmar tu pago.</p>
+          <a
+            class="btn btn-block whatsapp-order-btn"
+            [href]="paymentProofWhatsAppUrl()"
+            target="_blank"
+            rel="noopener">
+            Enviar comprobante por WhatsApp
+          </a>
+        } @else {
+          <p class="success-message">Te hemos enviado un correo de confirmación.</p>
+        }
         <a routerLink="/" class="btn btn-primary">Volver a la tienda</a>
       </div>
     } @else {
       <div class="checkout-hero">
         <div>
-          <span class="hero-eyebrow">Checkout</span>
           <h1 class="page-title">Finalizar compra</h1>
-          <p class="hero-subtitle">Compra rapida, clara y sin fricciones. Solo necesitamos tu numero de telefono y tu metodo de pago.</p>
         </div>
         <div class="hero-steps">
-          <span class="step-chip active">1. Direccion</span>
+          <span class="step-chip active">1. Dirección</span>
           <span class="step-chip">2. Pago</span>
-          <span class="step-chip">3. Confirmacion</span>
+          <span class="step-chip">3. Confirmación</span>
         </div>
       </div>
 
@@ -29,7 +38,7 @@
             @if (isAuthenticated()) {
               <div class="account-content">
                 <div>
-                  <span class="account-badge">Sesion iniciada</span>
+                  <span class="account-badge">Sesión iniciada</span>
                   <h3>Hola, {{ displayName() }}.</h3>
                   <p>Usaremos tus datos de perfil para acelerar la compra.</p>
                 </div>
@@ -41,10 +50,10 @@
                   <span class="account-badge guest">Compra como invitado</span>
                   <div style="height: 10px;"></div>
                   <h3>No necesitas registrarte.</h3>
-                  <p>Podes completar la compra en segundos. Con cuenta accedes a ofertas mucho mejores y checkout mas rapido.</p>
+                  <p>Podés completar la compra en segundos. Con cuenta accedés a ofertas mucho mejores y checkout más rápido.</p>
                 </div>
                 <div class="account-actions">
-                  <a routerLink="/login" class="link-button">Iniciar sesion</a>
+                  <a routerLink="/login" class="link-button">Iniciar sesión</a>
                   <a routerLink="/register" class="link-button secondary">Crear cuenta</a>
                 </div>
               </div>
@@ -57,33 +66,33 @@
               @if (isAuthenticated() && hasProfileContact()) {
                 <div class="profile-summary">
                   <div>
-                    <span class="summary-label">Telefono</span>
+                    <span class="summary-label">Teléfono</span>
                     <span class="summary-value">{{ shippingForm.get('phone')?.value }}</span>
                   </div>
                 </div>
               } @else {
                 <div class="form-group">
-                  <label>Telefono</label>
+                  <label>Teléfono</label>
                   <input type="tel" formControlName="phone" class="form-input" placeholder="0000-0000">
                 </div>
-                <p class="hint-text">Este es el unico dato obligatorio para poder contactarte por tu pedido.</p>
+                <p class="hint-text">Este es el único dato obligatorio para poder contactarte por tu pedido.</p>
               }
             </div>
 
             <div class="section-card">
               <h2>Datos opcionales</h2>
-              <p class="hint-text">Si quieres, puedes dejar nombre, correo y direccion para agilizar la entrega.</p>
+              <p class="hint-text">Si quieres, puedes dejar nombre, correo y dirección para agilizar la entrega.</p>
               <div class="form-group">
                 <label>Nombre completo</label>
                 <input type="text" formControlName="fullName" class="form-input" placeholder="Escribe tu nombre completo">
               </div>
               <div class="form-group">
-                <label>Correo electronico</label>
+                <label>Correo electrónico</label>
                 <input type="email" formControlName="email" class="form-input" placeholder="correo@ejemplo.com">
               </div>
               <div class="form-group">
-                <label>Direccion</label>
-                <input type="text" formControlName="address" class="form-input" placeholder="Escribe tu direccion">
+                <label>Dirección</label>
+                <input type="text" formControlName="address" class="form-input" placeholder="Escribe tu dirección">
               </div>
 
               <div class="form-row">
@@ -92,24 +101,24 @@
                   <input type="text" formControlName="city" class="form-input" placeholder="Ciudad">
                 </div>
                 <div class="form-group">
-                  <label>Codigo postal</label>
+                  <label>Código postal</label>
                   <input type="text" formControlName="zipCode" class="form-input" placeholder="00000">
                 </div>
               </div>
 
               <div class="form-group">
-                <label>Pais</label>
+                <label>País</label>
                 <input type="text" formControlName="country" class="form-input" placeholder="Pais">
               </div>
             </div>
           </form>
 
           <div class="payment-section">
-            <h2>Metodo de pago</h2>
+            <h2>Método de pago</h2>
             @if (paymentMethods().length === 0) {
               <div class="payment-method selected">
                 <span class="method-icon">...</span>
-                <span>Cargando metodos de pago...</span>
+                <span>Cargando métodos de pago...</span>
               </div>
             } @else {
               @for (method of paymentMethods(); track method.id) {
@@ -141,14 +150,62 @@
                     }
                   </div>
                   @if (selectedPaymentMethod()?.id === method.id) {
-                    <span class="check-icon">OK</span>
+                    <span class="check-icon" aria-label="Método seleccionado"></span>
                   }
                 </div>
               }
               @if (selectedPaymentMethod()) {
+                @if (selectedPaymentIsCashOnDelivery()) {
+                  <div class="cash-delivery-notice">
+                    <strong>Costo adicional por pago contra entrega</strong>
+                    <p>Por políticas de la empresa de transporte, este método cobra un 4% adicional sobre el valor de la factura.</p>
+                  </div>
+                }
+                @if (selectedPaymentIsTransfer()) {
+                  <div class="transfer-details">
+                    <strong>Datos para transferencia</strong>
+                    @if (hasAccountDetails(selectedPaymentMethod()!)) {
+                      <div class="transfer-account-list">
+                        @if (selectedPaymentMethod()!.bankName) {
+                          <div>
+                            <span>Banco</span>
+                            <b>{{ selectedPaymentMethod()!.bankName }}</b>
+                          </div>
+                        }
+                        @if (selectedPaymentMethod()!.accountNumber) {
+                          <div>
+                            <span>Número de cuenta</span>
+                            <b>{{ selectedPaymentMethod()!.accountNumber }}</b>
+                          </div>
+                        }
+                        @if (selectedPaymentMethod()!.accountHolderName) {
+                          <div>
+                            <span>Titular</span>
+                            <b>{{ selectedPaymentMethod()!.accountHolderName }}</b>
+                          </div>
+                        }
+                        @if (selectedPaymentMethod()!.walletProvider || selectedPaymentMethod()!.walletNumber) {
+                          <div>
+                            <span>Billetera</span>
+                            <b>{{ selectedPaymentMethod()!.walletProvider }} {{ selectedPaymentMethod()!.walletNumber }}</b>
+                          </div>
+                        }
+                      </div>
+                    } @else {
+                      <p>Los números de cuenta aún no están configurados en el sistema. Escríbenos por WhatsApp para recibirlos antes de hacer el depósito.</p>
+                    }
+                    <a
+                      class="btn btn-block whatsapp-proof-btn"
+                      [href]="paymentProofWhatsAppUrl()"
+                      target="_blank"
+                      rel="noopener">
+                      Enviar comprobante por WhatsApp
+                    </a>
+                  </div>
+                }
                 @if (selectedPaymentMethod()!.qrCodeUrl) {
                   <div class="qr-code-section">
-                    <p class="qr-label">Escanea el codigo QR para pagar:</p>
+                    <p class="qr-label">Escanea el código QR para pagar:</p>
                     <img [src]="selectedPaymentMethod()!.qrCodeUrl" alt="QR Code" class="qr-code">
                   </div>
                 }
@@ -194,7 +251,11 @@
             </div>
             <div class="summary-row">
               <span>Envío</span>
-              <span>{{ getShippingFreeLabel() }}</span>
+              @if (qualifiesForFreeShipping()) {
+                <span>{{ getShippingFreeLabel() }}</span>
+              } @else {
+                <span>{{ shippingCost() | appCurrency:'1.2-2' }}</span>
+              }
             </div>
             @if (discountTotal() > 0) {
               <div class="summary-row discount-row">
@@ -209,8 +270,13 @@
             <div class="summary-divider"></div>
             <div class="summary-row total">
               <span>Total</span>
-              <span>{{ discountedTotal() | appCurrency:'1.2-2' }}</span>
+              <span>{{ orderGrandTotal() | appCurrency:'1.2-2' }}</span>
             </div>
+            @if (!qualifiesForFreeShipping()) {
+              <small class="shipping-progress-message">
+                {{ freeShippingProgressMessage() }}
+              </small>
+            }
             @if (discountTotal() > 0) {
               <small class="summary-note">Descuento estimado; el total final se confirma al pagar.</small>
             }
@@ -226,7 +292,7 @@
             class="btn btn-primary btn-block place-order-btn"
             (click)="onSubmit()"
             [disabled]="loading() || !sessionReady() || shippingForm.invalid">
-            {{ loading() ? 'Procesando...' : (!sessionReady() ? 'Validando sesion...' : 'Ejecutar compra') }}
+            {{ loading() ? 'Procesando...' : (!sessionReady() ? 'Validando sesión...' : 'Ejecutar compra') }}
           </button>
 
           <div class="checkout-option-divider">

@@ -1,5 +1,16 @@
 import { Product, ProductPrice } from '../models/models';
 
+const productNameCollator = new Intl.Collator('es', {
+  sensitivity: 'base',
+  numeric: true
+});
+
+export function sortProductsByName(products: Product[]): Product[] {
+  return [...products].sort((a, b) =>
+    productNameCollator.compare((a.name || '').trim(), (b.name || '').trim())
+  );
+}
+
 export function getProductPrice(product: Product, priceLevelId?: string): number {
   return getProductPriceByQuantity(product, 1, priceLevelId);
 }

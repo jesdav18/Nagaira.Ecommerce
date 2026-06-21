@@ -314,7 +314,12 @@ export class CartComponent {
   }
 
   private formatCurrency(amount: number): string {
-    return `${this.appSettings.getCurrencySymbol()}${amount.toFixed(2)}`;
+    const formatted = new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount);
+
+    return `${this.appSettings.getCurrencySymbol()} ${formatted}`;
   }
 
   private escapeHtml(text: string): string {

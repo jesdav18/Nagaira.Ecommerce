@@ -27,6 +27,8 @@ interface AppSetting {
   styleUrls: ['./admin-settings.component.css']
 })
 export class AdminSettingsComponent implements OnInit {
+  private readonly defaultShippingProgressMessage = 'Te faltan {amount} para activar tu envío gratis. Agregá un producto más y aprovechá mejor tu compra.';
+
   private adminService = inject(AdminService);
   private appSettings = inject(AppSettingsService);
   private notificationService = inject(NotificationService);
@@ -56,7 +58,7 @@ export class AdminSettingsComponent implements OnInit {
     this.loading.set(true);
     this.adminService.getAppSettings().subscribe({
       next: (settings: any) => {
-        const settingsArray = Array.isArray(settings) ? settings : [];
+        const settingsArray = this.withDefaultSettings(Array.isArray(settings) ? settings : []);
         this.settings.set(settingsArray);
         
         const categories = new Set<string>();
@@ -71,6 +73,29 @@ export class AdminSettingsComponent implements OnInit {
         this.loading.set(false);
       }
     });
+  }
+
+  private withDefaultSettings(settings: AppSetting[]): AppSetting[] {
+    const hasShippingProgressMessage = settings.some(s => s.key === 'shipping_free_progress_message');
+    if (hasShippingProgressMessage) {
+      return settings;
+    }
+
+    return [
+      ...settings,
+      {
+        id: '',
+        key: 'shipping_free_progress_message',
+        value: this.defaultShippingProgressMessage,
+        label: 'Mensaje para activar envío gratis',
+        description: 'Texto que se muestra debajo del total cuando al cliente le falta monto para llegar al envío gratis. Usa {amount} para mostrar la cantidad faltante.',
+        category: 'shipping',
+        dataType: 'textarea',
+        displayOrder: 20,
+        isActive: true,
+        createdAt: new Date().toISOString()
+      }
+    ];
   }
 
   groupSettings(): void {
@@ -120,9 +145,8 @@ export class AdminSettingsComponent implements OnInit {
 
   updateSetting(setting: AppSetting): void {
     this.saving.set(true);
-    
-    const updateData = {
-      id: setting.id,
+
+    const settingData = {
       key: setting.key,
       value: setting.value,
       label: setting.label,
@@ -133,7 +157,11 @@ export class AdminSettingsComponent implements OnInit {
       isActive: setting.isActive
     };
 
-    this.adminService.updateAppSetting(setting.id, updateData).subscribe({
+    const operation = setting.id
+      ? this.adminService.updateAppSetting(setting.id, { id: setting.id, ...settingData })
+      : this.adminService.createAppSetting(settingData);
+
+    operation.subscribe({
       next: () => {
         this.appSettings.reloadSettings();
         this.loadSettings();
@@ -141,7 +169,7 @@ export class AdminSettingsComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error updating setting:', error);
-        this.notificationService.error('Error al actualizar la configuracion: ' + (error.error?.message || error.message));
+        this.notificationService.error('Error al actualizar la configuración: ' + (error.error?.message || error.message));
         this.saving.set(false);
       }
     });

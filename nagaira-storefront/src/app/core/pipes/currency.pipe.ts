@@ -15,11 +15,14 @@ export class AppCurrencyPipe implements PipeTransform {
 
     const formatStr = format || '1.2-2';
     const decimals = parseInt(formatStr.split('.')[1]?.split('-')[0] || '2');
-    const formatted = value.toFixed(decimals);
+    const formatted = new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
+    }).format(value);
     
     const symbol = this.appSettings.currencySymbol();
     const position = this.appSettings.currencyPosition();
     
-    return position === 'after' ? `${formatted}${symbol}` : `${symbol}${formatted}`;
+    return position === 'after' ? `${formatted} ${symbol}` : `${symbol} ${formatted}`;
   }
 }

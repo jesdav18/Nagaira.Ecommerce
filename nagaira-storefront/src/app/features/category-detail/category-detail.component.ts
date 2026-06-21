@@ -7,6 +7,7 @@ import { Category, Product } from '../../core/models/models';
 import { ProductCardComponent } from '../../shared/components/product-card/product-card.component';
 import { SeoService } from '../../core/services/seo.service';
 import { SeoResolveService } from '../../core/services/seo-resolve.service';
+import { sortProductsByName } from '../../core/utils/product.utils';
 
 @Component({
   selector: 'app-category-detail',
@@ -52,7 +53,7 @@ export class CategoryDetailComponent implements OnInit {
   private loadProducts(categoryId: string): void {
     this.productService.getByCategory(categoryId).subscribe({
       next: (products) => {
-        this.products.set(products);
+        this.products.set(sortProductsByName(products));
         this.loading.set(false);
       },
       error: (error) => {

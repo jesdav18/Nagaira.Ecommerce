@@ -1,7 +1,9 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:5098/api',
+  apiUrl: 'https://nagaira.com/nagaira-ecommerce-api/api',
   publicBaseUrl: '',
+  facebookUrl: 'https://www.facebook.com/',
+  whatsappCheckoutPhone: '50492016464',
   cloudinary: {
     cloudName: 'ddn7oafvd',
     uploadPreset: 'nagaira_products'

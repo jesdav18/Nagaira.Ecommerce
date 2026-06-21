@@ -21,6 +21,26 @@ import { environment } from '../../../environments/environment';
   styleUrls: ['./checkout.component.css']
 })
 export class CheckoutComponent implements OnInit {
+  private readonly freeShippingThreshold = 700;
+  private readonly standardShippingCost = 100;
+
+  private readonly fallbackTransferPaymentMethod: PaymentMethod = {
+    id: 'bank-transfer-fallback',
+    name: 'Transferencia bancaria',
+    description: 'Depósito o transferencia bancaria',
+    type: 'BankAccount',
+    typeLabel: 'Transferencia',
+    accountNumber: '',
+    bankName: '',
+    accountHolderName: '',
+    walletProvider: '',
+    walletNumber: '',
+    qrCodeUrl: '',
+    instructions: 'Después de realizar el depósito, envía el comprobante por WhatsApp para confirmar tu pago.',
+    displayOrder: 999,
+    isActive: true
+  };
+
   cartService = inject(CartService);
   authService = inject(AuthService);
   orderService = inject(OrderService);
@@ -75,7 +95,24 @@ export class CheckoutComponent implements OnInit {
   });
 
   discountedTax = computed(() => this.discountedTotal() - this.discountedSubtotal());
+  qualifiesForFreeShipping = computed(() => this.discountedTotal() >= this.freeShippingThreshold);
+  freeShippingRemaining = computed(() => Math.max(this.freeShippingThreshold - this.discountedTotal(), 0));
+  shippingCost = computed(() => this.qualifiesForFreeShipping() ? 0 : this.standardShippingCost);
+  orderGrandTotal = computed(() => this.discountedTotal() + this.shippingCost());
+  freeShippingProgressMessage = computed(() => {
+    const message = this.appSettings.getShippingFreeProgressMessage();
+    return message.replaceAll('{amount}', this.formatMoney(this.freeShippingRemaining()));
+  });
   whatsAppCheckoutUrl = computed(() => this.buildWhatsAppCheckoutUrl());
+  selectedPaymentIsTransfer = computed(() => {
+    const method = this.selectedPaymentMethod();
+    return method ? this.isTransferPaymentMethod(method) : false;
+  });
+  selectedPaymentIsCashOnDelivery = computed(() => {
+    const method = this.selectedPaymentMethod();
+    return method ? this.isCashOnDeliveryPaymentMethod(method) : false;
+  });
+  paymentProofWhatsAppUrl = computed(() => this.buildPaymentProofWhatsAppUrl());
 
   shippingForm = this.fb.group({
     fullName: [''],
@@ -137,15 +174,30 @@ export class CheckoutComponent implements OnInit {
   loadPaymentMethods(): void {
     this.paymentMethodService.getActivePaymentMethods().subscribe({
       next: (methods) => {
-        this.paymentMethods.set(methods);
-        if (methods.length > 0) {
-          this.selectedPaymentMethod.set(methods[0]);
+        const paymentMethods = this.withTransferFallback(methods);
+        this.paymentMethods.set(paymentMethods);
+        if (paymentMethods.length > 0) {
+          this.selectedPaymentMethod.set(paymentMethods[0]);
         }
       },
       error: (error) => {
         console.error('Error loading payment methods:', error);
+        const paymentMethods = this.withTransferFallback([]);
+        this.paymentMethods.set(paymentMethods);
+        this.selectedPaymentMethod.set(paymentMethods[0]);
       }
     });
+  }
+
+  private withTransferFallback(methods: PaymentMethod[]): PaymentMethod[] {
+    const activeMethods = Array.isArray(methods) ? methods : [];
+    const hasTransferMethod = activeMethods.some(method => this.isTransferPaymentMethod(method));
+
+    if (hasTransferMethod) {
+      return activeMethods;
+    }
+
+    return [...activeMethods, this.fallbackTransferPaymentMethod];
   }
 
   getPaymentTypeLabel(method: PaymentMethod): string {
@@ -155,6 +207,45 @@ export class CheckoutComponent implements OnInit {
   getPaymentTypeIcon(method: PaymentMethod): string {
     const label = this.getPaymentTypeLabel(method).trim();
     return label.length > 0 ? label[0].toUpperCase() : '?';
+  }
+
+  isTransferPaymentMethod(method: PaymentMethod): boolean {
+    const values = [
+      method.name,
+      method.description,
+      method.type,
+      method.typeLabel,
+      method.bankName,
+      method.accountNumber
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+
+    return method.type === 'BankAccount'
+      || values.includes('transfer')
+      || values.includes('bancaria')
+      || values.includes('banco');
+  }
+
+  hasAccountDetails(method: PaymentMethod): boolean {
+    return Boolean(method.bankName || method.accountNumber || method.accountHolderName || method.walletProvider || method.walletNumber);
+  }
+
+  isCashOnDeliveryPaymentMethod(method: PaymentMethod): boolean {
+    const values = [
+      method.name,
+      method.description,
+      method.type,
+      method.typeLabel
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+
+    return method.type === 'Cash'
+      || values.includes('contra entrega')
+      || values.includes('efectivo');
   }
 
   selectPaymentMethod(method: PaymentMethod): void {
@@ -177,7 +268,7 @@ export class CheckoutComponent implements OnInit {
         return `- ${item.quantity}x ${item.product.name} (${this.formatMoney(lineTotal)})`;
       }),
       '',
-      `Total: ${this.formatMoney(this.discountedTotal())}`
+      `Total: ${this.formatMoney(this.orderGrandTotal())}`
     ];
 
     if (customerName) {
@@ -185,23 +276,62 @@ export class CheckoutComponent implements OnInit {
     }
 
     if (customerPhone) {
-      lines.push(`Telefono: ${customerPhone}`);
+      lines.push(`Teléfono: ${customerPhone}`);
     }
 
     if (paymentMethod) {
-      lines.push(`Metodo de pago seleccionado: ${paymentMethod.name}`);
+      lines.push(`Método de pago seleccionado: ${paymentMethod.name}`);
     }
 
     return `https://wa.me/${environment.whatsappCheckoutPhone}?text=${encodeURIComponent(lines.join('\n'))}`;
   }
 
+  private buildPaymentProofWhatsAppUrl(): string {
+    const shipping = this.shippingForm.getRawValue();
+    const customerName = (shipping.fullName || this.displayName()).trim();
+    const customerPhone = (shipping.phone || '').trim();
+    const orderId = this.createdOrderId();
+    const paymentMethod = this.selectedPaymentMethod();
+
+    const lines = [
+      'Hola, quiero enviar mi comprobante de pago por transferencia.',
+      '',
+      `Total pagado: ${this.formatMoney(this.orderGrandTotal())}`
+    ];
+
+    if (orderId) {
+      lines.push(`Orden: #${orderId}`);
+    }
+
+    if (customerName) {
+      lines.push(`Nombre: ${customerName}`);
+    }
+
+    if (customerPhone) {
+      lines.push(`Teléfono: ${customerPhone}`);
+    }
+
+    if (paymentMethod) {
+      lines.push(`Método de pago: ${paymentMethod.name}`);
+    }
+
+    lines.push('', 'Adjunto el comprobante en este chat.');
+
+    return `https://wa.me/${environment.whatsappCheckoutPhone}?text=${encodeURIComponent(lines.join('\n'))}`;
+  }
+
   private formatMoney(amount: number): string {
-    return `${this.appSettings.getCurrencySymbol()}${amount.toFixed(2)}`;
+    const formatted = new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount);
+
+    return `${this.appSettings.getCurrencySymbol()} ${formatted}`;
   }
 
   onSubmit(): void {
     if (!this.sessionReady()) {
-      this.error.set('Estamos validando tu sesion. Intenta nuevamente en unos segundos.');
+      this.error.set('Estamos validando tu sesión. Intenta nuevamente en unos segundos.');
       return;
     }
 

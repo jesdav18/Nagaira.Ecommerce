@@ -8,6 +8,7 @@ import { AppCurrencyPipe } from '../../../core/pipes/currency.pipe';
 import { PriceLevel, Product, ProductPrice } from '../../../core/models/models';
 import { NotificationService } from '../../../core/services/notification.service';
 import { AppSettingsService } from '../../../core/services/app-settings.service';
+import { sortProductsByName } from '../../../core/utils/product.utils';
 
 @Component({
   selector: 'app-admin-products',
@@ -310,7 +311,9 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
   downloadCatalog(layout: 'a4' | 'cards'): void {
     this.adminService.getAllProducts().subscribe({
       next: (products: any) => {
-        const items = Array.isArray(products) ? products : [];
+        const items = Array.isArray(products)
+          ? sortProductsByName(products.filter((product: Product) => product.isActive))
+          : [];
         if (items.length === 0) {
           this.notificationService.warning('No hay productos para exportar');
           return;
@@ -527,7 +530,11 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
 
   private formatCurrency(value: number): string {
     const symbol = this.appSettings.getCurrencySymbol();
-    return `${symbol}${value.toFixed(2)}`;
+    const formatted = new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
+    return `${symbol} ${formatted}`;
   }
 
   private truncate(text: string, max: number): string {
