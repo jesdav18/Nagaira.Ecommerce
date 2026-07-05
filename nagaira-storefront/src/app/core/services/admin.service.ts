@@ -258,6 +258,10 @@ export class AdminService {
     return this.http.get(`${this.apiUrl}/app-settings/${id}`);
   }
 
+  createAppSetting(setting: any) {
+    return this.http.post(`${this.apiUrl}/app-settings`, setting);
+  }
+
   updateAppSetting(id: string, setting: any) {
     return this.http.put(`${this.apiUrl}/app-settings/${id}`, setting);
   }

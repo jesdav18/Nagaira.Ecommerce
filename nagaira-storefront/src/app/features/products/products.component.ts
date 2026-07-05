@@ -6,6 +6,7 @@ import { Product, Category } from '../../core/models/models';
 import { ProductCardComponent } from '../../shared/components/product-card/product-card.component';
 import { CategoryService } from '../../core/services/category.service';
 import { ProductRequestCtaComponent } from '../product-requests/product-request-cta.component';
+import { sortProductsByName } from '../../core/utils/product.utils';
 
 @Component({
   selector: 'app-products',
@@ -132,7 +133,7 @@ export class ProductsComponent {
   }
 
   private updateView(data: Product[]): void {
-    this.products.set(data);
+    this.products.set(sortProductsByName(data));
     this.loading.set(false);
   }
 

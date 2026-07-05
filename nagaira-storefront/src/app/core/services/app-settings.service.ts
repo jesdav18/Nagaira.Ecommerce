@@ -22,15 +22,16 @@ export interface AppSetting {
 export class AppSettingsService {
   private http = inject(HttpClient);
   private apiUrl = environment.apiUrl;
-  
+
   private settingsLoaded = signal(false);
   private settings: Map<string, string> = new Map();
-  
-  public currencySymbol = signal<string>('$');
+
+  public currencySymbol = signal<string>('Lps');
   public currencyPosition = signal<'before' | 'after'>('before');
   public taxRate = signal<number>(0.16);
   public taxLabel = signal<string>('Impuestos');
   public shippingFreeLabel = signal<string>('Gratis');
+  public shippingFreeProgressMessage = signal<string>('Te faltan {amount} para activar tu envío gratis. Agregá un producto más y aprovechá mejor tu compra.');
   public defaultCountry = signal<string>('México');
 
   constructor() {
@@ -57,13 +58,14 @@ export class AppSettingsService {
   }
 
   private updatePublicValues(): void {
-    this.currencySymbol.set(this.settings.get('currency_symbol') || '$');
+    this.currencySymbol.set(this.settings.get('currency_symbol') || '');
     const position = this.settings.get('currency_position') || 'before';
     this.currencyPosition.set(position === 'after' ? 'after' : 'before');
     const taxRateValue = parseFloat(this.settings.get('tax_rate') || '0.16');
     this.taxRate.set(isNaN(taxRateValue) ? 0.16 : taxRateValue);
     this.taxLabel.set(this.settings.get('tax_label') || 'Impuestos');
     this.shippingFreeLabel.set(this.settings.get('shipping_free_label') || 'Gratis');
+    this.shippingFreeProgressMessage.set(this.settings.get('shipping_free_progress_message') || 'Te faltan {amount} para activar tu envío gratis. Agregá un producto más y aprovechá mejor tu compra.');
     this.defaultCountry.set(this.settings.get('default_country') || 'México');
   }
 
@@ -98,6 +100,10 @@ export class AppSettingsService {
 
   getShippingFreeLabel(): string {
     return this.shippingFreeLabel();
+  }
+
+  getShippingFreeProgressMessage(): string {
+    return this.shippingFreeProgressMessage();
   }
 
   getDefaultCountry(): string {

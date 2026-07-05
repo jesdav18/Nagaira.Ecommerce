@@ -45,7 +45,7 @@ export class AdminBannerFormComponent implements OnInit {
     this.adminService.getBannerById(id).subscribe({
       next: (banner: any) => {
         this.formData = {
-          title: banner.title || '',
+          title: this.displayText(banner.title),
           subtitle: banner.subtitle || '',
           imageUrl: banner.imageUrl || '',
           linkUrl: banner.linkUrl || '',
@@ -59,6 +59,10 @@ export class AdminBannerFormComponent implements OnInit {
         this.loading.set(false);
       }
     });
+  }
+
+  displayText(value?: string | null): string {
+    return value || '';
   }
 
   uploadImage(event: Event): void {
@@ -85,15 +89,15 @@ export class AdminBannerFormComponent implements OnInit {
   }
 
   save(): void {
-    if (!this.formData.title.trim() || !this.formData.imageUrl.trim()) {
-      this.notificationService.warning('Titulo e imagen son obligatorios');
+    if (!this.formData.imageUrl.trim()) {
+      this.notificationService.warning('La imagen es obligatoria');
       return;
     }
 
     this.saving.set(true);
     const payload = {
       title: this.formData.title.trim(),
-      subtitle: this.formData.subtitle.trim() || null,
+      subtitle: this.formData.subtitle.trim(),
       imageUrl: this.formData.imageUrl.trim(),
       linkUrl: this.formData.linkUrl.trim() || null,
       displayOrder: this.formData.displayOrder,

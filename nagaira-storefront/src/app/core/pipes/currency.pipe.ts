@@ -22,10 +22,10 @@ export class AppCurrencyPipe implements PipeTransform {
       minimumFractionDigits: Number.isNaN(minimumFractionDigits) ? 2 : minimumFractionDigits,
       maximumFractionDigits: Number.isNaN(maximumFractionDigits) ? 2 : maximumFractionDigits
     }).format(value);
-    
+
     const symbol = this.appSettings.currencySymbol();
     const position = this.appSettings.currencyPosition();
-    
-    return position === 'after' ? `${formatted}${symbol}` : `${symbol}${formatted}`;
+
+    return position === 'after' ? `${formatted} ${symbol}` : `${symbol} ${formatted}`;
   }
 }

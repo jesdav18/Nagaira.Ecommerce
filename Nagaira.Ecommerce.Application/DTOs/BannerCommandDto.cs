@@ -1,7 +1,7 @@
 namespace Nagaira.Ecommerce.Application.DTOs;
 
 public record CreateBannerDto(
-    string Title,
+    string? Title,
     string? Subtitle,
     string ImageUrl,
     string? LinkUrl,

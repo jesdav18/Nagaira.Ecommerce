@@ -75,15 +75,25 @@
                       </label>
                     } @else {
                       <div class="input-group">
-                        <input 
-                          [type]="getDataTypeInputType(setting.dataType)"
-                          [ngModel]="setting.value"
-                          (ngModelChange)="setting.value = $event"
-                          (blur)="updateSetting(setting)"
-                          [disabled]="saving()"
-                          [step]="setting.dataType === 'decimal' ? '0.01' : undefined"
-                          class="setting-input"
-                        >
+                        @if (setting.dataType === 'textarea') {
+                          <textarea
+                            [ngModel]="setting.value"
+                            (ngModelChange)="setting.value = $event"
+                            (blur)="updateSetting(setting)"
+                            [disabled]="saving()"
+                            class="setting-input setting-textarea"
+                            rows="3"></textarea>
+                        } @else {
+                          <input 
+                            [type]="getDataTypeInputType(setting.dataType)"
+                            [ngModel]="setting.value"
+                            (ngModelChange)="setting.value = $event"
+                            (blur)="updateSetting(setting)"
+                            [disabled]="saving()"
+                            [step]="setting.dataType === 'decimal' ? '0.01' : undefined"
+                            class="setting-input"
+                          >
+                        }
                         <button 
                           class="btn btn-primary btn-sm"
                           (click)="updateSetting(setting)"

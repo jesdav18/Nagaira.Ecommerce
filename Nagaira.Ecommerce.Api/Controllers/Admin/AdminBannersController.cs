@@ -43,15 +43,15 @@ public class AdminBannersController : ControllerBase
     public async Task<ActionResult<BannerDto>> Create([FromBody] CreateBannerDto dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        if (string.IsNullOrWhiteSpace(dto.Title) || string.IsNullOrWhiteSpace(dto.ImageUrl))
+        if (string.IsNullOrWhiteSpace(dto.ImageUrl))
         {
-            return BadRequest(new { message = "Titulo e imagen son obligatorios." });
+            return BadRequest(new { message = "La imagen es obligatoria." });
         }
 
         var banner = new Banner
         {
             Id = Guid.NewGuid(),
-            Title = dto.Title.Trim(),
+            Title = dto.Title?.Trim() ?? string.Empty,
             Subtitle = string.IsNullOrWhiteSpace(dto.Subtitle) ? null : dto.Subtitle.Trim(),
             ImageUrl = dto.ImageUrl.Trim(),
             LinkUrl = string.IsNullOrWhiteSpace(dto.LinkUrl) ? null : dto.LinkUrl.Trim(),

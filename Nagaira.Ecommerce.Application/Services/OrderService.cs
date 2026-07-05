@@ -9,6 +9,9 @@ namespace Nagaira.Ecommerce.Application.Services;
 
 public class OrderService : IOrderService
 {
+    private const decimal FreeShippingThreshold = 700m;
+    private const decimal StandardShippingCost = 100m;
+
     private readonly IUnitOfWork _unitOfWork;
     private readonly IEmailService _emailService;
 
@@ -215,10 +218,12 @@ public class OrderService : IOrderService
                     await _unitOfWork.InventoryMovements.AddAsync(inventoryMovement);
                 }
 
-                order.Total = orderTotal;
+                var shippingCost = orderTotal >= FreeShippingThreshold ? 0m : StandardShippingCost;
+
+                order.Total = orderTotal + shippingCost;
                 order.Subtotal = orderTotal / (1 + taxRate);
                 order.Tax = orderTotal - order.Subtotal;
-                order.ShippingCost = 0;
+                order.ShippingCost = shippingCost;
 
                 await _unitOfWork.Orders.AddAsync(order);
                 await _unitOfWork.SaveChangesAsync();
