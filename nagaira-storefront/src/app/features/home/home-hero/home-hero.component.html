@@ -43,17 +43,3 @@
   }
 </section>
 
-<div class="hero-actions hero-actions-below">
-  @if (currentSlide().linkUrl) {
-    <a class="btn btn-primary btn-lg" [href]="currentSlide().linkUrl" target="_blank" rel="noopener">
-      Ver banner
-    </a>
-  } @else {
-    <a routerLink="/products" class="btn btn-primary btn-lg">
-      Explorar Productos
-    </a>
-  }
-  <a routerLink="/categories" class="btn btn-secondary btn-lg">
-    Ver Categorias
-  </a>
-</div>

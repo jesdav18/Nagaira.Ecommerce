@@ -2,7 +2,6 @@ import { Component, inject } from '@angular/core';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { HeaderComponent } from './shared/components/header/header.component';
 import { FooterComponent } from './shared/components/footer/footer.component';
-import { FloatingSocialComponent } from './shared/components/floating-social/floating-social.component';
 import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs/operators';
 import { AnalyticsService } from './core/services/analytics.service';
@@ -10,7 +9,7 @@ import { AnalyticsService } from './core/services/analytics.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, HeaderComponent, FooterComponent, FloatingSocialComponent, CommonModule],
+  imports: [RouterOutlet, HeaderComponent, FooterComponent, CommonModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
