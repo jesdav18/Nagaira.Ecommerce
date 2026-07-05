@@ -1,4 +1,5 @@
 @import "sweetalert2/dist/sweetalert2.min.css";
+@import "@fortawesome/fontawesome-free/css/all.min.css";
 
 :root {
   --primary-color: #006DB1;
@@ -49,6 +50,8 @@
   
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --page-max-width: 1880px;
+  --page-gutter: clamp(1rem, 2vw, 2.5rem);
 }
 
 [data-theme="dark"] {
@@ -113,9 +116,11 @@ input, textarea, select {
 }
 
 .container {
-  max-width: 1280px;
+  width: min(calc(100% - (var(--page-gutter) * 2)), var(--page-max-width));
+  max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .btn {

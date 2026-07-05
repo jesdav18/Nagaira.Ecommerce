@@ -269,7 +269,7 @@
 .modal-items-head,
 .modal-items-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 90px 130px;
+  grid-template-columns: minmax(0, 1fr) 180px 90px 130px;
   gap: 12px;
   align-items: center;
 }

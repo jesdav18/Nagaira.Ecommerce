@@ -21,15 +21,11 @@ export function getProductPriceByQuantity(product: Product, quantity: number, pr
     return 0;
   }
 
-  const retailPrice = getRetailPrice(activePrices);
-  if (quantity >= 3) {
-    const wholesalePrice = getWholesalePrice(product);
-    if (wholesalePrice !== null) {
-      return wholesalePrice;
-    }
-  }
+  const matchedPrice = [...activePrices]
+    .sort((a, b) => b.minQuantity - a.minQuantity)
+    .find(price => quantity >= price.minQuantity);
 
-  return retailPrice;
+  return matchedPrice?.price ?? getRetailPrice(activePrices);
 }
 
 export function getWholesalePrice(product: Product): number | null {

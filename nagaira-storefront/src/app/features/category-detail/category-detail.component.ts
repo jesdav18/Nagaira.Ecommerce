@@ -23,24 +23,32 @@ export class CategoryDetailComponent implements OnInit {
   private seoResolveService = inject(SeoResolveService);
 
   category = signal<Category | null>(null);
+  selectedCategory = signal<Category | null>(null);
   products = signal<Product[]>([]);
   loading = signal(true);
   notFound = signal(false);
 
   ngOnInit(): void {
-    const slug = this.route.snapshot.paramMap.get('slug');
-    if (slug) {
-      this.loadCategory(slug);
-    }
+    this.route.paramMap.subscribe(params => {
+      const slug = params.get('slug');
+      if (slug) {
+        this.loadCategory(slug);
+      }
+    });
   }
 
   private loadCategory(slug: string): void {
     this.loading.set(true);
+    this.notFound.set(false);
+    this.products.set([]);
     this.categoryService.getBySlug(slug).subscribe({
       next: (category) => {
         this.category.set(category);
         this.setMeta(category);
-        this.loadProducts(category.id);
+        const firstSubcategory = this.sortedSubcategories(category)[0] || null;
+        const initialCategory = firstSubcategory || category;
+        this.selectedCategory.set(initialCategory);
+        this.loadProducts(initialCategory.id);
       },
       error: (error) => {
         console.error('Error loading category', error);
@@ -60,6 +68,21 @@ export class CategoryDetailComponent implements OnInit {
         this.loading.set(false);
       }
     });
+  }
+
+  sortedSubcategories(category = this.category()): Category[] {
+    return [...(category?.subCategories || [])]
+      .filter(subcategory => subcategory.isActive)
+      .sort((a, b) => a.name.localeCompare(b.name, 'es'));
+  }
+
+  selectSubcategory(subcategory: Category): void {
+    this.selectedCategory.set(subcategory);
+    this.loadProducts(subcategory.id);
+  }
+
+  isSelectedSubcategory(subcategory: Category): boolean {
+    return this.selectedCategory()?.id === subcategory.id;
   }
 
   private setMeta(category: Category): void {

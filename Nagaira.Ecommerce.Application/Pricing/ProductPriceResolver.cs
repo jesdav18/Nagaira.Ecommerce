@@ -16,17 +16,10 @@ public static class ProductPriceResolver
             return null;
         }
 
-        var retailPrice = activePrices.First().Price;
-        if (quantity < 3)
-        {
-            return retailPrice;
-        }
+        var matchedPrice = activePrices
+            .OrderByDescending(p => p.MinQuantity)
+            .FirstOrDefault(p => quantity >= p.MinQuantity);
 
-        var wholesalePrice = activePrices
-            .FirstOrDefault(p => (p.PriceLevel?.Name ?? string.Empty)
-                .Trim()
-                .Contains("mayorista", StringComparison.OrdinalIgnoreCase));
-
-        return wholesalePrice?.Price ?? retailPrice;
+        return matchedPrice?.Price ?? activePrices.First().Price;
     }
 }

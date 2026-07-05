@@ -121,12 +121,14 @@
           <div class="modal-items-table">
             <div class="modal-items-head">
               <span>Producto</span>
+              <span>Barra</span>
               <span>Cant.</span>
               <span>Subtotal</span>
             </div>
             @for (item of order.items; track item.productId) {
               <div class="modal-items-row">
                 <span>{{ item.productName }}</span>
+                <span>{{ item.productSku || 'N/A' }}</span>
                 <span>{{ item.quantity }}</span>
                 <span>{{ item.subtotal | appCurrency:'1.2-2' }}</span>
               </div>

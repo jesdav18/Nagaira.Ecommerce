@@ -188,6 +188,7 @@ builder.Services.AddCors(options =>
                 "http://localhost:4200",
                 "http://localhost:4201",
                 "https://nagaira.com",
+                "http://localhost:57720",
                 "https://www.nagaira.com")
               .AllowAnyHeader()
               .AllowAnyMethod()

@@ -16,6 +16,7 @@ import { getProductPrice, getProductStock, getPrimaryImage, getWholesalePrice, i
 })
 export class ProductCardComponent {
   @Input({ required: true }) product!: Product;
+  @Input() layout: 'default' | 'wide' = 'default';
 
   cartService = inject(CartService);
   private authService = inject(AuthService);
@@ -45,6 +46,15 @@ export class ProductCardComponent {
 
   get showWholesalePrice(): boolean {
     return this.wholesalePrice !== null && this.wholesalePrice !== this.finalPrice;
+  }
+
+  get special3PlusPrice(): number | null {
+    return this.showWholesalePrice ? this.wholesalePrice : null;
+  }
+
+  get special3PlusSavings(): number {
+    if (this.special3PlusPrice === null) return 0;
+    return Math.max(this.finalPrice - this.special3PlusPrice, 0);
   }
 
   get hasDiscount(): boolean {

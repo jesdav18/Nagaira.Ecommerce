@@ -70,6 +70,7 @@ public class AdminOrdersController : ControllerBase
                 return new OrderItemDto(
                     i.ProductId,
                     i.Product?.Name ?? string.Empty,
+                    i.Product?.Sku ?? string.Empty,
                     i.Quantity,
                     i.UnitPrice,
                     i.Subtotal,

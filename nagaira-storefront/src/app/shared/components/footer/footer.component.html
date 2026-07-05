@@ -4,31 +4,48 @@
       <div class="footer-brand">
         <span class="footer-logo">Nagaira</span>
         <p class="footer-tagline">
-          Bienestar, hogar, cuidado personal, y mucho más en un solo lugar.
+          Comprá fácil y ahorrá más en productos para tu día a día.
         </p>
         <div class="footer-highlights">
-          <span>Pago seguro y entrega rápida</span>
-          <span>Compras mayores a {{ currencySymbol() }}700.00 con envío gratis</span>
+          <span>Envío gratis desde {{ currencySymbol() }}700.00</span>
+          <span>Precio especial 3+ en productos seleccionados</span>
+          <span>Atención directa por WhatsApp</span>
         </div>
       </div>
 
       <div class="footer-links">
         <div class="footer-group">
-          <h4>Informacion</h4>
+          <h4>Tienda</h4>
+          <a routerLink="/products">Productos</a>
+          <a routerLink="/categories">Categorías</a>
+          <a routerLink="/products">Ofertas 3+</a>
+          <a routerLink="/cart">Carrito</a>
+        </div>
+
+        <div class="footer-group">
+          <h4>Políticas</h4>
           <a routerLink="/politica-venta">Política de venta</a>
           <a routerLink="/politica-reembolso">Política de reembolso</a>
           <a routerLink="/envio-devolucion">Envío y devolución</a>
           <a routerLink="/terminos-condiciones">Términos y condiciones</a>
           <a routerLink="/politica-privacidad">Política de privacidad</a>
         </div>
+
         <div class="footer-group">
-          <h4>Contactenos</h4>
+          <h4>Contacto</h4>
           <a href="mailto:hello@nagaira.com">hello&#64;nagaira.com</a>
-          <a href="tel:+504 9201-6464">+504 9201-6464</a>
-          <span class="footer-note"
-            >Col. Jardines del valle, 4 calle, bloque E Casa 8, San Pedro
-            Sula</span
-          >
+          <a href="tel:+50492016464">+504 9201-6464</a>
+          <a href="https://wa.me/50492016464" target="_blank" rel="noopener">WhatsApp</a>
+          <span class="footer-note">Col. Jardines del valle, 4 calle, bloque E Casa 8, San Pedro Sula</span>
+        </div>
+
+        <div class="footer-group">
+          <h4>Horarios</h4>
+          <span class="footer-note">Lunes a viernes: 8:00 AM - 5:00 PM</span>
+          <span class="footer-note">Sábado: 8:00 AM - 12:00 PM</span>
+          <h4>Pagos y envíos</h4>
+          <span class="footer-note">Tarjeta, transferencia y pagos confirmados por el equipo.</span>
+          <span class="footer-note">Envíos locales y coordinación por WhatsApp.</span>
         </div>
       </div>
     </div>
@@ -36,7 +53,7 @@
     <div class="footer-meta">
       <span>Developed by Nagaira Developers</span>
       <span class="footer-divider">|</span>
-      <span>© {{ currentYear }} Nagaira. Todos los derechos reservados.</span>
+      <span>(c) {{ currentYear }} Nagaira. Todos los derechos reservados.</span>
     </div>
   </div>
 </footer>

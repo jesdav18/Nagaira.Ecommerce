@@ -14,8 +14,14 @@ export class AppCurrencyPipe implements PipeTransform {
     }
 
     const formatStr = format || '1.2-2';
-    const decimals = parseInt(formatStr.split('.')[1]?.split('-')[0] || '2');
-    const formatted = value.toFixed(decimals);
+    const decimalsConfig = formatStr.split('.')[1] || '2-2';
+    const [minimumFractionDigits, maximumFractionDigits] = decimalsConfig
+      .split('-')
+      .map(part => parseInt(part, 10));
+    const formatted = new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: Number.isNaN(minimumFractionDigits) ? 2 : minimumFractionDigits,
+      maximumFractionDigits: Number.isNaN(maximumFractionDigits) ? 2 : maximumFractionDigits
+    }).format(value);
     
     const symbol = this.appSettings.currencySymbol();
     const position = this.appSettings.currencyPosition();

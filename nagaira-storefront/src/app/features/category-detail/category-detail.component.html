@@ -23,6 +23,20 @@
         <a routerLink="/products" class="btn btn-secondary">Ver todo</a>
       </div>
 
+      @if (sortedSubcategories().length > 0) {
+        <div class="subcategory-tabs" aria-label="Subcategorías">
+          @for (subcategory of sortedSubcategories(); track subcategory.id) {
+            <button
+              type="button"
+              class="subcategory-tab"
+              [class.active]="isSelectedSubcategory(subcategory)"
+              (click)="selectSubcategory(subcategory)">
+              {{ subcategory.name }}
+            </button>
+          }
+        </div>
+      }
+
       @if (products().length > 0) {
         <div class="products-grid">
           @for (product of products(); track product.id) {

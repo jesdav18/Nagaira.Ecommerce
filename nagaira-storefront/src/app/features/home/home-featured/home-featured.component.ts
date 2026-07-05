@@ -27,13 +27,13 @@ export class HomeFeaturedComponent implements OnInit {
     this.productService.getFeatured().subscribe({
       next: (products) => {
         if (products && products.length > 0) {
-          this.featuredProducts.set(products.slice(0, 8));
+          this.featuredProducts.set(products.slice(0, 5));
           this.loading.set(false);
           return;
         }
         this.productService.getAll().subscribe({
           next: (allProducts) => {
-            this.featuredProducts.set(allProducts.slice(0, 8));
+            this.featuredProducts.set(allProducts.slice(0, 5));
             this.loading.set(false);
           },
           error: (error) => {
@@ -46,7 +46,7 @@ export class HomeFeaturedComponent implements OnInit {
         console.error('Error loading featured products:', error);
         this.productService.getAll().subscribe({
           next: (allProducts) => {
-            this.featuredProducts.set(allProducts.slice(0, 8));
+            this.featuredProducts.set(allProducts.slice(0, 5));
             this.loading.set(false);
           },
           error: (fallbackError) => {

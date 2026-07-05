@@ -1,15 +1,15 @@
-<a [routerLink]="['/p', product.slug]" class="product-card">
+<a [routerLink]="['/p', product.slug]" class="product-card" [class.product-card-wide]="layout === 'wide'">
   <div class="product-image-wrapper">
     <img [src]="primaryImage" [alt]="product.name" class="product-image">
-    
+
     @if (hasDiscount) {
       <div class="discount-badge">-{{ discountPercentage }}%</div>
     }
-    
+
     @if (isVirtual) {
       <div class="stock-badge success">Disponible</div>
     } @else if (stock !== null && stock <= 5 && stock > 0) {
-      <div class="stock-badge warning">¡Últimas {{ stock }} unidades!</div>
+      <div class="stock-badge warning">Últimas {{ stock }} unidades</div>
     } @else if (stock === 0) {
       <div class="stock-badge error">Agotado</div>
     }
@@ -18,27 +18,31 @@
   <div class="product-info">
     <p class="product-category">{{ product.categoryName }}</p>
     <h3 class="product-name">{{ product.name }}</h3>
-    
+
     <div class="product-pricing">
       @if (hasDiscount) {
         <span class="price-original">{{ basePrice | appCurrency:'1.2-2' }}</span>
       }
+      <span class="price-label">Precio normal</span>
       <span class="price-current">{{ finalPrice | appCurrency:'1.2-2' }}</span>
     </div>
 
-    @if (showWholesalePrice) {
-      <div class="product-wholesale-price">
-        Mayorista: {{ wholesalePrice | appCurrency:'1.2-2' }}
+    @if (special3PlusPrice !== null) {
+      <div class="product-3plus-price">
+        <span>Llevando 3+: {{ special3PlusPrice | appCurrency:'1.2-2' }} c/u</span>
+        @if (special3PlusSavings > 0) {
+          <strong>Ahorra {{ special3PlusSavings | appCurrency:'1.2-2' }} por unidad</strong>
+        }
       </div>
     }
 
-    <button 
-      class="btn-add-cart" 
+    <button
+      class="btn-add-cart"
       (click)="addToCart($event)"
       [disabled]="(!isVirtual && stock === 0) || addingToCart"
       [class.adding]="addingToCart">
       @if (addingToCart) {
-        <span>✓ Agregado</span>
+        <span>Agregado</span>
       } @else if (!isVirtual && stock === 0) {
         <span>No disponible</span>
       } @else {

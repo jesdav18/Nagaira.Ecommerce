@@ -470,7 +470,7 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
     const wholesaleText = wholesalePrice !== null ? this.formatCurrency(wholesalePrice) : '';
     const wholesaleRow = wholesalePrice !== null
       ? `<div class="card-price-row card-price-wholesale">
-           <span class="card-price-label">Mayorista</span>
+           <span class="card-price-label">Precio 3+</span>
            <span class="card-price-value">${this.escapeHtml(wholesaleText)}</span>
          </div>`
       : '';

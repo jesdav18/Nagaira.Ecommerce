@@ -20,6 +20,7 @@ public record OrderDto(
 public record OrderItemDto(
     Guid ProductId,
     string ProductName,
+    string ProductSku,
     int Quantity,
     decimal UnitPrice,
     decimal Subtotal,

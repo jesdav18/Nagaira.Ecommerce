@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:5098/api',
+  apiUrl: 'https://nagaira.com/nagaira-ecommerce-api/api',
   publicBaseUrl: '',
   cloudinary: {
     cloudName: 'ddn7oafvd',

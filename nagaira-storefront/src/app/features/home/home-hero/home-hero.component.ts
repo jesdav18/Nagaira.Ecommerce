@@ -20,8 +20,8 @@ export class HomeHeroComponent implements OnInit, OnDestroy {
 
   private fallbackBanner: Banner = {
     id: 'fallback',
-    title: 'Descubre lo extraordinario',
-    subtitle: 'Bienestar, hogar, cuidado personal, y mucho más en un solo lugar.',
+    title: 'Comprá fácil y ahorrá más',
+    subtitle: 'Productos para tu día a día con envío gratis desde L 700 y precio especial al llevar 3 o más en productos seleccionados.',
     imageUrl: '',
     linkUrl: null,
     displayOrder: 0,

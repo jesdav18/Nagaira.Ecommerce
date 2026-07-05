@@ -103,6 +103,7 @@ export interface Order {
 export interface OrderItem {
   productId: string;
   productName: string;
+  productSku: string;
   quantity: number;
   unitPrice: number;
   subtotal: number;
