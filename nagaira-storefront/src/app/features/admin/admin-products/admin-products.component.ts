@@ -10,6 +10,9 @@ import { NotificationService } from '../../../core/services/notification.service
 import { AppSettingsService } from '../../../core/services/app-settings.service';
 import { sortProductsByName } from '../../../core/utils/product.utils';
 
+type CatalogLayout = 'a4' | 'cards';
+type CatalogPriceMode = 'both' | 'threePlusOnly';
+
 @Component({
   selector: 'app-admin-products',
   standalone: true,
@@ -39,6 +42,13 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
   categoryFilter = signal<string | null>(null);
   showPriceLevels = signal(false);
   priceLevelFilter = signal<string | null>(null);
+  showCatalogOptionsModal = signal(false);
+  selectedCatalogLayout = signal<CatalogLayout>('a4');
+
+  catalogOptions = {
+    sortAlphabetically: true,
+    priceMode: 'both' as CatalogPriceMode
+  };
 
   activePriceLevelIds = computed(() => {
     return new Set(this.priceLevels().filter(level => level.isActive).map(level => level.id));
@@ -308,17 +318,35 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
     this.searchInput$.complete();
   }
 
-  downloadCatalog(layout: 'a4' | 'cards'): void {
+  openCatalogOptions(layout: CatalogLayout): void {
+    this.selectedCatalogLayout.set(layout);
+    this.showCatalogOptionsModal.set(true);
+  }
+
+  closeCatalogOptions(): void {
+    this.showCatalogOptionsModal.set(false);
+  }
+
+  generateCatalogFromOptions(): void {
+    const layout = this.selectedCatalogLayout();
+    this.closeCatalogOptions();
+    this.downloadCatalog(layout);
+  }
+
+  downloadCatalog(layout: CatalogLayout): void {
     this.adminService.getAllProducts().subscribe({
       next: (products: any) => {
-        const items = Array.isArray(products)
-          ? sortProductsByName(products.filter((product: Product) => product.isActive))
+        const activeProducts = Array.isArray(products)
+          ? products.filter((product: Product) => this.isProductActiveForCatalog(product))
           : [];
+        const items = this.catalogOptions.sortAlphabetically
+          ? sortProductsByName(activeProducts)
+          : activeProducts;
         if (items.length === 0) {
           this.notificationService.warning('No hay productos para exportar');
           return;
         }
-        const html = this.buildCatalogHtml(items, layout);
+        const html = this.buildCatalogHtml(items, layout, this.catalogOptions.priceMode);
         this.printHtmlInIframe(html);
       },
       error: (error) => {
@@ -328,10 +356,10 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
     });
   }
 
-  private buildCatalogHtml(products: Product[], layout: 'a4' | 'cards'): string {
+  private buildCatalogHtml(products: Product[], layout: CatalogLayout, priceMode: CatalogPriceMode): string {
     const title = layout === 'a4' ? '' : '';
     const logoUrl = this.toAbsoluteUrl('/assets/images/NagairaLogoNombre.png');
-    const cards = products.map(product => this.renderProductCard(product, layout)).join('');
+    const cards = products.map(product => this.renderProductCard(product, layout, priceMode)).join('');
 
     return `<!doctype html>
 <html lang="es">
@@ -465,13 +493,19 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
     });
   }
 
-  private renderProductCard(product: Product, layout: 'a4' | 'cards'): string {
+  private renderProductCard(product: Product, layout: CatalogLayout, priceMode: CatalogPriceMode): string {
     const imageUrl = this.getPrimaryImage(product);
     const retailPrice = this.getMinoristaPrice(product);
     const wholesalePrice = this.getMayoristaPrice(product);
     const retailText = retailPrice !== null ? this.formatCurrency(retailPrice) : 'Sin precio';
-    const wholesaleText = wholesalePrice !== null ? this.formatCurrency(wholesalePrice) : '';
-    const wholesaleRow = wholesalePrice !== null
+    const wholesaleText = wholesalePrice !== null ? this.formatCurrency(wholesalePrice) : 'Sin precio';
+    const retailRow = priceMode === 'both'
+      ? `<div class="card-price-row card-price-retail">
+           <span class="card-price-label">Precio</span>
+           <span class="card-price-value">${this.escapeHtml(retailText)}</span>
+         </div>`
+      : '';
+    const wholesaleRow = priceMode === 'threePlusOnly' || wholesalePrice !== null
       ? `<div class="card-price-row card-price-wholesale">
            <span class="card-price-label">Precio 3+</span>
            <span class="card-price-value">${this.escapeHtml(wholesaleText)}</span>
@@ -489,10 +523,7 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
           <div class="card-meta">Categor&iacute;a: ${this.escapeHtml(product.categoryName || '-')}</div>
           <div class="card-desc">${this.escapeHtml(desc)}</div>
           <div class="card-prices">
-            <div class="card-price-row card-price-retail">
-              <span class="card-price-label">Precio</span>
-              <span class="card-price-value">${this.escapeHtml(retailText)}</span>
-            </div>
+            ${retailRow}
             ${wholesaleRow}
           </div>
         </div>
@@ -507,6 +538,10 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
     const primary = product.images.find(img => img.isPrimary);
     const url = primary?.imageUrl || product.images[0].imageUrl || '/assets/placeholder.jpg';
     return this.toAbsoluteUrl(url);
+  }
+
+  private isProductActiveForCatalog(product: Product): boolean {
+    return product.isActive === true;
   }
 
   private getMinoristaPrice(product: Product): number | null {
