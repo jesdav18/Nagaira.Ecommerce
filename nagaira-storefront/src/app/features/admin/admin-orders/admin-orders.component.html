@@ -101,6 +101,9 @@
             <p><strong>Nombre:</strong> {{ getCustomerLabel(order) }}</p>
             <p><strong>Contacto:</strong> {{ getContactLine(order) }}</p>
             <p><strong>Total:</strong> {{ order.total | appCurrency:'1.2-2' }}</p>
+            @if (order.paymentMethodName) {
+              <p><strong>Pago:</strong> {{ order.paymentMethodName }}</p>
+            }
             <p><strong>Estado:</strong> <span class="status-badge" [class]="getStatusClass(order.status)">{{ order.status }}</span></p>
           </section>
 
@@ -115,6 +118,18 @@
             }
           </section>
         </div>
+
+        <section class="modal-card">
+          <h3>Comprobante de pago</h3>
+          @if (getPaymentProofUrl(order)) {
+            <a [href]="getPaymentProofUrl(order)" target="_blank" rel="noopener" class="payment-proof-link">
+              <img [src]="getPaymentProofUrl(order)" alt="Comprobante de pago" class="payment-proof-image">
+              <span>Abrir comprobante</span>
+            </a>
+          } @else {
+            <p class="muted-cell">Sin comprobante registrado.</p>
+          }
+        </section>
 
         <section class="modal-card modal-items">
           <h3>Items</h3>

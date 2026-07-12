@@ -11,10 +11,17 @@ namespace Nagaira.Ecommerce.Api.Controllers;
 public class OrdersController : ControllerBase
 {
     private readonly IOrderService _orderService;
+    private readonly ICloudinaryService _cloudinaryService;
+    private readonly ILogger<OrdersController> _logger;
 
-    public OrdersController(IOrderService orderService)
+    public OrdersController(
+        IOrderService orderService,
+        ICloudinaryService cloudinaryService,
+        ILogger<OrdersController> logger)
     {
         _orderService = orderService;
+        _cloudinaryService = cloudinaryService;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -53,6 +60,55 @@ public class OrdersController : ControllerBase
             var userId = GetOptionalUserId();
             var order = await _orderService.CreateOrderAsync(userId, dto);
             return CreatedAtAction(nameof(GetById), new { id = order.Id }, order);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("payment-proof-image")]
+    [AllowAnonymous]
+    public async Task<ActionResult<object>> UploadPaymentProofImage(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest(new { message = "No se proporciono ningun archivo" });
+        }
+
+        if (!file.ContentType.StartsWith("image/"))
+        {
+            return BadRequest(new { message = "El archivo debe ser una imagen" });
+        }
+
+        if (file.Length > 10 * 1024 * 1024)
+        {
+            return BadRequest(new { message = "La imagen no puede ser mayor a 10MB" });
+        }
+
+        try
+        {
+            using var sourceStream = file.OpenReadStream();
+            var imageUrl = await _cloudinaryService.UploadImageAsync(sourceStream, file.FileName, "payment-proofs");
+            return Ok(new { imageUrl });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al subir comprobante de pago");
+            return StatusCode(500, new { message = "Error al subir el comprobante", error = ex.Message });
+        }
+    }
+
+    [HttpPatch("{id:guid}/payment-proof")]
+    [AllowAnonymous]
+    public async Task<ActionResult<OrderDto>> UpdatePaymentProof(Guid id, [FromBody] UpdatePaymentProofDto dto)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        try
+        {
+            var order = await _orderService.UpdatePaymentProofAsync(id, dto);
+            return Ok(order);
         }
         catch (Exception ex)
         {

@@ -98,4 +98,8 @@ export class AdminOrdersComponent implements OnInit {
   getStatusClass(status: string): string {
     return (status || '').toLowerCase();
   }
+
+  getPaymentProofUrl(order: Order): string {
+    return order.paymentProofImageUrl || '';
+  }
 }

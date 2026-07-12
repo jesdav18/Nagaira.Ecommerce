@@ -2,13 +2,14 @@ import { Component, inject, signal, OnInit, effect, computed } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { CartService } from '../../core/services/cart.service';
 import { AuthService } from '../../core/services/auth.service';
 import { OrderService } from '../../core/services/order.service';
 import { PaymentMethodService, PaymentMethod } from '../../core/services/payment-method.service';
 import { AppSettingsService } from '../../core/services/app-settings.service';
 import { AppCurrencyPipe } from '../../core/pipes/currency.pipe';
-import { Product } from '../../core/models/models';
+import { CreateOrderRequest, Order, Product } from '../../core/models/models';
 import { getProductPriceByQuantity } from '../../core/utils/product.utils';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { environment } from '../../../environments/environment';
@@ -55,8 +56,14 @@ export class CheckoutComponent implements OnInit {
   error = signal('');
   success = signal(false);
   createdOrderId = signal('');
+  createdOrderNumber = signal('');
+  createdOrderTotal = signal<number | null>(null);
   paymentMethods = signal<PaymentMethod[]>([]);
   selectedPaymentMethod = signal<PaymentMethod | null>(null);
+  selectedPaymentProofFile = signal<File | null>(null);
+  selectedPaymentProofFileName = signal('');
+  paymentProofImageUrl = signal('');
+  savingPaymentProof = signal(false);
   isAuthenticated = computed(() => this.authService.isAuthenticated());
   currentUser = computed(() => this.authService.currentUser());
   hasProfileContact = computed(() => {
@@ -252,6 +259,93 @@ export class CheckoutComponent implements OnInit {
     this.selectedPaymentMethod.set(method);
   }
 
+  onPaymentProofFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+
+    if (!file) {
+      this.selectedPaymentProofFile.set(null);
+      this.selectedPaymentProofFileName.set('');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      this.error.set('Selecciona una imagen valida para el comprobante.');
+      input.value = '';
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      this.error.set('El comprobante no puede ser mayor a 10MB.');
+      input.value = '';
+      return;
+    }
+
+    this.error.set('');
+    this.paymentProofImageUrl.set('');
+    this.selectedPaymentProofFile.set(file);
+    this.selectedPaymentProofFileName.set(file.name);
+  }
+
+  async sendPaymentProofByWhatsApp(event?: Event): Promise<void> {
+    event?.preventDefault();
+
+    if (this.savingPaymentProof()) return;
+
+    if (!this.sessionReady()) {
+      this.error.set('Estamos validando tu sesion. Intenta nuevamente en unos segundos.');
+      return;
+    }
+
+    const proofFile = this.selectedPaymentProofFile();
+    if (!proofFile && !this.paymentProofImageUrl()) {
+      this.error.set('Selecciona la imagen del comprobante antes de enviarlo por WhatsApp.');
+      return;
+    }
+
+    let whatsappWindow: Window | null = null;
+
+    try {
+      this.savingPaymentProof.set(true);
+      this.error.set('');
+
+      let orderId = this.createdOrderId();
+      if (!orderId) {
+        if (this.shippingForm.invalid) {
+          this.shippingForm.markAllAsTouched();
+          this.error.set('Completa el telefono antes de registrar el pedido.');
+          return;
+        }
+      }
+
+      whatsappWindow = window.open('', '_blank');
+      if (whatsappWindow) {
+        whatsappWindow.opener = null;
+      }
+
+      if (!orderId) {
+        const order = await this.createOrder();
+        this.completeOrder(order);
+        orderId = order.id;
+      }
+
+      const imageUrl = this.paymentProofImageUrl() || await this.uploadPaymentProofImage(proofFile!);
+      await this.attachPaymentProof(orderId, imageUrl);
+      const whatsappUrl = this.paymentProofWhatsAppUrl();
+      if (whatsappWindow) {
+        whatsappWindow.location.href = whatsappUrl;
+      } else {
+        window.location.href = whatsappUrl;
+      }
+    } catch (error: any) {
+      whatsappWindow?.close();
+      console.error('Error saving payment proof', error);
+      this.error.set(error?.error?.message || 'No se pudo guardar el comprobante. Intenta nuevamente.');
+    } finally {
+      this.savingPaymentProof.set(false);
+    }
+  }
+
   private buildWhatsAppCheckoutUrl(): string {
     const shipping = this.shippingForm.getRawValue();
     const customerName = (shipping.fullName || this.displayName()).trim();
@@ -290,13 +384,13 @@ export class CheckoutComponent implements OnInit {
     const shipping = this.shippingForm.getRawValue();
     const customerName = (shipping.fullName || this.displayName()).trim();
     const customerPhone = (shipping.phone || '').trim();
-    const orderId = this.createdOrderId();
+    const orderId = this.createdOrderNumber() || this.createdOrderId();
     const paymentMethod = this.selectedPaymentMethod();
 
     const lines = [
       'Hola, quiero enviar mi comprobante de pago por transferencia.',
       '',
-      `Total pagado: ${this.formatMoney(this.orderGrandTotal())}`
+      `Total pagado: ${this.formatMoney(this.createdOrderTotal() ?? this.orderGrandTotal())}`
     ];
 
     if (orderId) {
@@ -329,7 +423,7 @@ export class CheckoutComponent implements OnInit {
     return `${this.appSettings.getCurrencySymbol()} ${formatted}`;
   }
 
-  onSubmit(): void {
+  async onSubmit(): Promise<void> {
     if (!this.sessionReady()) {
       this.error.set('Estamos validando tu sesión. Intenta nuevamente en unos segundos.');
       return;
@@ -342,15 +436,28 @@ export class CheckoutComponent implements OnInit {
 
     this.loading.set(true);
     this.error.set('');
+
+    try {
+      const order = await this.createOrder();
+      this.completeOrder(order);
+    } catch (err: any) {
+      console.error('Checkout error', err);
+      this.error.set(err.error?.message || 'Error al procesar la orden. Intente nuevamente.');
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  private buildOrderRequest(): CreateOrderRequest {
     const shipping = this.shippingForm.getRawValue();
+    const method = this.selectedPaymentMethod();
+    const methodId = method?.id && method.id !== this.fallbackTransferPaymentMethod.id ? method.id : undefined;
 
-    const items = this.cartService.cartItems().map(item => ({
-      productId: item.product.id,
-      quantity: item.quantity
-    }));
-
-    this.orderService.createOrder({ 
-      items,
+    return {
+      items: this.cartService.cartItems().map(item => ({
+        productId: item.product.id,
+        quantity: item.quantity
+      })),
       shippingAddressId: undefined,
       customerName: shipping.fullName!,
       customerEmail: shipping.email!,
@@ -358,30 +465,55 @@ export class CheckoutComponent implements OnInit {
       shippingStreet: shipping.address!,
       shippingCity: shipping.city!,
       shippingPostalCode: shipping.zipCode!,
-      shippingCountry: shipping.country!
-    }).subscribe({
-      next: (order) => {
-        this.cartService.clearCart();
-        this.createdOrderId.set(order.id);
-        this.success.set(true);
-        this.loading.set(false);
-        const method = this.selectedPaymentMethod();
-        this.analyticsService.purchase(
-          order.id,
-          order.total,
-          this.appSettings.getCurrencySymbol(),
-          {
-            itemsCount: order.items?.length || 0,
-            paymentMethod: method ? (method.name || this.getPaymentTypeLabel(method)) : undefined
-          }
-        );
-      },
-      error: (err) => {
-        console.error('Checkout error', err);
-        this.error.set(err.error?.message || 'Error al procesar la orden. Intente nuevamente.');
-        this.loading.set(false);
+      shippingCountry: shipping.country!,
+      paymentMethodId: methodId,
+      paymentMethodName: method ? method.name : undefined,
+      paymentProofImageUrl: this.paymentProofImageUrl() || undefined
+    };
+  }
+
+  private createOrder(): Promise<Order> {
+    return firstValueFrom(this.orderService.createOrder(this.buildOrderRequest()));
+  }
+
+  private completeOrder(order: Order): void {
+    this.cartService.clearCart();
+    this.createdOrderId.set(order.id);
+    this.createdOrderNumber.set(order.orderNumber || order.id);
+    this.createdOrderTotal.set(order.total);
+    this.success.set(true);
+
+    const method = this.selectedPaymentMethod();
+    this.analyticsService.purchase(
+      order.id,
+      order.total,
+      this.appSettings.getCurrencySymbol(),
+      {
+        itemsCount: order.items?.length || 0,
+        paymentMethod: method ? (method.name || this.getPaymentTypeLabel(method)) : undefined
       }
-    });
+    );
+  }
+
+  private async uploadPaymentProofImage(file: File): Promise<string> {
+    const response = await firstValueFrom(this.orderService.uploadPaymentProofImage(file));
+    if (!response.imageUrl) {
+      throw new Error('No se recibio la URL del comprobante.');
+    }
+
+    this.paymentProofImageUrl.set(response.imageUrl);
+    return response.imageUrl;
+  }
+
+  private attachPaymentProof(orderId: string, imageUrl: string): Promise<Order> {
+    const method = this.selectedPaymentMethod();
+    const methodId = method?.id && method.id !== this.fallbackTransferPaymentMethod.id ? method.id : undefined;
+
+    return firstValueFrom(this.orderService.updatePaymentProof(orderId, {
+      paymentProofImageUrl: imageUrl,
+      paymentMethodId: methodId,
+      paymentMethodName: method ? method.name : undefined
+    }));
   }
 
   getItemPrice(product: Product, quantity: number): number {

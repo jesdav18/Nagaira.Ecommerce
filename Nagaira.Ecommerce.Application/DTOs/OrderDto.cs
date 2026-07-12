@@ -13,6 +13,9 @@ public record OrderDto(
     decimal ShippingCost,
     decimal Total,
     string Status,
+    Guid? PaymentMethodId,
+    string PaymentMethodName,
+    string PaymentProofImageUrl,
     List<OrderItemDto> Items,
     AddressDto? ShippingAddress
 );
@@ -45,7 +48,16 @@ public record CreateOrderDto(
     string ShippingStreet,
     string ShippingCity,
     string ShippingPostalCode,
-    string ShippingCountry
+    string ShippingCountry,
+    Guid? PaymentMethodId,
+    string? PaymentMethodName,
+    string? PaymentProofImageUrl
+);
+
+public record UpdatePaymentProofDto(
+    string PaymentProofImageUrl,
+    Guid? PaymentMethodId,
+    string? PaymentMethodName
 );
 
 public record CreateOrderItemDto(

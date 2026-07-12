@@ -17,6 +17,10 @@ public class Order : BaseEntity
     public decimal ShippingCost { get; set; }
     public decimal Total { get; set; }
     public OrderStatus Status { get; set; }
+    public Guid? PaymentMethodId { get; set; }
+    public PaymentMethod? PaymentMethod { get; set; }
+    public string PaymentMethodName { get; set; } = string.Empty;
+    public string PaymentProofImageUrl { get; set; } = string.Empty;
     public Guid? ShippingAddressId { get; set; }
     public Address? ShippingAddress { get; set; }
     public List<OrderItem> Items { get; set; } = new();

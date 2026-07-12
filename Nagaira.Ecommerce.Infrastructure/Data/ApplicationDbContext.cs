@@ -201,6 +201,8 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.ShippingCity).IsRequired().HasMaxLength(120);
             entity.Property(e => e.ShippingPostalCode).IsRequired().HasMaxLength(50);
             entity.Property(e => e.ShippingCountry).IsRequired().HasMaxLength(120);
+            entity.Property(e => e.PaymentMethodName).HasMaxLength(255);
+            entity.Property(e => e.PaymentProofImageUrl).HasMaxLength(1000);
             entity.Property(e => e.Subtotal).HasPrecision(18, 2);
             entity.Ignore(e => e.UpdatedAt);
             entity.Property(e => e.Tax).HasPrecision(18, 2);
@@ -209,6 +211,7 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Status)
                 .HasColumnName("status");
             entity.HasOne(e => e.User).WithMany(e => e.Orders).HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(e => e.PaymentMethod).WithMany().HasForeignKey(e => e.PaymentMethodId).OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<OrderItem>(entity =>

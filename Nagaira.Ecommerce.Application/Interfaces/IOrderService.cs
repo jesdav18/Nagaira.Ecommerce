@@ -8,4 +8,5 @@ public interface IOrderService
     Task<IEnumerable<OrderDto>> GetUserOrdersAsync(Guid userId);
     Task<OrderDto?> GetOrderByIdAsync(Guid orderId);
     Task UpdateOrderStatusAsync(Guid orderId, string status);
+    Task<OrderDto> UpdatePaymentProofAsync(Guid orderId, UpdatePaymentProofDto dto);
 }

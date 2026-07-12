@@ -96,6 +96,9 @@ export interface Order {
   shippingCost: number;
   total: number;
   status: string;
+  paymentMethodId?: string;
+  paymentMethodName?: string;
+  paymentProofImageUrl?: string;
   items: OrderItem[];
   shippingAddress?: Address;
 }
@@ -147,6 +150,9 @@ export interface CreateOrderRequest {
   shippingCity: string;
   shippingPostalCode: string;
   shippingCountry: string;
+  paymentMethodId?: string;
+  paymentMethodName?: string;
+  paymentProofImageUrl?: string;
 }
 
 export interface Quote {

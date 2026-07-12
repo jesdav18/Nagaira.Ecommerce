@@ -40,6 +40,8 @@ public class OrderService : IOrderService
                 var shippingCity = dto.ShippingCity?.Trim() ?? string.Empty;
                 var shippingPostalCode = dto.ShippingPostalCode?.Trim() ?? string.Empty;
                 var shippingCountry = dto.ShippingCountry?.Trim() ?? string.Empty;
+                var paymentMethodName = dto.PaymentMethodName?.Trim() ?? string.Empty;
+                var paymentProofImageUrl = dto.PaymentProofImageUrl?.Trim() ?? string.Empty;
 
                 if (string.IsNullOrWhiteSpace(customerPhone))
                     throw new Exception("El telefono del cliente es obligatorio");
@@ -66,6 +68,9 @@ public class OrderService : IOrderService
                     ShippingCity = shippingCity,
                     ShippingPostalCode = shippingPostalCode,
                     ShippingCountry = shippingCountry,
+                    PaymentMethodId = dto.PaymentMethodId,
+                    PaymentMethodName = paymentMethodName,
+                    PaymentProofImageUrl = paymentProofImageUrl,
                     ShippingAddressId = dto.ShippingAddressId,
                     Status = OrderStatus.Pending,
                     CreatedAt = DateTime.UtcNow
@@ -282,6 +287,25 @@ public class OrderService : IOrderService
         await _unitOfWork.SaveChangesAsync();
     }
 
+    public async Task<OrderDto> UpdatePaymentProofAsync(Guid orderId, UpdatePaymentProofDto dto)
+    {
+        var order = await _unitOfWork.Orders.GetByIdAsync(orderId);
+        if (order == null) throw new Exception("Order not found");
+
+        var imageUrl = dto.PaymentProofImageUrl?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(imageUrl))
+            throw new Exception("La URL del comprobante es obligatoria");
+
+        order.PaymentProofImageUrl = imageUrl;
+        order.PaymentMethodId = dto.PaymentMethodId;
+        order.PaymentMethodName = dto.PaymentMethodName?.Trim() ?? order.PaymentMethodName;
+
+        await _unitOfWork.Orders.UpdateAsync(order);
+        await _unitOfWork.SaveChangesAsync();
+
+        return await GetOrderDtoAsync(orderId);
+    }
+
     private async Task<OrderDto> GetOrderDtoAsync(Guid orderId)
     {
         var order = await _unitOfWork.Orders.GetByIdAsync(orderId);
@@ -303,6 +327,9 @@ public class OrderService : IOrderService
             order.ShippingCost,
             order.Total,
             order.Status.ToString(),
+            order.PaymentMethodId,
+            order.PaymentMethodName,
+            order.PaymentProofImageUrl,
             order.Items.Select(i =>
             {
                 var suppliers = i.OrderItemSuppliers?.Select(ois => new OrderItemSupplierDto(

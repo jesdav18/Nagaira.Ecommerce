@@ -363,6 +363,31 @@
     overflow-wrap: anywhere;
 }
 
+.proof-upload {
+    display: grid;
+    gap: 0.45rem;
+    margin: 1rem 0;
+}
+
+.proof-upload label {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.proof-upload input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px dashed rgba(37, 211, 102, 0.65);
+    border-radius: var(--border-radius-sm);
+    background: var(--bg-primary);
+}
+
+.proof-upload small {
+    color: var(--text-secondary);
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
 .whatsapp-proof-btn {
     padding: 0.85rem 1rem;
     width: 100%;
@@ -607,6 +632,11 @@
 }
 
 .success-card .whatsapp-order-btn {
+    margin-bottom: 1rem;
+}
+
+.success-card .proof-upload {
+    text-align: left;
     margin-bottom: 1rem;
 }
 

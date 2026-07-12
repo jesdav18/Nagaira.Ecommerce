@@ -50,6 +50,9 @@ public class AdminOrdersController : ControllerBase
             order.ShippingCost,
             order.Total,
             order.Status.ToString(),
+            order.PaymentMethodId,
+            order.PaymentMethodName,
+            order.PaymentProofImageUrl,
             order.Items.Select(i =>
             {
                 var suppliers = i.OrderItemSuppliers?.Select(ois => new OrderItemSupplierDto(

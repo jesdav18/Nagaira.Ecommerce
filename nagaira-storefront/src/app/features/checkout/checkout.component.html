@@ -8,13 +8,30 @@
         <div class="order-id">Orden #{{ createdOrderId() }}</div>
         @if (selectedPaymentIsTransfer()) {
           <p class="success-message">Cuando tengas el comprobante de la transferencia, envíalo por WhatsApp para confirmar tu pago.</p>
-          <a
+          @if (error()) {
+            <div class="error-alert">
+              {{ error() }}
+            </div>
+          }
+          <div class="proof-upload">
+            <label for="successPaymentProof">Comprobante de transferencia</label>
+            <input
+              id="successPaymentProof"
+              type="file"
+              accept="image/*"
+              (change)="onPaymentProofFileSelected($event)"
+              [disabled]="savingPaymentProof()">
+            @if (selectedPaymentProofFileName()) {
+              <small>{{ selectedPaymentProofFileName() }}</small>
+            }
+          </div>
+          <button
+            type="button"
             class="btn btn-block whatsapp-order-btn"
-            [href]="paymentProofWhatsAppUrl()"
-            target="_blank"
-            rel="noopener">
-            Enviar comprobante por WhatsApp
-          </a>
+            (click)="sendPaymentProofByWhatsApp($event)"
+            [disabled]="savingPaymentProof()">
+            {{ savingPaymentProof() ? 'Guardando comprobante...' : 'Enviar comprobante por WhatsApp' }}
+          </button>
         } @else {
           <p class="success-message">Te hemos enviado un correo de confirmación.</p>
         }
@@ -194,13 +211,27 @@
                     } @else {
                       <p>Los números de cuenta aún no están configurados en el sistema. Escríbenos por WhatsApp para recibirlos antes de hacer el depósito.</p>
                     }
-                    <a
+                    <div class="proof-upload">
+                      <label for="paymentProof">Comprobante de transferencia</label>
+                      <input
+                        id="paymentProof"
+                        type="file"
+                        accept="image/*"
+                        (change)="onPaymentProofFileSelected($event)"
+                        [disabled]="savingPaymentProof() || loading()">
+                      @if (selectedPaymentProofFileName()) {
+                        <small>{{ selectedPaymentProofFileName() }}</small>
+                      } @else {
+                        <small>Sube una imagen del comprobante antes de enviarlo por WhatsApp.</small>
+                      }
+                    </div>
+                    <button
+                      type="button"
                       class="btn btn-block whatsapp-proof-btn"
-                      [href]="paymentProofWhatsAppUrl()"
-                      target="_blank"
-                      rel="noopener">
-                      Enviar comprobante por WhatsApp
-                    </a>
+                      (click)="sendPaymentProofByWhatsApp($event)"
+                      [disabled]="savingPaymentProof() || loading()">
+                      {{ savingPaymentProof() ? 'Guardando comprobante...' : 'Enviar comprobante por WhatsApp' }}
+                    </button>
                   </div>
                 }
                 @if (selectedPaymentMethod()!.qrCodeUrl) {

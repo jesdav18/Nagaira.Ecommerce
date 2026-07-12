@@ -22,4 +22,25 @@ export class OrderService {
   getOrderById(id: string): Observable<Order> {
     return this.http.get<Order>(`${this.apiUrl}/${id}`);
   }
+
+  uploadPaymentProofImage(file: File): Observable<{ imageUrl: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return this.http.post<{ imageUrl: string }>(
+      `${this.apiUrl}/payment-proof-image`,
+      formData
+    );
+  }
+
+  updatePaymentProof(
+    id: string,
+    payload: {
+      paymentProofImageUrl: string;
+      paymentMethodId?: string;
+      paymentMethodName?: string;
+    }
+  ): Observable<Order> {
+    return this.http.patch<Order>(`${this.apiUrl}/${id}/payment-proof`, payload);
+  }
 }
