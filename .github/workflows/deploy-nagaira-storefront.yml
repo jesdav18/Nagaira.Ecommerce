@@ -13,7 +13,7 @@ on:
 env:
   NODE_VERSION: '20'
   FRONTEND_DIR: './nagaira-storefront'
-  APP_DIR: '/var/www/nagaira.com'
+  APP_DIR: '/var/www/sitios/nagaira.com'
   TMP_DIR: '/var/www/sitios/_deploy/nagaira.com'
   BACKUP_DIR: '/var/www/sitios/_backup/nagaira.com'
 
@@ -92,7 +92,7 @@ jobs:
           ssh -o IdentitiesOnly=yes -i ~/.ssh/deploy_key -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" << 'EOF'
             set -e
 
-            APP_DIR="/var/www/nagaira.com"
+            APP_DIR="/var/www/sitios/nagaira.com"
             TMP_DIR="/var/www/sitios/_deploy/nagaira.com"
             BACKUP_DIR="/var/www/sitios/_backup/nagaira.com"
 
@@ -101,14 +101,10 @@ jobs:
             mkdir -p "$BACKUP_DIR/$TIMESTAMP"
 
             rsync -a \
-              --exclude "apis/***" \
-              --exclude "hotel-fares/***" \
               "$APP_DIR"/ "$BACKUP_DIR/$TIMESTAMP"/
 
             echo "Actualizando frontend Nagaira..."
             rsync -a --delete \
-              --exclude "apis/***" \
-              --exclude "hotel-fares/***" \
               "$TMP_DIR"/ "$APP_DIR"/
 
             echo "Deploy frontend terminado."
