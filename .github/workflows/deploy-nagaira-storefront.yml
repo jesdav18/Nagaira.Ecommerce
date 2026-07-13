@@ -1,0 +1,111 @@
+name: Deploy Nagaira Storefront
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'nagaira-storefront/**'
+      - '.github/workflows/deploy-nagaira-storefront.yml'
+
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+  FRONTEND_DIR: './nagaira-storefront'
+  APP_DIR: '/var/www/sitios/nagaira.com'
+  TMP_DIR: '/var/www/sitios/_deploy/nagaira.com'
+  BACKUP_DIR: '/var/www/sitios/_backup/nagaira.com'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: '${{ env.FRONTEND_DIR }}/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm install
+
+      - name: Build Angular Storefront
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm run build -- --configuration production
+
+      - name: Prepare SSH
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          set -e
+
+          echo "Preparando SSH..."
+          mkdir -p ~/.ssh
+
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          ssh-keyscan -p "$VPS_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload build to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+        run: |
+          set -e
+
+          echo "Detectando carpeta dist..."
+
+          DIST_DIR=$(find "${{ env.FRONTEND_DIR }}/dist" -mindepth 1 -maxdepth 5 -type f -name "index.html" -exec dirname {} \; | head -n 1)
+
+          if [ -z "$DIST_DIR" ]; then
+            echo "No se encontró index.html dentro de dist"
+            exit 1
+          fi
+
+          echo "Usando DIST_DIR=$DIST_DIR"
+
+          echo "Subiendo build a carpeta temporal..."
+          rsync -az --delete \
+            -e "ssh -o IdentitiesOnly=yes -i ~/.ssh/deploy_key -p $VPS_PORT" \
+            "$DIST_DIR"/ "$VPS_USER@$VPS_HOST:${{ env.TMP_DIR }}/"
+
+      - name: Deploy on VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+        run: |
+          set -e
+
+          echo "Ejecutando deploy en VPS..."
+          ssh -o IdentitiesOnly=yes -i ~/.ssh/deploy_key -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" << 'EOF'
+            set -e
+
+            APP_DIR="/var/www/sitios/nagaira.com"
+            TMP_DIR="/var/www/sitios/_deploy/nagaira.com"
+            BACKUP_DIR="/var/www/sitios/_backup/nagaira.com"
+
+            echo "Creando backup del frontend actual..."
+            TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
+            mkdir -p "$BACKUP_DIR/$TIMESTAMP"
+
+            rsync -a \
+              "$APP_DIR"/ "$BACKUP_DIR/$TIMESTAMP"/
+
+            echo "Actualizando frontend Nagaira..."
+            rsync -a --delete \
+              "$TMP_DIR"/ "$APP_DIR"/
+
+            echo "Deploy frontend terminado."
+          EOF
