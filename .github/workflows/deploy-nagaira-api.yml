@@ -1,0 +1,113 @@
+name: Deploy Nagaira Ecommerce API
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'Nagaira.Ecommerce.Api/**'
+      - 'Nagaira.Ecommerce.Application/**'
+      - 'Nagaira.Ecommerce.Domain/**'
+      - 'Nagaira.Ecommerce.Infrastructure/**'
+      - 'Nagaira.Ecommerce.sln'
+      - '.github/workflows/deploy-nagaira-api.yml'
+
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  PROJECT_PATH: './Nagaira.Ecommerce.Api/Nagaira.Ecommerce.Api.csproj'
+  SERVICE_NAME: 'api-nagaira-ecommerce.service'
+  APP_DIR: '/var/www/apis/nagaira-ecommerce'
+  TMP_DIR: '/var/www/apis/_deploy/nagaira-ecommerce'
+  BACKUP_DIR: '/var/www/apis/_backup/nagaira-ecommerce'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore ${{ env.PROJECT_PATH }}
+
+      - name: Publish
+        run: dotnet publish ${{ env.PROJECT_PATH }} --configuration Release --output ./publish --no-restore --no-self-contained
+
+      - name: Prepare SSH
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          set -e
+
+          echo "Preparando SSH..."
+          mkdir -p ~/.ssh
+
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          ssh-keyscan -p "$VPS_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload publish to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+        run: |
+          set -e
+
+          echo "Subiendo API a carpeta temporal..."
+          rsync -az --delete \
+            -e "ssh -o IdentitiesOnly=yes -i ~/.ssh/deploy_key -p $VPS_PORT" \
+            ./publish/ "$VPS_USER@$VPS_HOST:${{ env.TMP_DIR }}/"
+
+      - name: Deploy on VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+        run: |
+          set -e
+
+          echo "Ejecutando deploy en VPS..."
+          ssh -o IdentitiesOnly=yes -i ~/.ssh/deploy_key -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" << 'EOF'
+            set -e
+
+            SERVICE_NAME="api-nagaira-ecommerce.service"
+            APP_DIR="/var/www/apis/nagaira-ecommerce"
+            TMP_DIR="/var/www/apis/_deploy/nagaira-ecommerce"
+            BACKUP_DIR="/var/www/apis/_backup/nagaira-ecommerce"
+
+            echo "Deteniendo servicio..."
+            sudo /usr/bin/systemctl stop "$SERVICE_NAME"
+
+            echo "Creando backup..."
+            TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
+            mkdir -p "$BACKUP_DIR/$TIMESTAMP"
+
+            if [ -d "$APP_DIR" ]; then
+              rsync -a \
+                --exclude "appsettings*.json" \
+                "$APP_DIR"/ "$BACKUP_DIR/$TIMESTAMP"/
+            fi
+
+            echo "Actualizando API..."
+            rsync -a --delete \
+              --exclude "appsettings*.json" \
+              "$TMP_DIR"/ "$APP_DIR"/
+
+            echo "Iniciando servicio..."
+            sudo /usr/bin/systemctl start "$SERVICE_NAME"
+
+            echo "Estado del servicio:"
+            sudo /usr/bin/systemctl status "$SERVICE_NAME" --no-pager
+          EOF
