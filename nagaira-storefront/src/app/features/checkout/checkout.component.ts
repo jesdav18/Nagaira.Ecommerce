@@ -10,7 +10,7 @@ import { PaymentMethodService, PaymentMethod } from '../../core/services/payment
 import { AppSettingsService } from '../../core/services/app-settings.service';
 import { AppCurrencyPipe } from '../../core/pipes/currency.pipe';
 import { CreateOrderRequest, Order, Product } from '../../core/models/models';
-import { getProductDisplayPriceByQuantity } from '../../core/utils/product.utils';
+import { getProductDisplayPriceByQuantity, getProductOfferPrice } from '../../core/utils/product.utils';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { environment } from '../../../environments/environment';
 
@@ -532,8 +532,7 @@ export class CheckoutComponent implements OnInit {
 
   getItemOfferPrice(product: Product): number | null {
     if (!this.isAuthenticated()) return null;
-    if (typeof product.offerPrice !== 'number') return null;
-    return product.offerPrice;
+    return getProductOfferPrice(product);
   }
 
   getItemDisplayPrice(product: Product, quantity: number): number {

@@ -3,9 +3,17 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Product } from '../../../core/models/models';
 import { CartService } from '../../../core/services/cart.service';
-import { AuthService } from '../../../core/services/auth.service';
 import { AppCurrencyPipe } from '../../../core/pipes/currency.pipe';
-import { getProductPrice, getProductStock, getPrimaryImage, getWholesalePrice, hasProductOffer, isVirtualStock } from '../../../core/utils/product.utils';
+import {
+  getProductOfferPrice,
+  getProductPrice,
+  getProductStock,
+  getPrimaryImage,
+  getWholesalePrice,
+  isVirtualStock,
+  shouldShowBulkPrice,
+  shouldShowOffer
+} from '../../../core/utils/product.utils';
 
 @Component({
   selector: 'app-product-card',
@@ -19,7 +27,6 @@ export class ProductCardComponent {
   @Input() layout: 'default' | 'wide' = 'default';
 
   cartService = inject(CartService);
-  private authService = inject(AuthService);
   addingToCart = false;
 
   get basePrice(): number {
@@ -27,12 +34,11 @@ export class ProductCardComponent {
   }
 
   get offerPrice(): number | null {
-    return typeof this.product.offerPrice === 'number' ? this.product.offerPrice : null;
+    return getProductOfferPrice(this.product);
   }
 
   get showOffer(): boolean {
-    if (!this.authService.isAuthenticated()) return false;
-    return hasProductOffer(this.product);
+    return shouldShowOffer(this.product);
   }
 
   get finalPrice(): number {
@@ -44,7 +50,9 @@ export class ProductCardComponent {
   }
 
   get showWholesalePrice(): boolean {
-    return this.wholesalePrice !== null && this.wholesalePrice !== this.finalPrice;
+    return shouldShowBulkPrice(this.product)
+      && this.wholesalePrice !== null
+      && this.wholesalePrice !== this.finalPrice;
   }
 
   get special3PlusPrice(): number | null {

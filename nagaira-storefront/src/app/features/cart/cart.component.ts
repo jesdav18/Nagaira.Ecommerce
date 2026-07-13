@@ -6,7 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { AppSettingsService } from '../../core/services/app-settings.service';
 import { AppCurrencyPipe } from '../../core/pipes/currency.pipe';
 import { CreateQuoteRequest, Product, Quote } from '../../core/models/models';
-import { getProductDisplayPriceByQuantity, getProductStock, isVirtualStock } from '../../core/utils/product.utils';
+import { getProductDisplayPriceByQuantity, getProductOfferPrice, getProductStock, isVirtualStock } from '../../core/utils/product.utils';
 import { NotificationService } from '../../core/services/notification.service';
 import { QuoteService } from '../../core/services/quote.service';
 import Swal from 'sweetalert2';
@@ -103,8 +103,7 @@ export class CartComponent {
 
   getItemOfferPrice(product: Product): number | null {
     if (!this.authService.isAuthenticated()) return null;
-    if (typeof product.offerPrice !== 'number') return null;
-    return product.offerPrice;
+    return getProductOfferPrice(product);
   }
 
   getItemDisplayPrice(product: Product, quantity: number): number {

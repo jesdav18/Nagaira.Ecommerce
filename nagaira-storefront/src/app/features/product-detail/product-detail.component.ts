@@ -5,11 +5,18 @@ import { ProductService } from '../../core/services/product.service';
 import { CartService } from '../../core/services/cart.service';
 import { AppCurrencyPipe } from '../../core/pipes/currency.pipe';
 import { Product } from '../../core/models/models';
-import { getProductPrice, getProductStock, getWholesalePrice, hasProductOffer, isVirtualStock } from '../../core/utils/product.utils';
+import {
+  getProductOfferPrice,
+  getProductPrice,
+  getProductStock,
+  getWholesalePrice,
+  isVirtualStock,
+  shouldShowBulkPrice,
+  shouldShowOffer
+} from '../../core/utils/product.utils';
 import { SeoService } from '../../core/services/seo.service';
 import { SeoResolveService } from '../../core/services/seo-resolve.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
-import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-product-detail',
@@ -26,7 +33,6 @@ export class ProductDetailComponent implements OnInit {
   private seoService = inject(SeoService);
   private seoResolveService = inject(SeoResolveService);
   private analyticsService = inject(AnalyticsService);
-  private authService = inject(AuthService);
 
   product = signal<Product | null>(null);
   loading = signal(true);
@@ -127,14 +133,13 @@ export class ProductDetailComponent implements OnInit {
   get offerPrice(): number | null {
     const p = this.product();
     if (!p) return null;
-    return typeof p.offerPrice === 'number' ? p.offerPrice : null;
+    return getProductOfferPrice(p);
   }
 
   get showOffer(): boolean {
     const p = this.product();
     if (!p) return false;
-    if (!this.authService.isAuthenticated()) return false;
-    return hasProductOffer(p);
+    return shouldShowOffer(p);
   }
 
   get finalPrice(): number {
@@ -152,7 +157,11 @@ export class ProductDetailComponent implements OnInit {
   }
 
   get showWholesalePrice(): boolean {
-    return this.wholesalePrice !== null && this.wholesalePrice !== this.finalPrice;
+    const p = this.product();
+    return !!p
+      && shouldShowBulkPrice(p)
+      && this.wholesalePrice !== null
+      && this.wholesalePrice !== this.finalPrice;
   }
 
   get stock(): number | null {

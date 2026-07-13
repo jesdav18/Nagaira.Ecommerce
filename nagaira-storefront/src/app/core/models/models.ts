@@ -15,6 +15,14 @@ export interface Product {
   images: ProductImage[];
   prices: ProductPrice[];
   offerPrice?: number;
+  discountPrice?: number;
+  discountPercentage?: number;
+  hasOffer?: boolean;
+  isOnSale?: boolean;
+  bulkPrice?: number;
+  wholesalePrice?: number;
+  priceByQuantity?: number;
+  minimumQuantity?: number;
 }
 
 export interface ProductImage {

@@ -27,7 +27,7 @@
       <span class="price-current">{{ finalPrice | appCurrency:'1.2-2' }}</span>
     </div>
 
-    @if (special3PlusPrice !== null) {
+    @if (showWholesalePrice && special3PlusPrice !== null) {
       <div class="product-3plus-price">
         <span>Llevando 3+: {{ special3PlusPrice | appCurrency:'1.2-2' }} c/u</span>
         @if (special3PlusSavings > 0) {

@@ -15,13 +15,58 @@ export function getProductPrice(product: Product, priceLevelId?: string): number
   return getProductPriceByQuantity(product, 1, priceLevelId);
 }
 
-export function hasProductOffer(product: Product): boolean {
-  if (typeof product.offerPrice !== 'number') {
-    return false;
+function toPositiveNumber(value: unknown): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    return null;
   }
 
+  return value;
+}
+
+export function getProductOfferPrice(product: Product): number | null {
   const basePrice = getProductPrice(product);
-  return basePrice > 0 && product.offerPrice < basePrice;
+  const directOfferPrice = toPositiveNumber(product.offerPrice ?? product.discountPrice);
+  if (directOfferPrice !== null && (basePrice <= 0 || directOfferPrice < basePrice)) {
+    return directOfferPrice;
+  }
+
+  const discountPercentage = toPositiveNumber(product.discountPercentage);
+  if (basePrice > 0 && discountPercentage !== null) {
+    return Math.max(basePrice - (basePrice * (discountPercentage / 100)), 0);
+  }
+
+  return null;
+}
+
+export function hasActiveOffer(product: Product): boolean {
+  return getProductOfferPrice(product) !== null
+    || toPositiveNumber(product.discountPercentage) !== null
+    || product.hasOffer === true
+    || product.isOnSale === true;
+}
+
+export function hasProductOffer(product: Product): boolean {
+  return hasActiveOffer(product);
+}
+
+export function shouldShowOffer(product: Product): boolean {
+  return hasActiveOffer(product) && getProductOfferPrice(product) !== null;
+}
+
+export function hasBulkPrice(product: Product): boolean {
+  if (toPositiveNumber(product.bulkPrice ?? product.wholesalePrice ?? product.priceByQuantity) !== null) {
+    return true;
+  }
+
+  if (typeof product.minimumQuantity === 'number' && product.minimumQuantity > 1) {
+    return true;
+  }
+
+  return getWholesalePrice(product, false) !== null;
+}
+
+export function shouldShowBulkPrice(product: Product): boolean {
+  return hasBulkPrice(product) && !hasActiveOffer(product);
 }
 
 export function getProductDisplayPriceByQuantity(
@@ -61,9 +106,22 @@ export function getProductPriceByQuantity(product: Product, quantity: number, pr
   return matchedPrice?.price ?? getRetailPrice(activePrices);
 }
 
-export function getWholesalePrice(product: Product): number | null {
-  if (hasProductOffer(product)) {
+export function getWholesalePrice(product: Product, suppressWhenOffer = true): number | null {
+  if (suppressWhenOffer && hasActiveOffer(product)) {
     return null;
+  }
+
+  const explicitPrice = toPositiveNumber(product.bulkPrice ?? product.wholesalePrice ?? product.priceByQuantity);
+  if (explicitPrice !== null) {
+    return explicitPrice;
+  }
+
+  if (typeof product.minimumQuantity === 'number' && product.minimumQuantity > 1) {
+    const quantityPrice = getProductPriceByQuantity(product, product.minimumQuantity);
+    const retailPrice = getProductPrice(product);
+    if (quantityPrice > 0 && quantityPrice !== retailPrice) {
+      return quantityPrice;
+    }
   }
 
   if (!product.prices || product.prices.length === 0) {
