@@ -5,7 +5,7 @@ import { Product } from '../../../core/models/models';
 import { CartService } from '../../../core/services/cart.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { AppCurrencyPipe } from '../../../core/pipes/currency.pipe';
-import { getProductPrice, getProductStock, getPrimaryImage, getWholesalePrice, isVirtualStock } from '../../../core/utils/product.utils';
+import { getProductPrice, getProductStock, getPrimaryImage, getWholesalePrice, hasProductOffer, isVirtualStock } from '../../../core/utils/product.utils';
 
 @Component({
   selector: 'app-product-card',
@@ -32,8 +32,7 @@ export class ProductCardComponent {
 
   get showOffer(): boolean {
     if (!this.authService.isAuthenticated()) return false;
-    if (this.offerPrice === null) return false;
-    return this.offerPrice < this.basePrice;
+    return hasProductOffer(this.product);
   }
 
   get finalPrice(): number {

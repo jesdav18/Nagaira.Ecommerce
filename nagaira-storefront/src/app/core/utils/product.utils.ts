@@ -15,6 +15,28 @@ export function getProductPrice(product: Product, priceLevelId?: string): number
   return getProductPriceByQuantity(product, 1, priceLevelId);
 }
 
+export function hasProductOffer(product: Product): boolean {
+  if (typeof product.offerPrice !== 'number') {
+    return false;
+  }
+
+  const basePrice = getProductPrice(product);
+  return basePrice > 0 && product.offerPrice < basePrice;
+}
+
+export function getProductDisplayPriceByQuantity(
+  product: Product,
+  quantity: number,
+  priceLevelId?: string,
+  honorOffer = true
+): number {
+  if (honorOffer && hasProductOffer(product)) {
+    return getProductPrice(product, priceLevelId);
+  }
+
+  return getProductPriceByQuantity(product, quantity, priceLevelId);
+}
+
 export function getProductPriceByQuantity(product: Product, quantity: number, priceLevelId?: string): number {
   if (!product.prices || product.prices.length === 0) {
     return 0;
@@ -40,6 +62,10 @@ export function getProductPriceByQuantity(product: Product, quantity: number, pr
 }
 
 export function getWholesalePrice(product: Product): number | null {
+  if (hasProductOffer(product)) {
+    return null;
+  }
+
   if (!product.prices || product.prices.length === 0) {
     return null;
   }

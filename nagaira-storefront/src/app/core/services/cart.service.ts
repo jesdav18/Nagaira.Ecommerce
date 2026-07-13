@@ -1,8 +1,9 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { CartItem, Product } from '../models/models';
-import { getProductPriceByQuantity } from '../utils/product.utils';
+import { getProductDisplayPriceByQuantity } from '../utils/product.utils';
 import { AppSettingsService } from './app-settings.service';
 import { AnalyticsService } from './analytics.service';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -10,6 +11,7 @@ import { AnalyticsService } from './analytics.service';
 export class CartService {
   private appSettings = inject(AppSettingsService);
   private analyticsService = inject(AnalyticsService);
+  private authService = inject(AuthService);
   private items = signal<CartItem[]>([]);
 
   cartItems = this.items.asReadonly();
@@ -24,7 +26,12 @@ export class CartService {
 
   private grossSubtotal = computed(() =>
     this.items().reduce((total, item) => {
-      const price = getProductPriceByQuantity(item.product, item.quantity);
+      const price = getProductDisplayPriceByQuantity(
+        item.product,
+        item.quantity,
+        undefined,
+        this.authService.isAuthenticated()
+      );
       return total + (price * item.quantity);
     }, 0)
   );
@@ -44,7 +51,12 @@ export class CartService {
     const currentItems = this.items();
     const existingItem = currentItems.find(item => item.product.id === product.id);
     const resultingQuantity = existingItem ? existingItem.quantity + quantity : quantity;
-    const price = getProductPriceByQuantity(product, resultingQuantity);
+    const price = getProductDisplayPriceByQuantity(
+      product,
+      resultingQuantity,
+      undefined,
+      this.authService.isAuthenticated()
+    );
 
     if (existingItem) {
       const updatedItems = currentItems.map(item =>

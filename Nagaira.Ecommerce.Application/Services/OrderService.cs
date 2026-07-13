@@ -78,7 +78,7 @@ public class OrderService : IOrderService
 
                 var taxRate = 0.16m;
                 decimal totalDiscount = 0;
-                var itemInfos = new List<(Product Product, int Quantity, decimal BaseUnitPrice)>();
+                var itemInfos = new List<(Product Product, int Quantity, decimal BaseUnitPrice, List<Offer> ApplicableOffers)>();
                 decimal cartBaseTotal = 0;
 
                 foreach (var item in dto.Items)
@@ -95,11 +95,15 @@ public class OrderService : IOrderService
                     }
 
                     var prices = await _unitOfWork.ProductPrices.GetByProductIdAsync(item.ProductId);
-                    var basePrice = ProductPriceResolver.ResolveUnitPrice(prices, item.Quantity);
+                    var applicableOffers = (await _unitOfWork.Offers.GetOffersForProductAsync(product.Id, DateTime.UtcNow)).ToList();
+                    var basePrice = ProductPriceResolver.ResolveUnitPrice(
+                        prices,
+                        item.Quantity,
+                        useQuantityBreaks: applicableOffers.Count == 0);
                     if (!basePrice.HasValue)
                         throw new Exception($"No price found for product {product.Name}");
 
-                    itemInfos.Add((product, item.Quantity, basePrice.Value));
+                    itemInfos.Add((product, item.Quantity, basePrice.Value, applicableOffers));
                     cartBaseTotal += basePrice.Value * item.Quantity;
                 }
 
@@ -109,7 +113,7 @@ public class OrderService : IOrderService
                     var quantity = info.Quantity;
                     var unitPrice = info.BaseUnitPrice;
 
-                    var applicableOffers = await _unitOfWork.Offers.GetOffersForProductAsync(product.Id, DateTime.UtcNow);
+                    var applicableOffers = info.ApplicableOffers;
 
                     foreach (var offer in applicableOffers.OrderByDescending(o => o.Priority))
                     {

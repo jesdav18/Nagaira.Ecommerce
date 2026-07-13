@@ -5,7 +5,7 @@ import { ProductService } from '../../core/services/product.service';
 import { CartService } from '../../core/services/cart.service';
 import { AppCurrencyPipe } from '../../core/pipes/currency.pipe';
 import { Product } from '../../core/models/models';
-import { getProductPrice, getProductStock, getWholesalePrice, isVirtualStock } from '../../core/utils/product.utils';
+import { getProductPrice, getProductStock, getWholesalePrice, hasProductOffer, isVirtualStock } from '../../core/utils/product.utils';
 import { SeoService } from '../../core/services/seo.service';
 import { SeoResolveService } from '../../core/services/seo-resolve.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
@@ -131,9 +131,10 @@ export class ProductDetailComponent implements OnInit {
   }
 
   get showOffer(): boolean {
+    const p = this.product();
+    if (!p) return false;
     if (!this.authService.isAuthenticated()) return false;
-    if (this.offerPrice === null) return false;
-    return this.offerPrice < this.basePrice;
+    return hasProductOffer(p);
   }
 
   get finalPrice(): number {

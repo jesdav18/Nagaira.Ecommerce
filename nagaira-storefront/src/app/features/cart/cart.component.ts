@@ -6,7 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { AppSettingsService } from '../../core/services/app-settings.service';
 import { AppCurrencyPipe } from '../../core/pipes/currency.pipe';
 import { CreateQuoteRequest, Product, Quote } from '../../core/models/models';
-import { getProductPriceByQuantity, getProductStock, isVirtualStock } from '../../core/utils/product.utils';
+import { getProductDisplayPriceByQuantity, getProductStock, isVirtualStock } from '../../core/utils/product.utils';
 import { NotificationService } from '../../core/services/notification.service';
 import { QuoteService } from '../../core/services/quote.service';
 import Swal from 'sweetalert2';
@@ -52,7 +52,12 @@ export class CartComponent {
   get discountTotal(): number {
     if (!this.authService.isAuthenticated()) return 0;
     return this.cartService.cartItems().reduce((total, item) => {
-      const base = getProductPriceByQuantity(item.product, item.quantity);
+      const base = getProductDisplayPriceByQuantity(
+        item.product,
+        item.quantity,
+        undefined,
+        this.authService.isAuthenticated()
+      );
       const offer = this.getItemOfferPrice(item.product);
       if (offer === null || offer >= base) return total;
       return total + ((base - offer) * item.quantity);
@@ -88,7 +93,12 @@ export class CartComponent {
   }
 
   getItemPrice(product: Product, quantity: number): number {
-    return getProductPriceByQuantity(product, quantity);
+    return getProductDisplayPriceByQuantity(
+      product,
+      quantity,
+      undefined,
+      this.authService.isAuthenticated()
+    );
   }
 
   getItemOfferPrice(product: Product): number | null {
@@ -98,7 +108,12 @@ export class CartComponent {
   }
 
   getItemDisplayPrice(product: Product, quantity: number): number {
-    const base = getProductPriceByQuantity(product, quantity);
+    const base = getProductDisplayPriceByQuantity(
+      product,
+      quantity,
+      undefined,
+      this.authService.isAuthenticated()
+    );
     const offer = this.getItemOfferPrice(product);
     if (offer !== null && offer < base) return offer;
     return base;
