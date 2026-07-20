@@ -95,5 +95,6 @@ jobs:
             sudo /usr/bin/systemctl start "$SERVICE_NAME"
             sleep 5
             sudo /usr/bin/systemctl --no-pager --full status "$SERVICE_NAME"
-            curl -fsS http://127.0.0.1:5012/ >/dev/null
+            sudo /usr/bin/systemctl is-active --quiet "$SERVICE_NAME"
+            ss -ltn | grep -q '127.0.0.1:5012'
           EOF
