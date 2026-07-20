@@ -2,11 +2,6 @@ name: Deploy Nagaira Ecommerce API - Staging
 
 on:
   workflow_dispatch:
-    inputs:
-      source_ref:
-        description: Branch or commit to deploy
-        required: true
-        default: dev_meta_catalogo
 
 permissions:
   contents: read
@@ -27,10 +22,10 @@ jobs:
     environment: staging
 
     steps:
-      - name: Checkout source
+      - name: Checkout staging
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_ref }}
+          ref: staging
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
