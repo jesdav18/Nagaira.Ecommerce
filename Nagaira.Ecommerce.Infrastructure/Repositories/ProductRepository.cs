@@ -119,6 +119,32 @@ public class ProductRepository : Repository<Product>, IProductRepository
             .FirstOrDefaultAsync(p => p.Sku == sku);
     }
 
+    public async Task<Product?> GetByIdIncludingDeletedAsync(Guid id)
+    {
+        return await _dbSet
+            .IgnoreQueryFilters()
+            .Include(p => p.Category)
+            .Include(p => p.Images)
+            .Include(p => p.Prices)
+                .ThenInclude(pp => pp.PriceLevel)
+            .Include(p => p.InventoryBalance)
+            .FirstOrDefaultAsync(p => p.Id == id);
+    }
+
+    public override async Task DeleteAsync(Guid id)
+    {
+        var product = await GetByIdAsync(id);
+        if (product == null)
+        {
+            return;
+        }
+
+        product.IsDeleted = true;
+        product.IsActive = false;
+        product.UpdatedAt = DateTime.UtcNow;
+        await UpdateAsync(product);
+    }
+
     public async Task<bool> SkuExistsAsync(string sku)
     {
         // Verificar si el SKU existe (sin filtros)

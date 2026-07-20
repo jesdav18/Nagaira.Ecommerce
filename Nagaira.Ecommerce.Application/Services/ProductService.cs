@@ -84,6 +84,7 @@ public class ProductService : IProductService
             Id = Guid.NewGuid(),
             Name = dto.Name,
             Description = dto.Description,
+            Brand = dto.Brand,
             Sku = dto.Sku,
             Slug = await GenerateUniqueSlugAsync(dto.Name),
             CategoryId = dto.CategoryId,
@@ -192,6 +193,7 @@ public class ProductService : IProductService
 
         product.Name = dto.Name;
         product.Description = dto.Description;
+        product.Brand = dto.Brand;
         product.Cost = dto.Cost;
         product.IsActive = dto.IsActive;
         product.HasVirtualStock = dto.HasVirtualStock;
@@ -205,6 +207,7 @@ public class ProductService : IProductService
     public async Task DeleteProductAsync(Guid id)
     {
         await _unitOfWork.Products.DeleteAsync(id);
+        await _unitOfWork.MetaProductSyncStates.MarkPendingAsync(id, id.ToString("D"));
         await _unitOfWork.SaveChangesAsync();
     }
 
@@ -226,6 +229,7 @@ public class ProductService : IProductService
             product.Id,
             product.Name,
             product.Description,
+            product.Brand,
             product.Sku,
             product.Slug,
             product.IsActive,
@@ -269,6 +273,7 @@ public class ProductService : IProductService
             product.Id,
             product.Name,
             product.Description,
+            product.Brand,
             product.Sku,
             product.Slug,
             product.IsActive,

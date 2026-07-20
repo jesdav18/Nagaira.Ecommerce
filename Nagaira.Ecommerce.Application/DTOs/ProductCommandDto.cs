@@ -9,6 +9,9 @@ public record CreateProductDto(
     
     [StringLength(2000, ErrorMessage = "La descripción no puede exceder 2000 caracteres")]
     string Description,
+
+    [StringLength(255, ErrorMessage = "La marca no puede exceder 255 caracteres")]
+    string? Brand,
     
     [Required(ErrorMessage = "El SKU es requerido")]
     [StringLength(50, ErrorMessage = "El SKU no puede exceder 50 caracteres")]
@@ -39,6 +42,9 @@ public record UpdateProductDto(
     
     [StringLength(2000, ErrorMessage = "La descripción no puede exceder 2000 caracteres")]
     string Description,
+
+    [StringLength(255, ErrorMessage = "La marca no puede exceder 255 caracteres")]
+    string? Brand,
     
     [Required(ErrorMessage = "El SKU es requerido")]
     [StringLength(50, ErrorMessage = "El SKU no puede exceder 50 caracteres")]

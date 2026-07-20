@@ -45,6 +45,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<AnalyticsEvent> AnalyticsEvents { get; set; }
     public DbSet<Quote> Quotes { get; set; }
     public DbSet<QuoteItem> QuoteItems { get; set; }
+    public DbSet<MetaProductSyncState> MetaProductSyncStates { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -156,6 +157,7 @@ public class ApplicationDbContext : DbContext
             entity.ToTable("products");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.Brand).HasMaxLength(255);
             entity.Property(e => e.Sku).IsRequired().HasMaxLength(50);
             entity.Property(e => e.Slug).IsRequired().HasMaxLength(255);
             entity.HasIndex(e => e.Sku).IsUnique();
@@ -186,6 +188,23 @@ public class ApplicationDbContext : DbContext
             entity.ToTable("product_images");
             entity.HasKey(e => e.Id);
             entity.HasOne(e => e.Product).WithMany(e => e.Images).HasForeignKey(e => e.ProductId);
+        });
+
+        modelBuilder.Entity<MetaProductSyncState>(entity =>
+        {
+            entity.ToTable("meta_product_sync_states");
+            entity.HasKey(e => e.ProductId);
+            entity.Property(e => e.RetailerId).IsRequired().HasMaxLength(64);
+            entity.Property(e => e.Status).IsRequired().HasMaxLength(30);
+            entity.Property(e => e.LastPayloadHash).HasMaxLength(128);
+            entity.Property(e => e.LastErrorCode).HasMaxLength(100);
+            entity.Property(e => e.LastErrorMessage).HasMaxLength(2000);
+            entity.HasIndex(e => e.RetailerId).IsUnique();
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.LockedUntilAt);
+            entity.HasOne(e => e.Product).WithOne()
+                .HasForeignKey<MetaProductSyncState>(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Order>(entity =>

@@ -27,6 +27,7 @@ public class UnitOfWork : IUnitOfWork
     public ISupplierRepository Suppliers { get; }
     public IProductSupplierRepository ProductSuppliers { get; }
     public IRefreshTokenRepository RefreshTokens { get; }
+    public IMetaProductSyncStateRepository MetaProductSyncStates { get; }
 
     public UnitOfWork(
         ApplicationDbContext context,
@@ -46,7 +47,8 @@ public class UnitOfWork : IUnitOfWork
         IAppSettingRepository appSettingRepository,
         ISupplierRepository supplierRepository,
         IProductSupplierRepository productSupplierRepository,
-        IRefreshTokenRepository refreshTokenRepository)
+        IRefreshTokenRepository refreshTokenRepository,
+        IMetaProductSyncStateRepository metaProductSyncStateRepository)
     {
         _context = context;
         Products = productRepository;
@@ -66,6 +68,7 @@ public class UnitOfWork : IUnitOfWork
         Suppliers = supplierRepository;
         ProductSuppliers = productSupplierRepository;
         RefreshTokens = refreshTokenRepository;
+        MetaProductSyncStates = metaProductSyncStateRepository;
     }
 
     public IRepository<T> Repository<T>() where T : class

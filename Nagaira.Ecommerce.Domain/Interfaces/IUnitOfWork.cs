@@ -23,6 +23,7 @@ public interface IUnitOfWork : IDisposable
     ISupplierRepository Suppliers { get; }
     IProductSupplierRepository ProductSuppliers { get; }
     IRefreshTokenRepository RefreshTokens { get; }
+    IMetaProductSyncStateRepository MetaProductSyncStates { get; }
     IRepository<T> Repository<T>() where T : class;
     Task<int> SaveChangesAsync();
     Task<IDbContextTransaction> BeginTransactionAsync();
