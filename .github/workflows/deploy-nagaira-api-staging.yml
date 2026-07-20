@@ -1,0 +1,104 @@
+name: Deploy Nagaira Ecommerce API - Staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Branch or commit to deploy
+        required: true
+        default: dev_meta_catalogo
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  SOLUTION_PATH: './Nagaira.Ecommerce.sln'
+  PROJECT_PATH: './Nagaira.Ecommerce.Api/Nagaira.Ecommerce.Api.csproj'
+  SERVICE_NAME: 'api-nagaira-ecommerce-staging.service'
+  APP_DIR: '/var/www/apis/nagaira-ecommerce-staging'
+  TMP_DIR: '/var/www/apis/_deploy/nagaira-ecommerce-staging'
+  BACKUP_DIR: '/var/www/apis/_backup/nagaira-ecommerce-staging'
+
+jobs:
+  deploy:
+    name: Build, test and deploy staging
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore ${{ env.SOLUTION_PATH }}
+
+      - name: Build
+        run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test ${{ env.SOLUTION_PATH }} --configuration Release --no-build
+
+      - name: Publish
+        run: dotnet publish ${{ env.PROJECT_PATH }} --configuration Release --output ./publish --no-build --no-self-contained
+
+      - name: Prepare SSH
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "$VPS_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload publish to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+        run: |
+          set -euo pipefail
+          rsync -az --delete \
+            -e "ssh -o IdentitiesOnly=yes -i ~/.ssh/deploy_key -p $VPS_PORT" \
+            ./publish/ "$VPS_USER@$VPS_HOST:${{ env.TMP_DIR }}/"
+
+      - name: Deploy on VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+        run: |
+          set -euo pipefail
+          ssh -o IdentitiesOnly=yes -i ~/.ssh/deploy_key -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" << 'EOF'
+            set -euo pipefail
+            SERVICE_NAME="api-nagaira-ecommerce-staging.service"
+            APP_DIR="/var/www/apis/nagaira-ecommerce-staging"
+            TMP_DIR="/var/www/apis/_deploy/nagaira-ecommerce-staging"
+            BACKUP_DIR="/var/www/apis/_backup/nagaira-ecommerce-staging"
+
+            sudo /usr/bin/systemctl stop "$SERVICE_NAME" || true
+
+            TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
+            mkdir -p "$BACKUP_DIR/$TIMESTAMP"
+
+            if [ -d "$APP_DIR" ]; then
+              rsync -a "$APP_DIR"/ "$BACKUP_DIR/$TIMESTAMP"/
+            fi
+
+            rsync -a --delete "$TMP_DIR"/ "$APP_DIR"/
+
+            sudo /usr/bin/systemctl start "$SERVICE_NAME"
+            sleep 5
+            sudo /usr/bin/systemctl --no-pager --full status "$SERVICE_NAME"
+            curl -fsS http://127.0.0.1:5012/ >/dev/null
+          EOF
