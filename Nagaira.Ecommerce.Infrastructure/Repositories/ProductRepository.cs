@@ -131,6 +131,25 @@ public class ProductRepository : Repository<Product>, IProductRepository
             .FirstOrDefaultAsync(p => p.Id == id);
     }
 
+    public async Task<IReadOnlyList<Product>> GetMetaCatalogSyncPlanCandidatesAsync(int limit)
+    {
+        var safeLimit = Math.Clamp(limit, 1, 200);
+        var syncedProductIds = _context.MetaProductSyncStates.Select(s => s.ProductId);
+
+        return await _dbSet
+            .IgnoreQueryFilters()
+            .Include(p => p.Category)
+            .Include(p => p.Images)
+            .Include(p => p.Prices)
+                .ThenInclude(pp => pp.PriceLevel)
+            .Include(p => p.InventoryBalance)
+            .Where(p => (p.IsActive && !p.IsDeleted) || syncedProductIds.Contains(p.Id))
+            .OrderBy(p => p.UpdatedAt ?? p.CreatedAt)
+            .ThenBy(p => p.Id)
+            .Take(safeLimit)
+            .ToListAsync();
+    }
+
     public override async Task DeleteAsync(Guid id)
     {
         var product = await GetByIdAsync(id);

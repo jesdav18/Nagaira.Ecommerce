@@ -16,6 +16,19 @@ public class MetaProductSyncStateRepository : Repository<MetaProductSyncState>, 
         return await _dbSet.FirstOrDefaultAsync(s => s.ProductId == productId);
     }
 
+    public async Task<IReadOnlyList<MetaProductSyncState>> GetByProductIdsAsync(IEnumerable<Guid> productIds)
+    {
+        var ids = productIds.Distinct().ToList();
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        return await _dbSet
+            .Where(s => ids.Contains(s.ProductId))
+            .ToListAsync();
+    }
+
     public async Task<MetaProductSyncState> MarkPendingAsync(Guid productId, string retailerId)
     {
         var now = DateTime.UtcNow;

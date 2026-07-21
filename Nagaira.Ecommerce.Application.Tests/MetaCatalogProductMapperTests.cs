@@ -130,39 +130,42 @@ public class MetaCatalogProductMapperTests
     }
 
     [Fact]
-    public void Map_ProductWithoutBrandReturnsDelete()
+    public void TryMap_ProductWithoutBrandReturnsSkipped()
     {
         var product = CreateProduct();
         product.Brand = null;
 
-        var result = MetaCatalogProductMapper.Map(product, CreateOptions());
+        var result = MetaCatalogProductMapper.TryMap(product, CreateOptions());
 
-        Assert.Equal(MetaCatalogSyncAction.Delete, result.Action);
-        Assert.Null(result.Item);
+        Assert.Equal(MetaCatalogProductMappingStatus.Skipped, result.Status);
+        Assert.Equal("missing_brand", result.Reason);
+        Assert.Null(result.MappingResult);
     }
 
     [Fact]
-    public void Map_ProductWithoutConfiguredPriceLevelReturnsDelete()
+    public void TryMap_ProductWithoutConfiguredPriceLevelReturnsSkipped()
     {
         var product = CreateProduct();
         product.Prices.RemoveAll(p => p.PriceLevelId == RetailPriceLevelId && p.MinQuantity <= 1);
 
-        var result = MetaCatalogProductMapper.Map(product, CreateOptions());
+        var result = MetaCatalogProductMapper.TryMap(product, CreateOptions());
 
-        Assert.Equal(MetaCatalogSyncAction.Delete, result.Action);
-        Assert.Null(result.Item);
+        Assert.Equal(MetaCatalogProductMappingStatus.Skipped, result.Status);
+        Assert.Equal("missing_public_price", result.Reason);
+        Assert.Null(result.MappingResult);
     }
 
     [Fact]
-    public void Map_ProductWithoutPrimaryImageReturnsDelete()
+    public void TryMap_ProductWithoutPrimaryImageReturnsSkipped()
     {
         var product = CreateProduct();
         product.Images.Clear();
 
-        var result = MetaCatalogProductMapper.Map(product, CreateOptions());
+        var result = MetaCatalogProductMapper.TryMap(product, CreateOptions());
 
-        Assert.Equal(MetaCatalogSyncAction.Delete, result.Action);
-        Assert.Null(result.Item);
+        Assert.Equal(MetaCatalogProductMappingStatus.Skipped, result.Status);
+        Assert.Equal("missing_image", result.Reason);
+        Assert.Null(result.MappingResult);
     }
 
     [Fact]

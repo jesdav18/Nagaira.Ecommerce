@@ -311,6 +311,43 @@ public class AdminMetaCatalogControllerTests
         Assert.Null(response.Payload);
     }
 
+    [Fact]
+    public async Task SyncPlan_InProduction_ReturnsForbidden()
+    {
+        var metaClient = new Mock<IMetaCatalogClient>();
+        var controller = CreateController(
+            CreateProduct(),
+            environmentName: "Production",
+            metaCatalogClient: metaClient.Object);
+
+        var result = await controller.SyncPlan();
+
+        var statusCode = Assert.IsType<StatusCodeResult>(result.Result);
+        Assert.Equal(403, statusCode.StatusCode);
+        metaClient.Verify(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SyncPlan_LimitIsCappedAtTwoHundredAndDoesNotCallMeta()
+    {
+        var product = CreateProduct();
+        var metaClient = new Mock<IMetaCatalogClient>();
+        var controller = CreateController(
+            product,
+            environmentName: "Staging",
+            metaCatalogClient: metaClient.Object);
+
+        var result = await controller.SyncPlan(limit: 500);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<MetaCatalogSyncPlanResponse>(ok.Value);
+        Assert.True(response.DryRun);
+        Assert.Equal(200, response.Limit);
+        Assert.Equal(1, response.Summary.Scanned);
+        Assert.Equal(MetaCatalogSyncPlanOperations.Create, Assert.Single(response.Items).Operation);
+        metaClient.Verify(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     private static AdminMetaCatalogController CreateController(
         Product? product,
         string accessToken = "",
@@ -324,9 +361,18 @@ public class AdminMetaCatalogControllerTests
         productRepository
             .Setup(r => r.GetByIdIncludingDeletedAsync(It.IsAny<Guid>()))
             .ReturnsAsync(product);
+        productRepository
+            .Setup(r => r.GetMetaCatalogSyncPlanCandidatesAsync(It.IsAny<int>()))
+            .ReturnsAsync(product == null ? [] : [product]);
+
+        var syncStateRepository = new Mock<IMetaProductSyncStateRepository>();
+        syncStateRepository
+            .Setup(r => r.GetByProductIdsAsync(It.IsAny<IEnumerable<Guid>>()))
+            .ReturnsAsync([]);
 
         var unitOfWork = new Mock<IUnitOfWork>();
         unitOfWork.SetupGet(u => u.Products).Returns(productRepository.Object);
+        unitOfWork.SetupGet(u => u.MetaProductSyncStates).Returns(syncStateRepository.Object);
 
         var options = Options.Create(new MetaCatalogOptions
         {

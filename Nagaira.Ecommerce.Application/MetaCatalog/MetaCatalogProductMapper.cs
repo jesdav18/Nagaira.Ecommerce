@@ -8,44 +8,66 @@ public static class MetaCatalogProductMapper
 {
     public static MetaCatalogMappingResult Map(Product product, MetaCatalogOptions options, IMetaCatalogPayloadHasher? hasher = null)
     {
+        var outcome = TryMap(product, options, hasher);
+        if (outcome.MappingResult == null)
+        {
+            throw new InvalidOperationException($"Product is not eligible for Meta Catalog sync: {outcome.Reason}");
+        }
+
+        return outcome.MappingResult;
+    }
+
+    public static MetaCatalogProductMappingOutcome TryMap(Product product, MetaCatalogOptions options, IMetaCatalogPayloadHasher? hasher = null)
+    {
         hasher ??= new MetaCatalogPayloadHasher();
         var retailerId = product.Id.ToString("D");
 
-        if (product.IsDeleted || !product.IsActive)
-        {
-            return new MetaCatalogMappingResult(
-                MetaCatalogSyncAction.Delete,
-                retailerId,
-                null,
-                hasher.HashDelete(retailerId)
-            );
-        }
-
-        var item = MapProduct(product, options, retailerId);
+        var item = MapProduct(product, options, retailerId, out var reason);
         if (item == null)
         {
-            return new MetaCatalogMappingResult(
-                MetaCatalogSyncAction.Delete,
+            return new MetaCatalogProductMappingOutcome(
+                MetaCatalogProductMappingStatus.Skipped,
                 retailerId,
                 null,
-                hasher.HashDelete(retailerId)
+                reason);
+        }
+
+        if (product.IsDeleted || !product.IsActive)
+        {
+            return new MetaCatalogProductMappingOutcome(
+                MetaCatalogProductMappingStatus.Delete,
+                retailerId,
+                new MetaCatalogMappingResult(
+                    MetaCatalogSyncAction.Delete,
+                    retailerId,
+                    null,
+                    hasher.HashDelete(retailerId)
+                ),
+                null
             );
         }
 
-        return new MetaCatalogMappingResult(
-            MetaCatalogSyncAction.Upsert,
+        return new MetaCatalogProductMappingOutcome(
+            MetaCatalogProductMappingStatus.Upsert,
             retailerId,
-            item,
-            hasher.HashUpsert(item)
+            new MetaCatalogMappingResult(
+                MetaCatalogSyncAction.Upsert,
+                retailerId,
+                item,
+                hasher.HashUpsert(item)
+            ),
+            null
         );
     }
 
-    private static MetaCatalogProduct? MapProduct(Product product, MetaCatalogOptions options, string retailerId)
+    private static MetaCatalogProduct? MapProduct(Product product, MetaCatalogOptions options, string retailerId, out string? reason)
     {
+        reason = null;
 
         var brand = product.Brand?.Trim();
         if (string.IsNullOrWhiteSpace(brand))
         {
+            reason = "missing_brand";
             return null;
         }
 
@@ -56,18 +78,35 @@ public static class MetaCatalogProductMapper
             .FirstOrDefault();
         if (image == null)
         {
+            reason = "missing_image";
             return null;
         }
 
         var price = ResolvePublicPrice(product, options.PublicPriceLevelId);
         if (price == null)
         {
+            reason = "missing_public_price";
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(product.Slug))
+        {
+            reason = "missing_slug";
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(options.PublicBaseUrl))
+        {
+            reason = "missing_public_base_url";
             return null;
         }
 
         var url = BuildProductUrl(options.PublicBaseUrl, product.Slug);
         if (string.IsNullOrWhiteSpace(url))
         {
+            reason = string.IsNullOrWhiteSpace(options.PublicBaseUrl)
+                ? "missing_public_base_url"
+                : "missing_slug";
             return null;
         }
 
@@ -119,3 +158,17 @@ public static class MetaCatalogProductMapper
         return $"{publicBaseUrl.TrimEnd('/')}/p/{slug.TrimStart('/')}";
     }
 }
+
+public enum MetaCatalogProductMappingStatus
+{
+    Upsert,
+    Delete,
+    Skipped
+}
+
+public record MetaCatalogProductMappingOutcome(
+    MetaCatalogProductMappingStatus Status,
+    string RetailerId,
+    MetaCatalogMappingResult? MappingResult,
+    string? Reason
+);

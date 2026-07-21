@@ -135,6 +135,25 @@ public class AdminMetaCatalogController : ControllerBase
         }
     }
 
+    [HttpPost("sync-plan")]
+    public async Task<ActionResult<MetaCatalogSyncPlanResponse>> SyncPlan([FromQuery] int limit = 50)
+    {
+        if (!_environment.IsDevelopment() && !_environment.IsStaging())
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        var safeLimit = Math.Clamp(limit, 1, 200);
+        var products = await _unitOfWork.Products.GetMetaCatalogSyncPlanCandidatesAsync(safeLimit);
+        var productIds = products.Select(p => p.Id).ToList();
+        var states = await _unitOfWork.MetaProductSyncStates.GetByProductIdsAsync(productIds);
+        var statesByProductId = states
+            .GroupBy(s => s.ProductId)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        return Ok(MetaCatalogSyncPlanner.BuildPlan(products, statesByProductId, _options, safeLimit));
+    }
+
     private string? ValidateLiveTestConfiguration()
     {
         if (!_options.SyncEnabled)
