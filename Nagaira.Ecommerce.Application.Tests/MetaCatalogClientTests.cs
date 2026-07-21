@@ -325,13 +325,132 @@ public class MetaCatalogClientTests
         Assert.DoesNotContain("secret-token", ex.Message);
     }
 
+    [Fact]
+    public async Task Submit_BatchHandleAcceptedAndApplied_ReturnsSuccessAfterStatusPolling()
+    {
+        var handler = new FakeHttpMessageHandler(request =>
+        {
+            if (request.Method == HttpMethod.Post)
+            {
+                return JsonResponse("""{"handles":["batch-handle-1"]}""");
+            }
+
+            return JsonResponse("""{"data":[{"status":"finished"}]}""");
+        });
+        var client = CreateClient(handler, delay: (_, _) => Task.CompletedTask);
+
+        var result = await client.SubmitAsync([CreateUpsert("p-1")]);
+
+        var item = Assert.Single(result.Items);
+        Assert.True(item.Success);
+        Assert.Equal("finished", item.Status);
+        Assert.Equal("batch-handle-1", item.BatchHandle);
+        Assert.Equal(2, handler.Requests.Count);
+        Assert.Equal(HttpMethod.Get, handler.Requests[1].Method);
+        Assert.Contains("/check_batch_request_status", handler.Requests[1].RequestUri!.ToString());
+        Assert.Contains("handle=batch-handle-1", handler.Requests[1].RequestUri!.ToString());
+    }
+
+    [Fact]
+    public async Task Submit_BatchHandleStillProcessingAfterPolling_ReturnsTransientFailure()
+    {
+        var delayCount = 0;
+        var handler = new FakeHttpMessageHandler(request =>
+            request.Method == HttpMethod.Post
+                ? JsonResponse("""{"handles":["batch-handle-1"]}""")
+                : JsonResponse("""{"data":[{"status":"processing"}]}"""));
+        var client = CreateClient(handler, delay: (_, _) =>
+        {
+            delayCount++;
+            return Task.CompletedTask;
+        });
+
+        var result = await client.SubmitAsync([CreateUpsert("p-1")]);
+
+        var item = Assert.Single(result.Items);
+        Assert.False(item.Success);
+        Assert.True(item.IsTransient);
+        Assert.Equal("processing", item.Status);
+        Assert.Equal("Meta Catalog batch is still processing.", item.ErrorMessage);
+        Assert.Equal("batch-handle-1", item.BatchHandle);
+        Assert.Equal(6, handler.Requests.Count);
+        Assert.Equal(4, delayCount);
+    }
+
+    [Fact]
+    public async Task Submit_BatchHandleWithIndividualError_ReturnsSanitizedPerItemError()
+    {
+        var handler = new FakeHttpMessageHandler(request =>
+        {
+            if (request.Method == HttpMethod.Post)
+            {
+                return JsonResponse("""{"handles":["batch-handle-1"]}""");
+            }
+
+            return JsonResponse("""
+            {"data":[{"status":"finished","errors":[{"retailer_id":"p-1","errors":[{"code":"100","error_subcode":"1885316","message":"Invalid product secret-token Authorization Bearer","is_transient":false}],"warnings":[{"message":"Image warning"}]}]}]}
+            """);
+        });
+        var client = CreateClient(handler, accessToken: "secret-token", delay: (_, _) => Task.CompletedTask);
+
+        var result = await client.SubmitAsync([CreateUpsert("p-1")]);
+
+        var item = Assert.Single(result.Items);
+        Assert.False(item.Success);
+        Assert.Equal("finished", item.Status);
+        Assert.Equal("100", item.ErrorCode);
+        Assert.Equal("1885316", item.ErrorSubcode);
+        Assert.Equal("batch-handle-1", item.BatchHandle);
+        Assert.Contains("Image warning", item.Warnings!);
+        Assert.DoesNotContain("secret-token", item.ErrorMessage);
+        Assert.DoesNotContain("Authorization", item.ErrorMessage);
+        Assert.DoesNotContain("Bearer", item.ErrorMessage);
+        Assert.Contains("[redacted]", item.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task Submit_BatchResponseWithoutHandle_ReturnsTransientFailureWithoutPolling()
+    {
+        var handler = new FakeHttpMessageHandler(_ => JsonResponse("""{"handles":[]}"""));
+        var client = CreateClient(handler);
+
+        var result = await client.SubmitAsync([CreateUpsert("p-1")]);
+
+        var item = Assert.Single(result.Items);
+        Assert.False(item.Success);
+        Assert.True(item.IsTransient);
+        Assert.Equal("missing_handle", item.Status);
+        Assert.Equal("Meta Catalog batch response did not include a handle.", item.ErrorMessage);
+        Assert.Single(handler.Requests);
+    }
+
+    [Fact]
+    public async Task Submit_BatchStatusResultNeverReturnsAccessToken()
+    {
+        var handler = new FakeHttpMessageHandler(request =>
+            request.Method == HttpMethod.Post
+                ? JsonResponse("""{"handle":"batch-handle-1"}""")
+                : JsonResponse("""
+                {"data":[{"status":"finished","errors":[{"retailer_id":"p-1","errors":[{"code":"100","message":"secret-token should not appear","is_transient":false}]}]}]}
+                """));
+        var client = CreateClient(handler, accessToken: "secret-token", delay: (_, _) => Task.CompletedTask);
+
+        var result = await client.SubmitAsync([CreateUpsert("p-1")]);
+
+        var item = Assert.Single(result.Items);
+        Assert.False(item.Success);
+        Assert.DoesNotContain("secret-token", JsonSerializer.Serialize(result));
+        Assert.DoesNotContain("secret-token", item.ErrorMessage);
+    }
+
     private static MetaCatalogClient CreateClient(
         FakeHttpMessageHandler handler,
         bool syncEnabled = true,
         int batchSize = 100,
         string catalogId = "catalog-123",
         string accessToken = "secret-token",
-        string graphApiVersion = "v25.0")
+        string graphApiVersion = "v25.0",
+        Func<TimeSpan, CancellationToken, Task>? delay = null)
     {
         var httpClient = new HttpClient(handler);
         var factory = new FakeHttpClientFactory(httpClient);
@@ -346,7 +465,7 @@ public class MetaCatalogClientTests
             RequestTimeoutSeconds = 30
         });
 
-        return new MetaCatalogClient(factory, options, NullLogger<MetaCatalogClient>.Instance);
+        return new MetaCatalogClient(factory, options, NullLogger<MetaCatalogClient>.Instance, delay);
     }
 
     private static MetaCatalogMappingResult CreateUpsert(string retailerId)

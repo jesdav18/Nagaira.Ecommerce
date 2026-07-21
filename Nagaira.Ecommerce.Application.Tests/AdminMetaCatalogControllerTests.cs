@@ -59,7 +59,7 @@ public class AdminMetaCatalogControllerTests
             .Setup(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()))
             .Callback<IReadOnlyCollection<MetaCatalogMappingResult>, CancellationToken>((items, _) => submitted = items.Single())
             .ReturnsAsync(new MetaCatalogBatchResult([
-                new MetaCatalogItemResult(product.Id.ToString("D"), MetaCatalogSyncAction.Upsert, true, "meta-1", null, null, false)
+                new MetaCatalogItemResult(product.Id.ToString("D"), MetaCatalogSyncAction.Upsert, true, "meta-1", null, null, false, "finished", null, ["Image warning"], "batch-handle-1")
             ]));
         var controller = CreateController(
             product,
@@ -77,6 +77,9 @@ public class AdminMetaCatalogControllerTests
         Assert.False(response.DryRun);
         Assert.True(response.Success);
         Assert.Equal(200, response.StatusCode);
+        Assert.Equal("finished", response.Status);
+        Assert.Equal("batch-handle-1", response.BatchHandle);
+        Assert.Contains("Image warning", response.Warnings!);
         Assert.Equal(product.Id.ToString("D"), submitted!.RetailerId);
         Assert.Equal(MetaCatalogSyncAction.Upsert, submitted.Action);
         Assert.DoesNotContain("super-secret-token", JsonSerializer.Serialize(response));

@@ -64,6 +64,15 @@ internal sealed class MetaCatalogItemData
 
 internal sealed class MetaCatalogBatchResponse
 {
+    [JsonPropertyName("handles")]
+    public List<string>? Handles { get; set; }
+
+    [JsonPropertyName("handle")]
+    public string? Handle { get; set; }
+
+    [JsonPropertyName("validation_status")]
+    public List<MetaCatalogBatchValidationStatus>? ValidationStatus { get; set; }
+
     [JsonPropertyName("responses")]
     public List<MetaCatalogBatchResponseItem>? Responses { get; set; }
 
@@ -92,6 +101,18 @@ internal sealed class MetaCatalogBatchResponseItem
     public MetaCatalogBatchItemError? Error { get; set; }
 }
 
+internal sealed class MetaCatalogBatchValidationStatus
+{
+    [JsonPropertyName("retailer_id")]
+    public string? RetailerId { get; set; }
+
+    [JsonPropertyName("errors")]
+    public List<MetaCatalogBatchItemError>? Errors { get; set; }
+
+    [JsonPropertyName("warnings")]
+    public List<MetaCatalogBatchItemWarning>? Warnings { get; set; }
+}
+
 internal sealed class MetaCatalogBatchItemError
 {
     [JsonPropertyName("code")]
@@ -102,4 +123,40 @@ internal sealed class MetaCatalogBatchItemError
 
     [JsonPropertyName("is_transient")]
     public bool? IsTransient { get; set; }
+
+    [JsonPropertyName("error_subcode")]
+    public string? ErrorSubcode { get; set; }
+}
+
+internal sealed class MetaCatalogBatchItemWarning
+{
+    [JsonPropertyName("message")]
+    public string? Message { get; set; }
+}
+
+internal sealed class MetaCatalogBatchStatusResponse
+{
+    [JsonPropertyName("data")]
+    public List<MetaCatalogBatchStatusItem>? Data { get; set; }
+
+    [JsonPropertyName("status")]
+    public string? Status { get; set; }
+
+    [JsonPropertyName("errors")]
+    public List<MetaCatalogBatchValidationStatus>? Errors { get; set; }
+
+    [JsonPropertyName("warnings")]
+    public List<MetaCatalogBatchValidationStatus>? Warnings { get; set; }
+}
+
+internal sealed class MetaCatalogBatchStatusItem
+{
+    [JsonPropertyName("status")]
+    public string? Status { get; set; }
+
+    [JsonPropertyName("errors")]
+    public List<MetaCatalogBatchValidationStatus>? Errors { get; set; }
+
+    [JsonPropertyName("warnings")]
+    public List<MetaCatalogBatchValidationStatus>? Warnings { get; set; }
 }

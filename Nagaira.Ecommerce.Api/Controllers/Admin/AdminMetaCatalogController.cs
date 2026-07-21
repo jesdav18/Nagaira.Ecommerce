@@ -79,6 +79,9 @@ public class AdminMetaCatalogController : ControllerBase
                     null,
                     false,
                     "Meta Catalog did not return a per-product result.",
+                    null,
+                    null,
+                    null,
                     null));
             }
 
@@ -87,10 +90,13 @@ public class AdminMetaCatalogController : ControllerBase
                 itemResult.Success,
                 StatusCodes.Status200OK,
                 itemResult.ErrorCode,
-                null,
+                itemResult.ErrorSubcode,
                 itemResult.IsTransient,
                 itemResult.ErrorMessage,
-                null));
+                null,
+                itemResult.Status,
+                itemResult.Warnings,
+                itemResult.BatchHandle));
         }
         catch (MetaCatalogApiException ex)
         {
@@ -102,7 +108,10 @@ public class AdminMetaCatalogController : ControllerBase
                 ex.MetaErrorSubcode,
                 ex.IsTransient,
                 ex.SafeMessage,
-                ex.RequestId));
+                ex.RequestId,
+                null,
+                null,
+                null));
         }
     }
 
@@ -144,7 +153,10 @@ public record MetaCatalogTestSyncResponse(
     string? ErrorSubcode,
     bool? IsTransient,
     string? Message,
-    string? TraceId)
+    string? TraceId,
+    string? Status,
+    IReadOnlyList<string>? Warnings,
+    string? BatchHandle)
 {
     public static MetaCatalogTestSyncResponse FromDryRun(MetaCatalogMappingResult result)
     {
@@ -154,6 +166,9 @@ public record MetaCatalogTestSyncResponse(
             result.PayloadHash,
             result.Item,
             true,
+            null,
+            null,
+            null,
             null,
             null,
             null,
@@ -180,6 +195,9 @@ public record MetaCatalogTestSyncResponse(
             null,
             false,
             message,
+            null,
+            null,
+            null,
             null);
     }
 
@@ -191,7 +209,10 @@ public record MetaCatalogTestSyncResponse(
         string? errorSubcode,
         bool isTransient,
         string? message,
-        string? traceId)
+        string? traceId,
+        string? status,
+        IReadOnlyList<string>? warnings,
+        string? batchHandle)
     {
         return new MetaCatalogTestSyncResponse(
             result.RetailerId,
@@ -205,6 +226,9 @@ public record MetaCatalogTestSyncResponse(
             errorSubcode,
             isTransient,
             message,
-            traceId);
+            traceId,
+            status,
+            warnings,
+            batchHandle);
     }
 }

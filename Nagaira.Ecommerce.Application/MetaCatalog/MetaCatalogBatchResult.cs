@@ -12,5 +12,9 @@ public record MetaCatalogItemResult(
     string? MetaItemId,
     string? ErrorCode,
     string? ErrorMessage,
-    bool IsTransient
+    bool IsTransient,
+    string? Status = null,
+    string? ErrorSubcode = null,
+    IReadOnlyList<string>? Warnings = null,
+    string? BatchHandle = null
 );
