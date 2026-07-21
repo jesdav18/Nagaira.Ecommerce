@@ -154,6 +154,20 @@ public class ProductRepository : Repository<Product>, IProductRepository
             .ToList();
     }
 
+    public async Task<IReadOnlyList<Product>> GetMetaCatalogBrandBackfillPlanCandidatesAsync(int limit)
+    {
+        var safeLimit = Math.Clamp(limit, 1, 200);
+
+        return await _dbSet
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(p => !p.IsDeleted)
+            .OrderBy(p => p.CreatedAt)
+            .ThenBy(p => p.Id)
+            .Take(safeLimit)
+            .ToListAsync();
+    }
+
     public override async Task DeleteAsync(Guid id)
     {
         var product = await GetByIdAsync(id);

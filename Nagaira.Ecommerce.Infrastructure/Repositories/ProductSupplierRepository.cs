@@ -21,6 +21,25 @@ public class ProductSupplierRepository : Repository<ProductSupplier>, IProductSu
             .ToListAsync();
     }
 
+    public async Task<IReadOnlyList<ProductSupplier>> GetByProductIdsAsync(IEnumerable<Guid> productIds)
+    {
+        var ids = productIds.Distinct().ToList();
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        return await _dbSet
+            .AsNoTracking()
+            .Include(ps => ps.Supplier)
+            .Where(ps => ids.Contains(ps.ProductId) && ps.IsActive && !ps.IsDeleted && ps.Supplier.IsActive && !ps.Supplier.IsDeleted)
+            .OrderBy(ps => ps.ProductId)
+            .ThenByDescending(ps => ps.IsPrimary)
+            .ThenBy(ps => ps.Priority)
+            .ThenBy(ps => ps.SupplierId)
+            .ToListAsync();
+    }
+
     public async Task<IEnumerable<ProductSupplier>> GetBySupplierIdAsync(Guid supplierId)
     {
         return await _dbSet

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Nagaira.Ecommerce.Application.Interfaces;
 using Nagaira.Ecommerce.Application.MetaCatalog;
+using Nagaira.Ecommerce.Domain.Entities;
 using Nagaira.Ecommerce.Domain.Interfaces;
 using Nagaira.Ecommerce.Infrastructure.Integrations.MetaCatalog;
 
@@ -152,6 +153,25 @@ public class AdminMetaCatalogController : ControllerBase
             .ToDictionary(g => g.Key, g => g.First());
 
         return Ok(MetaCatalogSyncPlanner.BuildPlan(products, statesByProductId, _options, safeLimit));
+    }
+
+    [HttpPost("brand-backfill-plan")]
+    public async Task<ActionResult<MetaCatalogBrandBackfillPlanResponse>> BrandBackfillPlan([FromQuery] int limit = 200)
+    {
+        if (!_environment.IsDevelopment() && !_environment.IsStaging())
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        var safeLimit = Math.Clamp(limit, 1, 200);
+        var products = await _unitOfWork.Products.GetMetaCatalogBrandBackfillPlanCandidatesAsync(safeLimit);
+        var productIds = products.Select(p => p.Id).ToList();
+        var productSuppliers = await _unitOfWork.ProductSuppliers.GetByProductIdsAsync(productIds);
+        var suppliersByProductId = productSuppliers
+            .GroupBy(ps => ps.ProductId)
+            .ToDictionary(g => g.Key, g => (IReadOnlyCollection<ProductSupplier>)g.ToList());
+
+        return Ok(MetaCatalogBrandBackfillPlanner.BuildPlan(products, suppliersByProductId, safeLimit));
     }
 
     private string? ValidateLiveTestConfiguration()
