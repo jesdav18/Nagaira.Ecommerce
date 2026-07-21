@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nagaira.Ecommerce.Application.Interfaces;
 using Nagaira.Ecommerce.Application.MetaCatalog;
@@ -19,11 +20,16 @@ public class MetaCatalogClient : IMetaCatalogClient
 
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly MetaCatalogOptions _options;
+    private readonly ILogger<MetaCatalogClient> _logger;
 
-    public MetaCatalogClient(IHttpClientFactory httpClientFactory, IOptions<MetaCatalogOptions> options)
+    public MetaCatalogClient(
+        IHttpClientFactory httpClientFactory,
+        IOptions<MetaCatalogOptions> options,
+        ILogger<MetaCatalogClient> logger)
     {
         _httpClientFactory = httpClientFactory;
         _options = options.Value;
+        _logger = logger;
     }
 
     public async Task<MetaCatalogBatchResult> SubmitAsync(
@@ -106,7 +112,11 @@ public class MetaCatalogClient : IMetaCatalogClient
 
         if (!response.IsSuccessStatusCode)
         {
-            throw BuildHttpException(response.StatusCode, body);
+            throw BuildHttpException(
+                response.StatusCode,
+                body,
+                response.Content.Headers.ContentType?.ToString(),
+                _options.AccessToken);
         }
 
         return ParseSuccessResponse(items, body);
@@ -201,7 +211,11 @@ public class MetaCatalogClient : IMetaCatalogClient
         return new MetaCatalogBatchResult(results);
     }
 
-    private static MetaCatalogApiException BuildHttpException(HttpStatusCode statusCode, string body)
+    private MetaCatalogApiException BuildHttpException(
+        HttpStatusCode statusCode,
+        string body,
+        string? contentType,
+        string accessToken)
     {
         MetaCatalogError? error = null;
         try
@@ -210,19 +224,31 @@ public class MetaCatalogClient : IMetaCatalogClient
         }
         catch (JsonException)
         {
-            // Keep a sanitized generic error below.
+            _logger.LogWarning(
+                "Meta Catalog returned a non-JSON error response. StatusCode: {StatusCode}. BodyLength: {BodyLength}. ContentType: {ContentType}",
+                (int)statusCode,
+                body?.Length ?? 0,
+                contentType ?? string.Empty);
         }
 
-        var isTransient = statusCode == HttpStatusCode.TooManyRequests || (int)statusCode >= 500;
-        var safeMessage = statusCode switch
+        var isTransient = error?.IsTransient
+            ?? (statusCode == HttpStatusCode.TooManyRequests || (int)statusCode >= 500);
+        var safeMessage = error != null
+            ? SanitizeMetaMessage(error.ErrorUserMessage ?? error.Message, accessToken)
+            : null;
+
+        if (string.IsNullOrWhiteSpace(safeMessage))
         {
-            HttpStatusCode.BadRequest => "Meta Catalog rejected the request payload.",
-            HttpStatusCode.Unauthorized => "Meta Catalog authentication failed.",
-            HttpStatusCode.Forbidden => "Meta Catalog authorization failed.",
-            HttpStatusCode.TooManyRequests => "Meta Catalog rate limit exceeded.",
-            _ when (int)statusCode >= 500 => "Meta Catalog returned a transient server error.",
-            _ => "Meta Catalog request failed."
-        };
+            safeMessage = statusCode switch
+            {
+                HttpStatusCode.BadRequest => "Meta Catalog rejected the request payload.",
+                HttpStatusCode.Unauthorized => "Meta Catalog authentication failed.",
+                HttpStatusCode.Forbidden => "Meta Catalog authorization failed.",
+                HttpStatusCode.TooManyRequests => "Meta Catalog rate limit exceeded.",
+                _ when (int)statusCode >= 500 => "Meta Catalog returned a transient server error.",
+                _ => "Meta Catalog request failed."
+            };
+        }
 
         return new MetaCatalogApiException(
             statusCode,
@@ -231,6 +257,24 @@ public class MetaCatalogClient : IMetaCatalogClient
             error?.Code?.ToString(System.Globalization.CultureInfo.InvariantCulture),
             error?.ErrorSubcode?.ToString(System.Globalization.CultureInfo.InvariantCulture),
             error?.FbTraceId);
+    }
+
+    private static string? SanitizeMetaMessage(string? message, string accessToken)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return null;
+        }
+
+        var sanitized = message.Trim();
+        if (!string.IsNullOrWhiteSpace(accessToken))
+        {
+            sanitized = sanitized.Replace(accessToken, "[redacted]", StringComparison.Ordinal);
+        }
+
+        return sanitized
+            .Replace("Authorization", "[redacted-header]", StringComparison.OrdinalIgnoreCase)
+            .Replace("Bearer", "[redacted-auth-scheme]", StringComparison.OrdinalIgnoreCase);
     }
 
     private void ValidateReadyForCall()

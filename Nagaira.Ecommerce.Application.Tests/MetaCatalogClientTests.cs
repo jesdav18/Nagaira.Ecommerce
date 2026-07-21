@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Nagaira.Ecommerce.Application.MetaCatalog;
 using Nagaira.Ecommerce.Infrastructure.Integrations.MetaCatalog;
@@ -203,6 +204,85 @@ public class MetaCatalogClientTests
     }
 
     [Fact]
+    public async Task Submit_GraphApiCode100ReturnsRealSanitizedMetaMessage()
+    {
+        var handler = new FakeHttpMessageHandler(_ => JsonResponse(
+            """{"error":{"message":"Invalid parameter: requests","type":"OAuthException","code":100,"is_transient":false,"fbtrace_id":"trace-100"}}""",
+            HttpStatusCode.BadRequest));
+        var client = CreateClient(handler);
+
+        var ex = await Assert.ThrowsAsync<MetaCatalogApiException>(() => client.SubmitAsync([CreateUpsert("p-1")]));
+
+        Assert.Equal(HttpStatusCode.BadRequest, ex.HttpStatusCode);
+        Assert.Equal("100", ex.MetaErrorCode);
+        Assert.False(ex.IsTransient);
+        Assert.Equal("Invalid parameter: requests", ex.SafeMessage);
+        Assert.Equal("trace-100", ex.RequestId);
+    }
+
+    [Fact]
+    public async Task Submit_GraphApiErrorSubcodeIsPreserved()
+    {
+        var handler = new FakeHttpMessageHandler(_ => JsonResponse(
+            """{"error":{"message":"Invalid catalog item","code":100,"error_subcode":1885316,"fbtrace_id":"trace-sub"}}""",
+            HttpStatusCode.BadRequest));
+        var client = CreateClient(handler);
+
+        var ex = await Assert.ThrowsAsync<MetaCatalogApiException>(() => client.SubmitAsync([CreateUpsert("p-1")]));
+
+        Assert.Equal("100", ex.MetaErrorCode);
+        Assert.Equal("1885316", ex.MetaErrorSubcode);
+        Assert.Equal("trace-sub", ex.RequestId);
+    }
+
+    [Fact]
+    public async Task Submit_GraphApiErrorUserMessageIsPreferred()
+    {
+        var handler = new FakeHttpMessageHandler(_ => JsonResponse(
+            """{"error":{"message":"Internal developer message","error_user_msg":"User-safe Meta message","code":100,"fbtrace_id":"trace-user"}}""",
+            HttpStatusCode.BadRequest));
+        var client = CreateClient(handler);
+
+        var ex = await Assert.ThrowsAsync<MetaCatalogApiException>(() => client.SubmitAsync([CreateUpsert("p-1")]));
+
+        Assert.Equal("User-safe Meta message", ex.SafeMessage);
+        Assert.DoesNotContain("Internal developer message", ex.SafeMessage);
+    }
+
+    [Fact]
+    public async Task Submit_NonJsonErrorResponseReturnsGenericMessage()
+    {
+        var handler = new FakeHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.BadRequest)
+        {
+            Content = new StringContent("<html>bad request</html>")
+        });
+        var client = CreateClient(handler);
+
+        var ex = await Assert.ThrowsAsync<MetaCatalogApiException>(() => client.SubmitAsync([CreateUpsert("p-1")]));
+
+        Assert.Equal(HttpStatusCode.BadRequest, ex.HttpStatusCode);
+        Assert.Equal("Meta Catalog rejected the request payload.", ex.SafeMessage);
+        Assert.Null(ex.MetaErrorCode);
+        Assert.Null(ex.MetaErrorSubcode);
+    }
+
+    [Fact]
+    public async Task Submit_GraphApiMessageNeverReturnsAccessToken()
+    {
+        var handler = new FakeHttpMessageHandler(_ => JsonResponse(
+            """{"error":{"message":"Token secret-token is invalid in Authorization Bearer header","code":100,"fbtrace_id":"trace-token"}}""",
+            HttpStatusCode.BadRequest));
+        var client = CreateClient(handler, accessToken: "secret-token");
+
+        var ex = await Assert.ThrowsAsync<MetaCatalogApiException>(() => client.SubmitAsync([CreateUpsert("p-1")]));
+
+        Assert.DoesNotContain("secret-token", ex.SafeMessage);
+        Assert.DoesNotContain("Authorization", ex.SafeMessage);
+        Assert.DoesNotContain("Bearer", ex.SafeMessage);
+        Assert.Contains("[redacted]", ex.SafeMessage);
+    }
+
+    [Fact]
     public async Task Submit_TimeoutIsTransient()
     {
         var handler = new FakeHttpMessageHandler(_ => throw new TimeoutException());
@@ -262,7 +342,7 @@ public class MetaCatalogClientTests
             RequestTimeoutSeconds = 30
         });
 
-        return new MetaCatalogClient(factory, options);
+        return new MetaCatalogClient(factory, options, NullLogger<MetaCatalogClient>.Instance);
     }
 
     private static MetaCatalogMappingResult CreateUpsert(string retailerId)
