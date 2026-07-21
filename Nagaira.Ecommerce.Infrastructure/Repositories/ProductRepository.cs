@@ -156,7 +156,7 @@ public class ProductRepository : Repository<Product>, IProductRepository
 
     public async Task<IReadOnlyList<Product>> GetMetaCatalogBrandBackfillPlanCandidatesAsync(int limit)
     {
-        var safeLimit = Math.Clamp(limit, 1, 200);
+        var safeLimit = Math.Clamp(limit, 1, 500);
 
         return await _dbSet
             .IgnoreQueryFilters()

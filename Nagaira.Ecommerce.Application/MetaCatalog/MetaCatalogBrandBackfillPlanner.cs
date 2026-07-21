@@ -16,6 +16,7 @@ public static class MetaCatalogBrandBackfillPlanner
         new("Rexona"),
         new("Dove"),
         new("Nivea"),
+        new("OFF!"),
         new("Lubriderm"),
         new("Mennen"),
         new("Pantene"),
@@ -37,9 +38,10 @@ public static class MetaCatalogBrandBackfillPlanner
     public static MetaCatalogBrandBackfillPlanResponse BuildPlan(
         IReadOnlyCollection<Product> products,
         IReadOnlyDictionary<Guid, IReadOnlyCollection<ProductSupplier>> suppliersByProductId,
-        int limit)
+        int limit,
+        int maxLimit = 200)
     {
-        var safeLimit = Math.Clamp(limit, 1, 200);
+        var safeLimit = Math.Clamp(limit, 1, maxLimit);
         var items = products
             .OrderBy(p => p.CreatedAt)
             .ThenBy(p => p.Id)
@@ -59,7 +61,7 @@ public static class MetaCatalogBrandBackfillPlanner
         IReadOnlyDictionary<Guid, IReadOnlyCollection<ProductSupplier>> suppliersByProductId)
     {
         var currentBrand = NormalizeBrand(product.Brand);
-        if (currentBrand != null)
+        if (currentBrand != null && !CanReplaceBrandValue(currentBrand))
         {
             return CreateItem(product, currentBrand, null, MetaCatalogBrandBackfillPlanOperations.Unchanged, MetaCatalogBrandBackfillConfidence.High, "brand_already_set");
         }
@@ -67,7 +69,7 @@ public static class MetaCatalogBrandBackfillPlanner
         var brandFromProductName = FindKnownBrandInProductName(product.Name);
         if (brandFromProductName != null)
         {
-            return CreateItem(product, null, brandFromProductName, MetaCatalogBrandBackfillPlanOperations.Update, MetaCatalogBrandBackfillConfidence.High, "product_name_contains_brand");
+            return CreateItem(product, currentBrand, brandFromProductName, MetaCatalogBrandBackfillPlanOperations.Update, MetaCatalogBrandBackfillConfidence.High, "product_name_contains_brand");
         }
 
         suppliersByProductId.TryGetValue(product.Id, out var suppliers);
@@ -83,11 +85,25 @@ public static class MetaCatalogBrandBackfillPlanner
             var brandFromSupplier = FindKnownBrandByExactName(supplier.Supplier.Name);
             if (brandFromSupplier != null)
             {
-                return CreateItem(product, null, brandFromSupplier, MetaCatalogBrandBackfillPlanOperations.Update, MetaCatalogBrandBackfillConfidence.High, "supplier_matches_known_brand");
+                return CreateItem(product, currentBrand, brandFromSupplier, MetaCatalogBrandBackfillPlanOperations.Update, MetaCatalogBrandBackfillConfidence.High, "supplier_matches_known_brand");
             }
         }
 
-        return CreateItem(product, null, null, MetaCatalogBrandBackfillPlanOperations.Skipped, MetaCatalogBrandBackfillConfidence.None, "brand_not_recognized");
+        return CreateItem(product, currentBrand, null, MetaCatalogBrandBackfillPlanOperations.Skipped, MetaCatalogBrandBackfillConfidence.None, "brand_not_recognized");
+    }
+
+    public static bool CanReplaceBrandValue(string? brand)
+    {
+        var normalized = NormalizeBrand(brand);
+        if (normalized == null)
+        {
+            return true;
+        }
+
+        return string.Equals(normalized, "Nagaira Test", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalized, "Test", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalized, "Unknown", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalized, "N/A", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string? NormalizeBrand(string? value)
@@ -217,4 +233,45 @@ public record MetaCatalogBrandBackfillPlanItem(
     string? SuggestedBrand,
     string Operation,
     string Confidence,
+    string? Reason);
+
+public static class MetaCatalogBrandBackfillApplyOperations
+{
+    public const string Updated = "UPDATED";
+    public const string Unchanged = "UNCHANGED";
+    public const string Skipped = "SKIPPED";
+}
+
+public record MetaCatalogBrandBackfillResponse(
+    bool DryRun,
+    MetaCatalogBrandBackfillSummary Summary,
+    IReadOnlyList<MetaCatalogBrandBackfillItem> Items);
+
+public record MetaCatalogBrandBackfillSummary(
+    int Scanned,
+    int Updated,
+    int Unchanged,
+    int Skipped)
+{
+    public static MetaCatalogBrandBackfillSummary FromItems(IReadOnlyCollection<MetaCatalogBrandBackfillItem> items)
+    {
+        return new MetaCatalogBrandBackfillSummary(
+            items.Count,
+            Count(items, MetaCatalogBrandBackfillApplyOperations.Updated),
+            Count(items, MetaCatalogBrandBackfillApplyOperations.Unchanged),
+            Count(items, MetaCatalogBrandBackfillApplyOperations.Skipped));
+    }
+
+    private static int Count(IEnumerable<MetaCatalogBrandBackfillItem> items, string operation)
+    {
+        return items.Count(i => string.Equals(i.Operation, operation, StringComparison.Ordinal));
+    }
+}
+
+public record MetaCatalogBrandBackfillItem(
+    Guid ProductId,
+    string Name,
+    string? PreviousBrand,
+    string? NewBrand,
+    string Operation,
     string? Reason);

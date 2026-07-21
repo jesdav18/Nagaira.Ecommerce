@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Options;
 using Moq;
 using Nagaira.Ecommerce.Api.Controllers.Admin;
@@ -408,6 +409,198 @@ public class AdminMetaCatalogControllerTests
         unitOfWork.Verify(u => u.SaveChangesAsync(), Times.Never);
     }
 
+    [Fact]
+    public async Task BrandBackfill_DryRunDoesNotSaveChangesOrCallMeta()
+    {
+        var product = CreateProduct(name: "Desodorante Rexona Clinical", brand: null);
+        var metaClient = new Mock<IMetaCatalogClient>();
+        var unitOfWork = new Mock<IUnitOfWork>();
+        var controller = CreateController(
+            product,
+            environmentName: "Staging",
+            metaCatalogClient: metaClient.Object,
+            unitOfWorkMock: unitOfWork);
+
+        var result = await controller.BrandBackfill(dryRun: true);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<MetaCatalogBrandBackfillResponse>(ok.Value);
+        var item = Assert.Single(response.Items);
+        Assert.True(response.DryRun);
+        Assert.Equal(MetaCatalogBrandBackfillApplyOperations.Updated, item.Operation);
+        Assert.Equal("Rexona", item.NewBrand);
+        Assert.Null(product.Brand);
+        unitOfWork.Verify(u => u.SaveChangesAsync(), Times.Never);
+        metaClient.Verify(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task BrandBackfill_DryRunFalseAppliesHighConfidenceSuggestionAndSavesOnce()
+    {
+        var product = CreateProduct(name: "Desodorante Rexona Clinical", brand: null);
+        var metaClient = new Mock<IMetaCatalogClient>();
+        var unitOfWork = new Mock<IUnitOfWork>();
+        var controller = CreateController(
+            product,
+            environmentName: "Staging",
+            metaCatalogClient: metaClient.Object,
+            unitOfWorkMock: unitOfWork);
+
+        var result = await controller.BrandBackfill(dryRun: false);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<MetaCatalogBrandBackfillResponse>(ok.Value);
+        var item = Assert.Single(response.Items);
+        Assert.False(response.DryRun);
+        Assert.Equal(MetaCatalogBrandBackfillApplyOperations.Updated, item.Operation);
+        Assert.Null(item.PreviousBrand);
+        Assert.Equal("Rexona", item.NewBrand);
+        Assert.Equal("Rexona", product.Brand);
+        Assert.Equal(1, response.Summary.Updated);
+        unitOfWork.Verify(u => u.SaveChangesAsync(), Times.Once);
+        metaClient.Verify(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task BrandBackfill_DryRunFalseDoesNotApplyNoneConfidence()
+    {
+        var product = CreateProduct(name: "Desodorante Genérico", brand: null);
+        var metaClient = new Mock<IMetaCatalogClient>();
+        var unitOfWork = new Mock<IUnitOfWork>();
+        var controller = CreateController(
+            product,
+            environmentName: "Staging",
+            metaCatalogClient: metaClient.Object,
+            productSuppliers:
+            [
+                CreateProductSupplier(product.Id, "Distribuidora Central")
+            ],
+            unitOfWorkMock: unitOfWork);
+
+        var result = await controller.BrandBackfill(dryRun: false);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<MetaCatalogBrandBackfillResponse>(ok.Value);
+        var item = Assert.Single(response.Items);
+        Assert.Equal(MetaCatalogBrandBackfillApplyOperations.Skipped, item.Operation);
+        Assert.Equal("brand_not_recognized", item.Reason);
+        Assert.Null(product.Brand);
+        metaClient.Verify(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task BrandBackfill_DryRunFalseDoesNotOverwriteRealBrand()
+    {
+        var product = CreateProduct(name: "Desodorante Rexona Clinical", brand: "Acme");
+        var metaClient = new Mock<IMetaCatalogClient>();
+        var unitOfWork = new Mock<IUnitOfWork>();
+        var controller = CreateController(
+            product,
+            environmentName: "Staging",
+            metaCatalogClient: metaClient.Object,
+            unitOfWorkMock: unitOfWork);
+
+        var result = await controller.BrandBackfill(dryRun: false);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<MetaCatalogBrandBackfillResponse>(ok.Value);
+        var item = Assert.Single(response.Items);
+        Assert.Equal(MetaCatalogBrandBackfillApplyOperations.Unchanged, item.Operation);
+        Assert.Equal("Acme", item.PreviousBrand);
+        Assert.Equal("Acme", product.Brand);
+        metaClient.Verify(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task BrandBackfill_DryRunFalseReplacesTemporaryBrand()
+    {
+        var product = CreateProduct(name: "Desodorante Rexona Clinical", brand: "Nagaira Test");
+        var metaClient = new Mock<IMetaCatalogClient>();
+        var unitOfWork = new Mock<IUnitOfWork>();
+        var controller = CreateController(
+            product,
+            environmentName: "Staging",
+            metaCatalogClient: metaClient.Object,
+            unitOfWorkMock: unitOfWork);
+
+        var result = await controller.BrandBackfill(dryRun: false);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<MetaCatalogBrandBackfillResponse>(ok.Value);
+        var item = Assert.Single(response.Items);
+        Assert.Equal(MetaCatalogBrandBackfillApplyOperations.Updated, item.Operation);
+        Assert.Equal("Nagaira Test", item.PreviousBrand);
+        Assert.Equal("Rexona", item.NewBrand);
+        Assert.Equal("Rexona", product.Brand);
+    }
+
+    [Fact]
+    public async Task BrandBackfill_DryRunFalseSecondRunIsIdempotent()
+    {
+        var product = CreateProduct(name: "Desodorante Rexona Clinical", brand: null);
+        var metaClient = new Mock<IMetaCatalogClient>();
+        var unitOfWork = new Mock<IUnitOfWork>();
+        var controller = CreateController(
+            product,
+            environmentName: "Staging",
+            metaCatalogClient: metaClient.Object,
+            unitOfWorkMock: unitOfWork);
+
+        await controller.BrandBackfill(dryRun: false);
+        var secondResult = await controller.BrandBackfill(dryRun: false);
+
+        var ok = Assert.IsType<OkObjectResult>(secondResult.Result);
+        var response = Assert.IsType<MetaCatalogBrandBackfillResponse>(ok.Value);
+        var item = Assert.Single(response.Items);
+        Assert.Equal(MetaCatalogBrandBackfillApplyOperations.Unchanged, item.Operation);
+        Assert.Equal("Rexona", item.PreviousBrand);
+        Assert.Null(item.NewBrand);
+        Assert.Equal("Rexona", product.Brand);
+        metaClient.Verify(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task BrandBackfill_DryRunFalseSkipsWhenBrandChangedSincePlan()
+    {
+        var plannedProduct = CreateProduct(name: "Desodorante Rexona Clinical", brand: null);
+        var currentProduct = CreateProduct(name: "Desodorante Rexona Clinical", brand: "Acme");
+        var metaClient = new Mock<IMetaCatalogClient>();
+        var unitOfWork = new Mock<IUnitOfWork>();
+        var controller = CreateController(
+            plannedProduct,
+            environmentName: "Staging",
+            metaCatalogClient: metaClient.Object,
+            unitOfWorkMock: unitOfWork,
+            currentProduct: currentProduct);
+
+        var result = await controller.BrandBackfill(dryRun: false);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<MetaCatalogBrandBackfillResponse>(ok.Value);
+        var item = Assert.Single(response.Items);
+        Assert.Equal(MetaCatalogBrandBackfillApplyOperations.Skipped, item.Operation);
+        Assert.Equal("brand_changed_since_plan", item.Reason);
+        Assert.Equal("Acme", item.PreviousBrand);
+        Assert.Null(item.NewBrand);
+        Assert.Equal("Acme", currentProduct.Brand);
+    }
+
+    [Fact]
+    public async Task BrandBackfill_InProduction_ReturnsForbidden()
+    {
+        var metaClient = new Mock<IMetaCatalogClient>();
+        var controller = CreateController(
+            CreateProduct(name: "Desodorante Rexona Clinical", brand: null),
+            environmentName: "Production",
+            metaCatalogClient: metaClient.Object);
+
+        var result = await controller.BrandBackfill(dryRun: false);
+
+        var statusCode = Assert.IsType<StatusCodeResult>(result.Result);
+        Assert.Equal(403, statusCode.StatusCode);
+        metaClient.Verify(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     private static AdminMetaCatalogController CreateController(
         Product? product,
         string accessToken = "",
@@ -417,12 +610,13 @@ public class AdminMetaCatalogControllerTests
         string graphApiVersion = "",
         IMetaCatalogClient? metaCatalogClient = null,
         IReadOnlyList<ProductSupplier>? productSuppliers = null,
-        Mock<IUnitOfWork>? unitOfWorkMock = null)
+        Mock<IUnitOfWork>? unitOfWorkMock = null,
+        Product? currentProduct = null)
     {
         var productRepository = new Mock<IProductRepository>();
         productRepository
             .Setup(r => r.GetByIdIncludingDeletedAsync(It.IsAny<Guid>()))
-            .ReturnsAsync(product);
+            .ReturnsAsync(currentProduct ?? product);
         productRepository
             .Setup(r => r.GetMetaCatalogSyncPlanCandidatesAsync(It.IsAny<int>()))
             .ReturnsAsync(product == null ? [] : [product]);
@@ -444,6 +638,18 @@ public class AdminMetaCatalogControllerTests
         unitOfWork.SetupGet(u => u.Products).Returns(productRepository.Object);
         unitOfWork.SetupGet(u => u.MetaProductSyncStates).Returns(syncStateRepository.Object);
         unitOfWork.SetupGet(u => u.ProductSuppliers).Returns(productSupplierRepository.Object);
+        unitOfWork
+            .Setup(u => u.BeginTransactionAsync())
+            .ReturnsAsync(Mock.Of<IDbContextTransaction>());
+        unitOfWork
+            .Setup(u => u.SaveChangesAsync())
+            .ReturnsAsync(1);
+        unitOfWork
+            .Setup(u => u.CommitTransactionAsync())
+            .Returns(Task.CompletedTask);
+        unitOfWork
+            .Setup(u => u.RollbackTransactionAsync())
+            .Returns(Task.CompletedTask);
 
         var options = Options.Create(new MetaCatalogOptions
         {
@@ -468,16 +674,16 @@ public class AdminMetaCatalogControllerTests
             environment.Object);
     }
 
-    private static Product CreateProduct()
+    private static Product CreateProduct(string name = " Router WiFi ", string? brand = " Acme ")
     {
         var productId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
         return new Product
         {
             Id = productId,
-            Name = " Router WiFi ",
+            Name = name,
             Description = " Router para casa ",
-            Brand = " Acme ",
+            Brand = brand,
             Sku = "RTR-001",
             Slug = "router-wifi",
             IsActive = true,
@@ -520,6 +726,28 @@ public class AdminMetaCatalogControllerTests
                     IsActive = true
                 }
             ]
+        };
+    }
+
+    private static ProductSupplier CreateProductSupplier(Guid productId, string supplierName)
+    {
+        var supplierId = Guid.NewGuid();
+        return new ProductSupplier
+        {
+            Id = Guid.NewGuid(),
+            ProductId = productId,
+            SupplierId = supplierId,
+            IsActive = true,
+            IsDeleted = false,
+            IsPrimary = true,
+            Priority = 1,
+            Supplier = new Supplier
+            {
+                Id = supplierId,
+                Name = supplierName,
+                IsActive = true,
+                IsDeleted = false
+            }
         };
     }
 }

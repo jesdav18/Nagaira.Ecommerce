@@ -174,6 +174,152 @@ public class AdminMetaCatalogController : ControllerBase
         return Ok(MetaCatalogBrandBackfillPlanner.BuildPlan(products, suppliersByProductId, safeLimit));
     }
 
+    [HttpPost("brand-backfill")]
+    public async Task<ActionResult<MetaCatalogBrandBackfillResponse>> BrandBackfill(
+        [FromQuery] int limit = 200,
+        [FromQuery] bool dryRun = true)
+    {
+        if (!_environment.IsDevelopment() && !_environment.IsStaging())
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        var safeLimit = Math.Clamp(limit, 1, 500);
+        var products = await _unitOfWork.Products.GetMetaCatalogBrandBackfillPlanCandidatesAsync(safeLimit);
+        var productIds = products.Select(p => p.Id).ToList();
+        var productSuppliers = await _unitOfWork.ProductSuppliers.GetByProductIdsAsync(productIds);
+        var suppliersByProductId = productSuppliers
+            .GroupBy(ps => ps.ProductId)
+            .ToDictionary(g => g.Key, g => (IReadOnlyCollection<ProductSupplier>)g.ToList());
+        var plan = MetaCatalogBrandBackfillPlanner.BuildPlan(products, suppliersByProductId, safeLimit, maxLimit: 500);
+
+        if (dryRun)
+        {
+            var dryRunItems = plan.Items
+                .Select(item => new MetaCatalogBrandBackfillItem(
+                    item.ProductId,
+                    item.Name,
+                    item.CurrentBrand,
+                    item.SuggestedBrand,
+                    ToDryRunApplyOperation(item),
+                    item.Reason))
+                .ToList();
+
+            return Ok(new MetaCatalogBrandBackfillResponse(
+                true,
+                MetaCatalogBrandBackfillSummary.FromItems(dryRunItems),
+                dryRunItems));
+        }
+
+        var appliedItems = new List<MetaCatalogBrandBackfillItem>();
+        await using var transaction = await _unitOfWork.BeginTransactionAsync();
+
+        try
+        {
+            foreach (var planItem in plan.Items)
+            {
+                if (!IsApplicablePlanItem(planItem))
+                {
+                    appliedItems.Add(new MetaCatalogBrandBackfillItem(
+                        planItem.ProductId,
+                        planItem.Name,
+                        planItem.CurrentBrand,
+                        planItem.SuggestedBrand,
+                        ToSkippedOrUnchangedOperation(planItem),
+                        planItem.Reason));
+                    continue;
+                }
+
+                var currentProduct = await _unitOfWork.Products.GetByIdIncludingDeletedAsync(planItem.ProductId);
+                if (currentProduct == null)
+                {
+                    appliedItems.Add(new MetaCatalogBrandBackfillItem(
+                        planItem.ProductId,
+                        planItem.Name,
+                        planItem.CurrentBrand,
+                        planItem.SuggestedBrand,
+                        MetaCatalogBrandBackfillApplyOperations.Skipped,
+                        "product_not_found"));
+                    continue;
+                }
+
+                var previousBrand = NormalizeBrandForBackfill(currentProduct.Brand);
+                if (!MetaCatalogBrandBackfillPlanner.CanReplaceBrandValue(previousBrand))
+                {
+                    appliedItems.Add(new MetaCatalogBrandBackfillItem(
+                        currentProduct.Id,
+                        currentProduct.Name,
+                        previousBrand,
+                        null,
+                        MetaCatalogBrandBackfillApplyOperations.Skipped,
+                        "brand_changed_since_plan"));
+                    continue;
+                }
+
+                var currentSuppliers = suppliersByProductId.TryGetValue(currentProduct.Id, out var suppliers)
+                    ? suppliers
+                    : [];
+                var currentPlan = MetaCatalogBrandBackfillPlanner.BuildPlan(
+                    [currentProduct],
+                    new Dictionary<Guid, IReadOnlyCollection<ProductSupplier>>
+                    {
+                        [currentProduct.Id] = currentSuppliers
+                    },
+                    1);
+                var currentPlanItem = currentPlan.Items.Single();
+
+                if (!IsApplicablePlanItem(currentPlanItem))
+                {
+                    appliedItems.Add(new MetaCatalogBrandBackfillItem(
+                        currentProduct.Id,
+                        currentProduct.Name,
+                        previousBrand,
+                        currentPlanItem.SuggestedBrand,
+                        MetaCatalogBrandBackfillApplyOperations.Skipped,
+                        currentPlanItem.Reason));
+                    continue;
+                }
+
+                var newBrand = NormalizeBrandForBackfill(currentPlanItem.SuggestedBrand);
+                if (newBrand == null || newBrand.Length > 255)
+                {
+                    appliedItems.Add(new MetaCatalogBrandBackfillItem(
+                        currentProduct.Id,
+                        currentProduct.Name,
+                        previousBrand,
+                        currentPlanItem.SuggestedBrand,
+                        MetaCatalogBrandBackfillApplyOperations.Skipped,
+                        "invalid_suggested_brand"));
+                    continue;
+                }
+
+                currentProduct.Brand = newBrand;
+                currentProduct.UpdatedAt = DateTime.UtcNow;
+                await _unitOfWork.Products.UpdateAsync(currentProduct);
+                appliedItems.Add(new MetaCatalogBrandBackfillItem(
+                    currentProduct.Id,
+                    currentProduct.Name,
+                    previousBrand,
+                    newBrand,
+                    MetaCatalogBrandBackfillApplyOperations.Updated,
+                    currentPlanItem.Reason));
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.CommitTransactionAsync();
+        }
+        catch
+        {
+            await _unitOfWork.RollbackTransactionAsync();
+            throw;
+        }
+
+        return Ok(new MetaCatalogBrandBackfillResponse(
+            false,
+            MetaCatalogBrandBackfillSummary.FromItems(appliedItems),
+            appliedItems));
+    }
+
     private string? ValidateLiveTestConfiguration()
     {
         if (!_options.SyncEnabled)
@@ -198,6 +344,36 @@ public class AdminMetaCatalogController : ControllerBase
 
         return null;
     }
+
+    private static string ToDryRunApplyOperation(MetaCatalogBrandBackfillPlanItem item)
+    {
+        return string.Equals(item.Operation, MetaCatalogBrandBackfillPlanOperations.Update, StringComparison.Ordinal)
+            && string.Equals(item.Confidence, MetaCatalogBrandBackfillConfidence.High, StringComparison.Ordinal)
+            && !string.IsNullOrWhiteSpace(item.SuggestedBrand)
+                ? MetaCatalogBrandBackfillApplyOperations.Updated
+                : ToSkippedOrUnchangedOperation(item);
+    }
+
+    private static string ToSkippedOrUnchangedOperation(MetaCatalogBrandBackfillPlanItem item)
+    {
+        return string.Equals(item.Operation, MetaCatalogBrandBackfillPlanOperations.Unchanged, StringComparison.Ordinal)
+            ? MetaCatalogBrandBackfillApplyOperations.Unchanged
+            : MetaCatalogBrandBackfillApplyOperations.Skipped;
+    }
+
+    private static bool IsApplicablePlanItem(MetaCatalogBrandBackfillPlanItem item)
+    {
+        return string.Equals(item.Operation, MetaCatalogBrandBackfillPlanOperations.Update, StringComparison.Ordinal)
+            && string.Equals(item.Confidence, MetaCatalogBrandBackfillConfidence.High, StringComparison.Ordinal)
+            && !string.IsNullOrWhiteSpace(item.SuggestedBrand);
+    }
+
+    private static string? NormalizeBrandForBackfill(string? brand)
+    {
+        var normalized = brand?.Trim();
+        return string.IsNullOrEmpty(normalized) ? null : normalized;
+    }
+
 }
 
 public record MetaCatalogTestSyncResponse(
