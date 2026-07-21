@@ -1,7 +1,21 @@
 name: Deploy Nagaira Ecommerce API - Staging
 
 on:
+  push:
+    branches:
+      - staging
+    paths:
+      - 'Nagaira.Ecommerce.Api/**'
+      - 'Nagaira.Ecommerce.Application/**'
+      - 'Nagaira.Ecommerce.Domain/**'
+      - 'Nagaira.Ecommerce.Infrastructure/**'
+      - 'Nagaira.Ecommerce.Application.Tests/**'
+      - 'Nagaira.Ecommerce.sln'
+      - '.github/workflows/deploy-nagaira-api-staging.yml'
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 env:
   DOTNET_VERSION: '9.0.x'
@@ -19,8 +33,10 @@ jobs:
     environment: staging
 
     steps:
-      - name: Checkout repository
+      - name: Checkout staging
         uses: actions/checkout@v4
+        with:
+          ref: staging
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -71,12 +87,10 @@ jobs:
           set -euo pipefail
           ssh -o IdentitiesOnly=yes -i ~/.ssh/deploy_key -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" << 'EOF'
             set -euo pipefail
-
             SERVICE_NAME="api-nagaira-ecommerce-staging.service"
             APP_DIR="/var/www/apis/nagaira-ecommerce-staging"
             TMP_DIR="/var/www/apis/_deploy/nagaira-ecommerce-staging"
             BACKUP_DIR="/var/www/apis/_backup/nagaira-ecommerce-staging"
-            PROD_APP_DIR="/var/www/apis/nagaira-ecommerce"
 
             sudo /usr/bin/systemctl stop "$SERVICE_NAME" || true
 
@@ -84,23 +98,14 @@ jobs:
             mkdir -p "$BACKUP_DIR/$TIMESTAMP"
 
             if [ -d "$APP_DIR" ]; then
-              rsync -a --exclude 'appsettings*.json' "$APP_DIR"/ "$BACKUP_DIR/$TIMESTAMP"/
+              rsync -a "$APP_DIR"/ "$BACKUP_DIR/$TIMESTAMP"/
             fi
 
-            rsync -a --delete --exclude 'appsettings*.json' "$TMP_DIR"/ "$APP_DIR"/
-
-            if [ ! -f "$APP_DIR/appsettings.json" ]; then
-              cp "$PROD_APP_DIR/appsettings.json" "$APP_DIR/appsettings.json"
-            fi
-
-            if [ ! -f "$APP_DIR/appsettings.Production.json" ] && [ -f "$PROD_APP_DIR/appsettings.Production.json" ]; then
-              cp "$PROD_APP_DIR/appsettings.Production.json" "$APP_DIR/appsettings.Production.json"
-            fi
+            rsync -a --delete "$TMP_DIR"/ "$APP_DIR"/
 
             sudo /usr/bin/systemctl start "$SERVICE_NAME"
             sleep 5
             sudo /usr/bin/systemctl --no-pager --full status "$SERVICE_NAME"
-
-            HTTP_CODE=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:5012/ || true)
-            echo "HTTP staging: $HTTP_CODE"
+            sudo /usr/bin/systemctl is-active --quiet "$SERVICE_NAME"
+            ss -ltn | grep -q '127.0.0.1:5012'
           EOF
