@@ -57,14 +57,20 @@ public class MetaCatalogClientTests
         Assert.False(requestItem.TryGetProperty("item_type", out _));
         var data = requestItem.GetProperty("data");
         Assert.Equal("p-1", data.GetProperty("id").GetString());
-        Assert.Equal("Router WiFi", data.GetProperty("name").GetString());
+        Assert.Equal("Router WiFi", data.GetProperty("title").GetString());
         Assert.Equal("Acme", data.GetProperty("brand").GetString());
         Assert.Equal("125.50", data.GetProperty("price").GetString());
         Assert.Equal("HNL", data.GetProperty("currency").GetString());
         Assert.Equal("in stock", data.GetProperty("availability").GetString());
         Assert.Equal("https://store.example/p/router", data.GetProperty("link").GetString());
         Assert.Equal("https://cdn.example/router.jpg", data.GetProperty("image_link").GetString());
+        Assert.False(data.TryGetProperty("name", out _));
+        Assert.False(data.TryGetProperty("url", out _));
+        Assert.False(data.TryGetProperty("imageUrl", out _));
+        Assert.False(data.TryGetProperty("retailerId", out _));
+        Assert.False(data.TryGetProperty("retailer_id", out _));
         Assert.Contains(@"""id"":""p-1""", serializedBody);
+        Assert.Contains(@"""title"":""Router WiFi""", serializedBody);
     }
 
     [Fact]

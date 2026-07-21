@@ -29,7 +29,7 @@ internal sealed class MetaCatalogItemData
     [JsonPropertyName("id")]
     public string Id { get; set; } = string.Empty;
 
-    [JsonPropertyName("name")]
+    [JsonPropertyName("title")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Name { get; set; }
 
