@@ -12,6 +12,7 @@ public static class MetaCatalogBrandBackfillPlanner
         new("Old Spice"),
         new("L'Oréal"),
         new("Johnson's"),
+        new("Gillette Venus", "Venus"),
         new("Axe"),
         new("Rexona"),
         new("Dove"),
@@ -66,7 +67,13 @@ public static class MetaCatalogBrandBackfillPlanner
             return CreateItem(product, currentBrand, null, MetaCatalogBrandBackfillPlanOperations.Unchanged, MetaCatalogBrandBackfillConfidence.High, "brand_already_set");
         }
 
-        var brandFromProductName = FindKnownBrandInProductName(product.Name);
+        var brandsFromProductName = FindKnownBrandsInProductName(product.Name);
+        if (brandsFromProductName.Count > 1)
+        {
+            return CreateItem(product, currentBrand, null, MetaCatalogBrandBackfillPlanOperations.Skipped, MetaCatalogBrandBackfillConfidence.None, "multiple_brands_detected");
+        }
+
+        var brandFromProductName = brandsFromProductName.SingleOrDefault();
         if (brandFromProductName != null)
         {
             return CreateItem(product, currentBrand, brandFromProductName, MetaCatalogBrandBackfillPlanOperations.Update, MetaCatalogBrandBackfillConfidence.High, "product_name_contains_brand");
@@ -112,15 +119,30 @@ public static class MetaCatalogBrandBackfillPlanner
         return string.IsNullOrEmpty(normalized) ? null : normalized;
     }
 
-    private static string? FindKnownBrandInProductName(string productName)
+    private static IReadOnlyList<string> FindKnownBrandsInProductName(string productName)
     {
         var normalizedProductName = NormalizeForMatch(productName);
         if (normalizedProductName.Length == 0)
         {
-            return null;
+            return [];
         }
 
-        return KnownBrands.FirstOrDefault(brand => normalizedProductName.Contains(brand.MatchKey, StringComparison.Ordinal))?.Name;
+        var matches = KnownBrands
+            .SelectMany(brand => brand.MatchKeys.Select(matchKey => new KnownBrandMatch(brand.Name, matchKey)))
+            .Where(match => normalizedProductName.Contains(match.MatchKey, StringComparison.Ordinal))
+            .ToList();
+
+        var filteredMatches = matches
+            .Where(match => !matches.Any(other =>
+                !string.Equals(other.Name, match.Name, StringComparison.Ordinal)
+                && other.MatchKey.Length > match.MatchKey.Length
+                && other.MatchKey.Contains(match.MatchKey, StringComparison.Ordinal)))
+            .ToList();
+
+        return filteredMatches
+            .Select(match => match.Name)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
     }
 
     private static string? FindKnownBrandByExactName(string supplierName)
@@ -131,7 +153,7 @@ public static class MetaCatalogBrandBackfillPlanner
             return null;
         }
 
-        return KnownBrands.FirstOrDefault(brand => string.Equals(normalizedSupplierName, brand.MatchKey, StringComparison.Ordinal))?.Name;
+        return KnownBrands.FirstOrDefault(brand => brand.MatchKeys.Any(matchKey => string.Equals(normalizedSupplierName, matchKey, StringComparison.Ordinal)))?.Name;
     }
 
     private static string NormalizeForMatch(string? value)
@@ -179,10 +201,25 @@ public static class MetaCatalogBrandBackfillPlanner
             reason);
     }
 
-    private sealed record KnownBrand(string Name)
+    private sealed record KnownBrand
     {
-        public string MatchKey { get; } = NormalizeForMatch(Name);
+        public KnownBrand(string name, params string[] aliases)
+        {
+            Name = name;
+            MatchKeys = aliases
+                .Prepend(name)
+                .Select(NormalizeForMatch)
+                .Where(matchKey => matchKey.Length > 0)
+                .Distinct(StringComparer.Ordinal)
+                .OrderByDescending(matchKey => matchKey.Length)
+                .ToList();
+        }
+
+        public string Name { get; }
+        public IReadOnlyList<string> MatchKeys { get; }
     }
+
+    private sealed record KnownBrandMatch(string Name, string MatchKey);
 }
 
 public static class MetaCatalogBrandBackfillPlanOperations

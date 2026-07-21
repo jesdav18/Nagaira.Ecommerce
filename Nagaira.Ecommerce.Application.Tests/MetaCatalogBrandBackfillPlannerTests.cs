@@ -21,16 +21,17 @@ public class MetaCatalogBrandBackfillPlannerTests
     }
 
     [Fact]
-    public void BuildPlan_ProductNamePrefersSpecificCompositeBrands()
+    public void BuildPlan_ProductNameWithDifferentKnownBrandsReturnsSkipped()
     {
         var product = CreateProduct(name: "Shampoo Head & Shoulders Old Spice 400ml");
 
         var plan = BuildPlan([product], []);
 
         var item = Assert.Single(plan.Items);
-        Assert.Equal(MetaCatalogBrandBackfillPlanOperations.Update, item.Operation);
-        Assert.Equal("Head & Shoulders", item.SuggestedBrand);
-        Assert.Equal("product_name_contains_brand", item.Reason);
+        Assert.Equal(MetaCatalogBrandBackfillPlanOperations.Skipped, item.Operation);
+        Assert.Null(item.SuggestedBrand);
+        Assert.Equal(MetaCatalogBrandBackfillConfidence.None, item.Confidence);
+        Assert.Equal("multiple_brands_detected", item.Reason);
     }
 
     [Fact]
@@ -130,6 +131,63 @@ public class MetaCatalogBrandBackfillPlannerTests
         Assert.Equal(MetaCatalogBrandBackfillPlanOperations.Update, item.Operation);
         Assert.Equal("L'Oréal", item.SuggestedBrand);
         Assert.Equal("product_name_contains_brand", item.Reason);
+    }
+
+    [Fact]
+    public void BuildPlan_ProductNameWithVenusReturnsGilletteVenus()
+    {
+        var product = CreateProduct(name: "Rasuradora Venus Mujer");
+
+        var plan = BuildPlan([product], []);
+
+        var item = Assert.Single(plan.Items);
+        Assert.Equal(MetaCatalogBrandBackfillPlanOperations.Update, item.Operation);
+        Assert.Equal("Gillette Venus", item.SuggestedBrand);
+        Assert.Equal(MetaCatalogBrandBackfillConfidence.High, item.Confidence);
+        Assert.Equal("product_name_contains_brand", item.Reason);
+    }
+
+    [Fact]
+    public void BuildPlan_ProductNameWithVenusAndPanteneReturnsMultipleBrandsDetected()
+    {
+        var product = CreateProduct(name: "Rasuradora Venus + Pantene");
+
+        var plan = BuildPlan([product], []);
+
+        var item = Assert.Single(plan.Items);
+        Assert.Equal(MetaCatalogBrandBackfillPlanOperations.Skipped, item.Operation);
+        Assert.Null(item.SuggestedBrand);
+        Assert.Equal(MetaCatalogBrandBackfillConfidence.None, item.Confidence);
+        Assert.Equal("multiple_brands_detected", item.Reason);
+    }
+
+    [Fact]
+    public void BuildPlan_ProductNameWithRepeatedSameBrandReturnsSingleBrand()
+    {
+        var product = CreateProduct(name: "JabÃ³n Dove + Dove");
+
+        var plan = BuildPlan([product], []);
+
+        var item = Assert.Single(plan.Items);
+        Assert.Equal(MetaCatalogBrandBackfillPlanOperations.Update, item.Operation);
+        Assert.Equal("Dove", item.SuggestedBrand);
+        Assert.Equal(MetaCatalogBrandBackfillConfidence.High, item.Confidence);
+        Assert.Equal("product_name_contains_brand", item.Reason);
+    }
+
+    [Fact]
+    public void BuildPlan_ProductWithExistingRealBrandIsNotModifiedEvenWhenNameHasKnownBrand()
+    {
+        var product = CreateProduct(name: "Rasuradora Venus Mujer");
+        product.Brand = "Acme";
+
+        var plan = BuildPlan([product], []);
+
+        var item = Assert.Single(plan.Items);
+        Assert.Equal(MetaCatalogBrandBackfillPlanOperations.Unchanged, item.Operation);
+        Assert.Equal("Acme", item.CurrentBrand);
+        Assert.Null(item.SuggestedBrand);
+        Assert.Equal("brand_already_set", item.Reason);
     }
 
     [Fact]
