@@ -136,18 +136,22 @@ public class ProductRepository : Repository<Product>, IProductRepository
         var safeLimit = Math.Clamp(limit, 1, 200);
         var syncedProductIds = _context.MetaProductSyncStates.Select(s => s.ProductId);
 
-        return await _dbSet
+        var products = await _dbSet
             .IgnoreQueryFilters()
+            .AsNoTracking()
             .Include(p => p.Category)
             .Include(p => p.Images)
             .Include(p => p.Prices)
                 .ThenInclude(pp => pp.PriceLevel)
             .Include(p => p.InventoryBalance)
             .Where(p => (p.IsActive && !p.IsDeleted) || syncedProductIds.Contains(p.Id))
+            .ToListAsync();
+
+        return products
             .OrderBy(p => p.UpdatedAt ?? p.CreatedAt)
             .ThenBy(p => p.Id)
             .Take(safeLimit)
-            .ToListAsync();
+            .ToList();
     }
 
     public override async Task DeleteAsync(Guid id)
