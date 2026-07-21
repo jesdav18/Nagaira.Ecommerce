@@ -6,18 +6,31 @@ namespace Nagaira.Ecommerce.Application.Tests;
 public class MetaCatalogBrandBackfillPlannerTests
 {
     [Fact]
-    public void BuildPlan_ProductWithoutBrandAndPrimarySupplierReturnsUpdate()
+    public void BuildPlan_ProductNameWithKnownBrandReturnsUpdate()
     {
-        var product = CreateProduct();
-        var supplier = CreateProductSupplier(product.Id, " Rexona ", isPrimary: true);
+        var product = CreateProduct(name: "Desodorante Rexona Clinical");
 
-        var plan = BuildPlan([product], [supplier]);
+        var plan = BuildPlan([product], []);
 
         var item = Assert.Single(plan.Items);
         Assert.Equal(MetaCatalogBrandBackfillPlanOperations.Update, item.Operation);
         Assert.Equal("Rexona", item.SuggestedBrand);
-        Assert.Equal("primary_supplier", item.Reason);
+        Assert.Equal(MetaCatalogBrandBackfillConfidence.High, item.Confidence);
+        Assert.Equal("product_name_contains_brand", item.Reason);
         Assert.Equal(1, plan.Summary.Update);
+    }
+
+    [Fact]
+    public void BuildPlan_ProductNamePrefersSpecificCompositeBrands()
+    {
+        var product = CreateProduct(name: "Shampoo Head & Shoulders Old Spice 400ml");
+
+        var plan = BuildPlan([product], []);
+
+        var item = Assert.Single(plan.Items);
+        Assert.Equal(MetaCatalogBrandBackfillPlanOperations.Update, item.Operation);
+        Assert.Equal("Head & Shoulders", item.SuggestedBrand);
+        Assert.Equal("product_name_contains_brand", item.Reason);
     }
 
     [Fact]
@@ -32,11 +45,12 @@ public class MetaCatalogBrandBackfillPlannerTests
         Assert.Equal(MetaCatalogBrandBackfillPlanOperations.Unchanged, item.Operation);
         Assert.Equal("Acme", item.CurrentBrand);
         Assert.Null(item.SuggestedBrand);
+        Assert.Equal(MetaCatalogBrandBackfillConfidence.High, item.Confidence);
         Assert.Equal("brand_already_set", item.Reason);
     }
 
     [Fact]
-    public void BuildPlan_ProductWithoutSupplierReturnsSkipped()
+    public void BuildPlan_ProductWithoutRecognizedBrandReturnsSkipped()
     {
         var product = CreateProduct();
 
@@ -44,42 +58,56 @@ public class MetaCatalogBrandBackfillPlannerTests
 
         var item = Assert.Single(plan.Items);
         Assert.Equal(MetaCatalogBrandBackfillPlanOperations.Skipped, item.Operation);
-        Assert.Equal("missing_supplier", item.Reason);
+        Assert.Equal(MetaCatalogBrandBackfillConfidence.None, item.Confidence);
+        Assert.Equal("brand_not_recognized", item.Reason);
     }
 
     [Fact]
-    public void BuildPlan_ProductWithSingleSupplierReturnsUpdate()
+    public void BuildPlan_ProductWithSupplierExactKnownBrandReturnsUpdate()
     {
         var product = CreateProduct();
-        var supplier = CreateProductSupplier(product.Id, "Dove");
+        var supplier = CreateProductSupplier(product.Id, " Dove ");
 
         var plan = BuildPlan([product], [supplier]);
 
         var item = Assert.Single(plan.Items);
         Assert.Equal(MetaCatalogBrandBackfillPlanOperations.Update, item.Operation);
         Assert.Equal("Dove", item.SuggestedBrand);
-        Assert.Equal("single_supplier", item.Reason);
+        Assert.Equal(MetaCatalogBrandBackfillConfidence.High, item.Confidence);
+        Assert.Equal("supplier_matches_known_brand", item.Reason);
     }
 
     [Fact]
-    public void BuildPlan_ProductWithMultipleSuppliersWithoutPrimaryReturnsSkipped()
+    public void BuildPlan_GenericSupplierNameNeverBecomesBrand()
     {
         var product = CreateProduct();
-        var suppliers = new[]
-        {
-            CreateProductSupplier(product.Id, "Dove"),
-            CreateProductSupplier(product.Id, "Rexona")
-        };
+        var supplier = CreateProductSupplier(product.Id, "Distribuidora Central", isPrimary: true);
 
-        var plan = BuildPlan([product], suppliers);
+        var plan = BuildPlan([product], [supplier]);
 
         var item = Assert.Single(plan.Items);
         Assert.Equal(MetaCatalogBrandBackfillPlanOperations.Skipped, item.Operation);
-        Assert.Equal("ambiguous_suppliers", item.Reason);
+        Assert.Null(item.SuggestedBrand);
+        Assert.Equal(MetaCatalogBrandBackfillConfidence.None, item.Confidence);
+        Assert.Equal("brand_not_recognized", item.Reason);
     }
 
     [Fact]
-    public void BuildPlan_ProductWithBlankSupplierNameReturnsSkipped()
+    public void BuildPlan_SupplierNameContainingKnownBrandButNotExactReturnsSkipped()
+    {
+        var product = CreateProduct();
+        var supplier = CreateProductSupplier(product.Id, "Distribuidora Rexona");
+
+        var plan = BuildPlan([product], [supplier]);
+
+        var item = Assert.Single(plan.Items);
+        Assert.Equal(MetaCatalogBrandBackfillPlanOperations.Skipped, item.Operation);
+        Assert.Null(item.SuggestedBrand);
+        Assert.Equal("brand_not_recognized", item.Reason);
+    }
+
+    [Fact]
+    public void BuildPlan_ProductWithBlankSupplierNameReturnsSkippedAsUnrecognized()
     {
         var product = CreateProduct();
         var supplier = CreateProductSupplier(product.Id, " ");
@@ -88,20 +116,20 @@ public class MetaCatalogBrandBackfillPlannerTests
 
         var item = Assert.Single(plan.Items);
         Assert.Equal(MetaCatalogBrandBackfillPlanOperations.Skipped, item.Operation);
-        Assert.Equal("missing_supplier_name", item.Reason);
+        Assert.Equal("brand_not_recognized", item.Reason);
     }
 
     [Fact]
-    public void BuildPlan_ProductWithLongSupplierNameReturnsSkipped()
+    public void BuildPlan_ProductNameMatchingAccentInsensitiveReturnsCanonicalBrand()
     {
-        var product = CreateProduct();
-        var supplier = CreateProductSupplier(product.Id, new string('A', 256));
+        var product = CreateProduct(name: "Crema LOREAL hidratante");
 
-        var plan = BuildPlan([product], [supplier]);
+        var plan = BuildPlan([product], []);
 
         var item = Assert.Single(plan.Items);
-        Assert.Equal(MetaCatalogBrandBackfillPlanOperations.Skipped, item.Operation);
-        Assert.Equal("brand_too_long", item.Reason);
+        Assert.Equal(MetaCatalogBrandBackfillPlanOperations.Update, item.Operation);
+        Assert.Equal("L'Oréal", item.SuggestedBrand);
+        Assert.Equal("product_name_contains_brand", item.Reason);
     }
 
     [Fact]
@@ -130,13 +158,13 @@ public class MetaCatalogBrandBackfillPlannerTests
             200);
     }
 
-    private static Product CreateProduct(Guid? id = null, DateTime? createdAt = null)
+    private static Product CreateProduct(Guid? id = null, DateTime? createdAt = null, string name = "Desodorante")
     {
         var productId = id ?? Guid.Parse("11111111-1111-1111-1111-111111111111");
         return new Product
         {
             Id = productId,
-            Name = "Desodorante",
+            Name = name,
             Sku = $"SKU-{productId.ToString("N")[..6]}",
             Brand = null,
             IsActive = true,

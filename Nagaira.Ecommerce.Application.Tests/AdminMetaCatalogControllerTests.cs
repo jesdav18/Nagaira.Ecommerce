@@ -380,7 +380,7 @@ public class AdminMetaCatalogControllerTests
             Supplier = new Supplier
             {
                 Id = Guid.NewGuid(),
-                Name = " Rexona ",
+                Name = "Distribuidora Central",
                 IsActive = true
             }
         };
@@ -400,8 +400,10 @@ public class AdminMetaCatalogControllerTests
         Assert.True(response.DryRun);
         Assert.Equal(200, response.Limit);
         var item = Assert.Single(response.Items);
-        Assert.Equal(MetaCatalogBrandBackfillPlanOperations.Update, item.Operation);
-        Assert.Equal("Rexona", item.SuggestedBrand);
+        Assert.Equal(MetaCatalogBrandBackfillPlanOperations.Skipped, item.Operation);
+        Assert.Null(item.SuggestedBrand);
+        Assert.Equal(MetaCatalogBrandBackfillConfidence.None, item.Confidence);
+        Assert.Equal("brand_not_recognized", item.Reason);
         metaClient.Verify(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()), Times.Never);
         unitOfWork.Verify(u => u.SaveChangesAsync(), Times.Never);
     }
