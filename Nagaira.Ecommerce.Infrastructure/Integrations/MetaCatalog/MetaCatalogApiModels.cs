@@ -4,6 +4,9 @@ namespace Nagaira.Ecommerce.Infrastructure.Integrations.MetaCatalog;
 
 internal sealed class MetaCatalogBatchRequest
 {
+    [JsonPropertyName("item_type")]
+    public string ItemType { get; set; } = "PRODUCT_ITEM";
+
     [JsonPropertyName("requests")]
     public List<MetaCatalogBatchRequestItem> Requests { get; set; } = new();
 }

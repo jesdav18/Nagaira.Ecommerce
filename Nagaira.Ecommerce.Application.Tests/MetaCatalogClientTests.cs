@@ -48,9 +48,11 @@ public class MetaCatalogClientTests
 
         await client.SubmitAsync([CreateUpsert("p-1")]);
 
-        var requestItem = document!.RootElement.GetProperty("requests")[0];
+        Assert.Equal("PRODUCT_ITEM", document!.RootElement.GetProperty("item_type").GetString());
+        var requestItem = document.RootElement.GetProperty("requests")[0];
         Assert.Equal("UPDATE", requestItem.GetProperty("method").GetString());
         Assert.Equal("p-1", requestItem.GetProperty("retailer_id").GetString());
+        Assert.False(requestItem.TryGetProperty("item_type", out _));
         var data = requestItem.GetProperty("data");
         Assert.Equal("Router WiFi", data.GetProperty("name").GetString());
         Assert.Equal("Acme", data.GetProperty("brand").GetString());
@@ -74,9 +76,11 @@ public class MetaCatalogClientTests
 
         await client.SubmitAsync([CreateDelete("p-1")]);
 
-        var requestItem = document!.RootElement.GetProperty("requests")[0];
+        Assert.Equal("PRODUCT_ITEM", document!.RootElement.GetProperty("item_type").GetString());
+        var requestItem = document.RootElement.GetProperty("requests")[0];
         Assert.Equal("DELETE", requestItem.GetProperty("method").GetString());
         Assert.Equal("p-1", requestItem.GetProperty("retailer_id").GetString());
+        Assert.False(requestItem.TryGetProperty("item_type", out _));
         Assert.False(requestItem.TryGetProperty("data", out _));
     }
 
