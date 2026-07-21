@@ -18,6 +18,29 @@
         <input type="text" [(ngModel)]="formData.name" name="name" required />
       </div>
 
+      <div class="form-row">
+        <div class="form-group">
+          <label>Marca</label>
+          <input
+            type="text"
+            [(ngModel)]="formData.brand"
+            name="brand"
+            maxlength="255"
+            placeholder="Marca real del producto"
+          />
+          @if (!formData.brand || !formData.brand.trim()) {
+          <small class="warning">
+            Este producto no podrá sincronizarse con Meta Catalog.
+          </small>
+          }
+        </div>
+
+        <div class="form-group">
+          <label>SKU *</label>
+          <input type="text" [(ngModel)]="formData.sku" name="sku" required />
+        </div>
+      </div>
+
       <div class="form-group">
         <label>Descripción *</label>
         <textarea
@@ -29,11 +52,6 @@
       </div>
 
       <div class="form-row">
-        <div class="form-group">
-          <label>SKU *</label>
-          <input type="text" [(ngModel)]="formData.sku" name="sku" required />
-        </div>
-
         <div class="form-group">
           <label>Categoría *</label>
           <select [(ngModel)]="formData.categoryId" name="categoryId" required>

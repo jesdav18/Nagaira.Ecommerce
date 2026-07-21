@@ -2,6 +2,7 @@ export interface Product {
   id: string;
   name: string;
   description: string;
+  brand?: string | null;
   sku: string;
   slug: string;
   isActive: boolean;

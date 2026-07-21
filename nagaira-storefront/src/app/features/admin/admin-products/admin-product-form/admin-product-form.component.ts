@@ -48,6 +48,7 @@ export class AdminProductFormComponent implements OnInit {
   formData = {
     name: '',
     description: '',
+    brand: '',
     sku: '',
     categoryId: '',
     cost: null as number | null,
@@ -236,6 +237,7 @@ export class AdminProductFormComponent implements OnInit {
         this.formData = {
           name: product.name,
           description: product.description,
+          brand: product.brand || '',
           sku: product.sku,
           categoryId: product.categoryId,
           cost: product.cost,
@@ -561,6 +563,7 @@ export class AdminProductFormComponent implements OnInit {
         id: currentProductId,
         name: this.formData.name,
         description: this.formData.description,
+        brand: this.formData.brand,
         sku: this.formData.sku,
         categoryId: this.formData.categoryId,
         cost: this.formData.cost,
@@ -572,6 +575,7 @@ export class AdminProductFormComponent implements OnInit {
       productData = {
         name: this.formData.name,
         description: this.formData.description,
+        brand: this.formData.brand,
         sku: this.formData.sku,
         categoryId: this.formData.categoryId,
         cost: this.formData.cost,

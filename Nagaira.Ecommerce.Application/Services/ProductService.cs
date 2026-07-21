@@ -84,7 +84,7 @@ public class ProductService : IProductService
             Id = Guid.NewGuid(),
             Name = dto.Name,
             Description = dto.Description,
-            Brand = dto.Brand,
+            Brand = NormalizeBrand(dto.Brand),
             Sku = dto.Sku,
             Slug = await GenerateUniqueSlugAsync(dto.Name),
             CategoryId = dto.CategoryId,
@@ -193,7 +193,7 @@ public class ProductService : IProductService
 
         product.Name = dto.Name;
         product.Description = dto.Description;
-        product.Brand = dto.Brand;
+        product.Brand = NormalizeBrand(dto.Brand);
         product.Cost = dto.Cost;
         product.IsActive = dto.IsActive;
         product.HasVirtualStock = dto.HasVirtualStock;
@@ -514,5 +514,21 @@ public class ProductService : IProductService
         return decimal.TryParse(setting.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out var rate)
             ? rate
             : 0.16m;
+    }
+
+    private static string? NormalizeBrand(string? brand)
+    {
+        var normalized = brand?.Trim();
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return null;
+        }
+
+        if (normalized.Length > 255)
+        {
+            throw new ArgumentException("La marca no puede exceder 255 caracteres.");
+        }
+
+        return normalized;
     }
 }
