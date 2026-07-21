@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nagaira.Ecommerce.Application.Interfaces;
@@ -122,7 +123,11 @@ public class MetaCatalogClient : IMetaCatalogClient
                 _options.AccessToken);
         }
 
-        return await ParseAcceptedBatchResponseAsync(items, body, cancellationToken);
+        return await ParseAcceptedBatchResponseAsync(
+            items,
+            body,
+            response.Content.Headers.ContentType?.ToString(),
+            cancellationToken);
     }
 
     private Uri BuildItemsBatchUrl()
@@ -174,6 +179,7 @@ public class MetaCatalogClient : IMetaCatalogClient
     private async Task<MetaCatalogBatchResult> ParseAcceptedBatchResponseAsync(
         IReadOnlyCollection<MetaCatalogMappingResult> requestedItems,
         string body,
+        string? contentType,
         CancellationToken cancellationToken)
     {
         MetaCatalogBatchResponse? parsed;
@@ -203,7 +209,7 @@ public class MetaCatalogClient : IMetaCatalogClient
         {
             if (handles.Count == 0 || string.IsNullOrWhiteSpace(handles[0]))
             {
-                return MissingHandleResult(requestedItems);
+                return MissingHandleResult(requestedItems, body, contentType);
             }
 
             if (handles.Count == 1)
@@ -223,7 +229,7 @@ public class MetaCatalogClient : IMetaCatalogClient
             return directResult;
         }
 
-        return MissingHandleResult(requestedItems);
+        return MissingHandleResult(requestedItems, body, contentType);
     }
 
     private static List<string>? GetBatchHandles(MetaCatalogBatchResponse? parsed)
@@ -241,8 +247,17 @@ public class MetaCatalogClient : IMetaCatalogClient
         return null;
     }
 
-    private static MetaCatalogBatchResult MissingHandleResult(IReadOnlyCollection<MetaCatalogMappingResult> requestedItems)
+    private MetaCatalogBatchResult MissingHandleResult(
+        IReadOnlyCollection<MetaCatalogMappingResult> requestedItems,
+        string body,
+        string? contentType)
     {
+        var sanitizedBody = SanitizeDiagnosticBody(body, _options.AccessToken);
+        var diagnosticBody = sanitizedBody.Length <= 2000
+            ? sanitizedBody
+            : sanitizedBody[..2000];
+        var topLevelProperties = GetSanitizedTopLevelProperties(body, _options.AccessToken);
+
         return new MetaCatalogBatchResult(requestedItems.Select(i => new MetaCatalogItemResult(
             i.RetailerId,
             i.Action,
@@ -251,7 +266,14 @@ public class MetaCatalogClient : IMetaCatalogClient
             null,
             "Meta Catalog batch response did not include a handle.",
             true,
-            "missing_handle")).ToList());
+            "missing_handle",
+            null,
+            null,
+            null,
+            contentType,
+            body.Length,
+            topLevelProperties,
+            diagnosticBody)).ToList());
     }
 
     private MetaCatalogBatchResult? BuildValidationResult(
@@ -602,6 +624,89 @@ public class MetaCatalogClient : IMetaCatalogClient
         return sanitized
             .Replace("Authorization", "[redacted-header]", StringComparison.OrdinalIgnoreCase)
             .Replace("Bearer", "[redacted-auth-scheme]", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string SanitizeDiagnosticBody(string? body, string accessToken)
+    {
+        if (string.IsNullOrEmpty(body))
+        {
+            return string.Empty;
+        }
+
+        var sanitized = body;
+        if (!string.IsNullOrWhiteSpace(accessToken))
+        {
+            sanitized = sanitized.Replace(accessToken, "[redacted]", StringComparison.Ordinal);
+        }
+
+        sanitized = Regex.Replace(
+            sanitized,
+            "(access_token\\s*[=:]\\s*)([^\\s&\"',}]+)",
+            "$1[redacted]",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        sanitized = Regex.Replace(
+            sanitized,
+            "(\"access_token\"\\s*:\\s*\")([^\"]*)(\")",
+            "$1[redacted]$3",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        sanitized = Regex.Replace(
+            sanitized,
+            "\"access_token\"",
+            "\"[redacted]\"",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        sanitized = Regex.Replace(
+            sanitized,
+            "(Authorization\\s*[:=]\\s*)([^\\r\\n,}]+)",
+            "$1[redacted]",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        sanitized = Regex.Replace(
+            sanitized,
+            "\\bBearer\\s+[A-Za-z0-9._~+/=-]+",
+            "[redacted-auth-scheme] [redacted]",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+        return sanitized
+            .Replace("Authorization", "[redacted-header]", StringComparison.OrdinalIgnoreCase)
+            .Replace("Bearer", "[redacted-auth-scheme]", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static IReadOnlyList<string> GetSanitizedTopLevelProperties(string body, string accessToken)
+    {
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return Array.Empty<string>();
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(body);
+            if (document.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                return Array.Empty<string>();
+            }
+
+            return document.RootElement
+                .EnumerateObject()
+                .Select(p => SanitizeDiagnosticPropertyName(p.Name, accessToken))
+                .ToList();
+        }
+        catch (JsonException)
+        {
+            return Array.Empty<string>();
+        }
+    }
+
+    private static string SanitizeDiagnosticPropertyName(string propertyName, string accessToken)
+    {
+        if (string.Equals(propertyName, "access_token", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(propertyName, "authorization", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(propertyName, "bearer", StringComparison.OrdinalIgnoreCase)
+            || (!string.IsNullOrWhiteSpace(accessToken) && string.Equals(propertyName, accessToken, StringComparison.Ordinal)))
+        {
+            return "[redacted]";
+        }
+
+        return propertyName;
     }
 
     private void ValidateReadyForCall()

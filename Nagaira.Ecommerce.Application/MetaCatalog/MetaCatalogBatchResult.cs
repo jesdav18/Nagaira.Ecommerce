@@ -16,5 +16,9 @@ public record MetaCatalogItemResult(
     string? Status = null,
     string? ErrorSubcode = null,
     IReadOnlyList<string>? Warnings = null,
-    string? BatchHandle = null
+    string? BatchHandle = null,
+    string? ResponseContentType = null,
+    int? ResponseBodyLength = null,
+    IReadOnlyList<string>? ResponseTopLevelProperties = null,
+    string? DiagnosticResponseBody = null
 );

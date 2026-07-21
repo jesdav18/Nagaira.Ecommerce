@@ -229,6 +229,53 @@ public class AdminMetaCatalogControllerTests
     }
 
     [Fact]
+    public async Task TestSync_DryRunFalseMissingHandleInStaging_ReturnsSafeDiagnostics()
+    {
+        var product = CreateProduct();
+        var metaClient = new Mock<IMetaCatalogClient>();
+        metaClient
+            .Setup(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MetaCatalogBatchResult([
+                new MetaCatalogItemResult(
+                    product.Id.ToString("D"),
+                    MetaCatalogSyncAction.Upsert,
+                    false,
+                    null,
+                    null,
+                    "Meta Catalog batch response did not include a handle.",
+                    true,
+                    "missing_handle",
+                    null,
+                    null,
+                    null,
+                    "application/json",
+                    125,
+                    ["unexpected"],
+                    """{"unexpected":true,"message":"[redacted]"}""")
+            ]));
+        var controller = CreateController(
+            product,
+            environmentName: "Staging",
+            syncEnabled: true,
+            catalogId: "catalog-1",
+            accessToken: "super-secret-token",
+            graphApiVersion: "v25.0",
+            metaCatalogClient: metaClient.Object);
+
+        var result = await controller.TestSync(product.Id, dryRun: false);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<MetaCatalogTestSyncResponse>(ok.Value);
+        Assert.False(response.Success);
+        Assert.Equal("missing_handle", response.Status);
+        Assert.Equal("application/json", response.ResponseContentType);
+        Assert.Equal(125, response.ResponseBodyLength);
+        Assert.Contains("unexpected", response.ResponseTopLevelProperties!);
+        Assert.Contains("[redacted]", response.DiagnosticResponseBody);
+        Assert.DoesNotContain("super-secret-token", JsonSerializer.Serialize(response));
+    }
+
+    [Fact]
     public async Task TestSync_InactiveProduct_ReturnsDeleteWithoutPayload()
     {
         var product = CreateProduct();

@@ -473,6 +473,21 @@ public class MetaCatalogClientTests
     }
 
     [Fact]
+    public async Task Submit_FirstHandleEmpty_ReturnsTransientFailureWithoutUsingLaterHandles()
+    {
+        var handler = new FakeHttpMessageHandler(_ => JsonResponse("""{"handles":["","abc123"]}"""));
+        var client = CreateClient(handler);
+
+        var result = await client.SubmitAsync([CreateUpsert("p-1")]);
+
+        var item = Assert.Single(result.Items);
+        Assert.False(item.Success);
+        Assert.True(item.IsTransient);
+        Assert.Equal("missing_handle", item.Status);
+        Assert.Single(handler.Requests);
+    }
+
+    [Fact]
     public async Task Submit_MissingHandlesProperty_ReturnsTransientFailureWithoutPolling()
     {
         var handler = new FakeHttpMessageHandler(_ => JsonResponse("""{}"""));
@@ -503,6 +518,48 @@ public class MetaCatalogClientTests
         Assert.Equal("abc123", item.BatchHandle);
         Assert.Equal(2, handler.Requests.Count);
         Assert.Contains("handle=abc123", handler.Requests[1].RequestUri!.ToString());
+    }
+
+    [Fact]
+    public async Task Submit_MissingHandleIncludesSanitizedDiagnosticBody()
+    {
+        const string accessToken = "secret-token";
+        var body = """
+        {"unexpected":true,"access_token":"secret-token","Authorization":"Bearer abc123","message":"secret-token Authorization Bearer abc123"}
+        """;
+        var handler = new FakeHttpMessageHandler(_ => JsonResponse(body, contentType: "application/json; charset=utf-8"));
+        var client = CreateClient(handler, accessToken: accessToken);
+
+        var result = await client.SubmitAsync([CreateUpsert("p-1")]);
+
+        var item = Assert.Single(result.Items);
+        Assert.False(item.Success);
+        Assert.Equal("missing_handle", item.Status);
+        Assert.Equal("application/json; charset=utf-8", item.ResponseContentType);
+        Assert.Equal(body.Length, item.ResponseBodyLength);
+        Assert.Contains("unexpected", item.ResponseTopLevelProperties!);
+        Assert.Contains("[redacted]", item.ResponseTopLevelProperties!);
+        Assert.DoesNotContain("access_token", item.DiagnosticResponseBody, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(accessToken, item.DiagnosticResponseBody);
+        Assert.DoesNotContain("Authorization", item.DiagnosticResponseBody, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Bearer", item.DiagnosticResponseBody, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("[redacted]", item.DiagnosticResponseBody);
+    }
+
+    [Fact]
+    public async Task Submit_MissingHandleLimitsDiagnosticBodyToTwoThousandCharacters()
+    {
+        var longValue = new string('x', 3000);
+        var body = $$"""{"unexpected":"{{longValue}}"}""";
+        var handler = new FakeHttpMessageHandler(_ => JsonResponse(body));
+        var client = CreateClient(handler);
+
+        var result = await client.SubmitAsync([CreateUpsert("p-1")]);
+
+        var item = Assert.Single(result.Items);
+        Assert.False(item.Success);
+        Assert.Equal(2000, item.DiagnosticResponseBody!.Length);
+        Assert.Equal(body.Length, item.ResponseBodyLength);
     }
 
     [Fact]
@@ -581,12 +638,21 @@ public class MetaCatalogClientTests
             "hash");
     }
 
-    private static HttpResponseMessage JsonResponse(string json, HttpStatusCode statusCode = HttpStatusCode.OK)
+    private static HttpResponseMessage JsonResponse(
+        string json,
+        HttpStatusCode statusCode = HttpStatusCode.OK,
+        string? contentType = null)
     {
-        return new HttpResponseMessage(statusCode)
+        var response = new HttpResponseMessage(statusCode)
         {
             Content = new StringContent(json)
         };
+        if (contentType != null)
+        {
+            response.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse(contentType);
+        }
+
+        return response;
     }
 
     private sealed class FakeHttpClientFactory : IHttpClientFactory

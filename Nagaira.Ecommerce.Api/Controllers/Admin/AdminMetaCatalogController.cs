@@ -96,7 +96,19 @@ public class AdminMetaCatalogController : ControllerBase
                 null,
                 itemResult.Status,
                 itemResult.Warnings,
-                itemResult.BatchHandle));
+                itemResult.BatchHandle,
+                _environment.IsDevelopment() || _environment.IsStaging()
+                    ? itemResult.ResponseContentType
+                    : null,
+                _environment.IsDevelopment() || _environment.IsStaging()
+                    ? itemResult.ResponseBodyLength
+                    : null,
+                _environment.IsDevelopment() || _environment.IsStaging()
+                    ? itemResult.ResponseTopLevelProperties
+                    : null,
+                _environment.IsDevelopment() || _environment.IsStaging()
+                    ? itemResult.DiagnosticResponseBody
+                    : null));
         }
         catch (MetaCatalogApiException ex)
         {
@@ -109,6 +121,10 @@ public class AdminMetaCatalogController : ControllerBase
                 ex.IsTransient,
                 ex.SafeMessage,
                 ex.RequestId,
+                null,
+                null,
+                null,
+                null,
                 null,
                 null,
                 null));
@@ -156,7 +172,11 @@ public record MetaCatalogTestSyncResponse(
     string? TraceId,
     string? Status,
     IReadOnlyList<string>? Warnings,
-    string? BatchHandle)
+    string? BatchHandle,
+    string? ResponseContentType,
+    int? ResponseBodyLength,
+    IReadOnlyList<string>? ResponseTopLevelProperties,
+    string? DiagnosticResponseBody)
 {
     public static MetaCatalogTestSyncResponse FromDryRun(MetaCatalogMappingResult result)
     {
@@ -166,6 +186,10 @@ public record MetaCatalogTestSyncResponse(
             result.PayloadHash,
             result.Item,
             true,
+            null,
+            null,
+            null,
+            null,
             null,
             null,
             null,
@@ -198,6 +222,10 @@ public record MetaCatalogTestSyncResponse(
             null,
             null,
             null,
+            null,
+            null,
+            null,
+            null,
             null);
     }
 
@@ -212,7 +240,11 @@ public record MetaCatalogTestSyncResponse(
         string? traceId,
         string? status,
         IReadOnlyList<string>? warnings,
-        string? batchHandle)
+        string? batchHandle,
+        string? responseContentType = null,
+        int? responseBodyLength = null,
+        IReadOnlyList<string>? responseTopLevelProperties = null,
+        string? diagnosticResponseBody = null)
     {
         return new MetaCatalogTestSyncResponse(
             result.RetailerId,
@@ -229,6 +261,10 @@ public record MetaCatalogTestSyncResponse(
             traceId,
             status,
             warnings,
-            batchHandle);
+            batchHandle,
+            responseContentType,
+            responseBodyLength,
+            responseTopLevelProperties,
+            diagnosticResponseBody);
     }
 }
