@@ -108,6 +108,9 @@ public class AdminMetaCatalogController : ControllerBase
                     : null,
                 _environment.IsDevelopment() || _environment.IsStaging()
                     ? itemResult.DiagnosticResponseBody
+                    : null,
+                _environment.IsDevelopment() || _environment.IsStaging()
+                    ? itemResult.DiagnosticRequestBody
                     : null));
         }
         catch (MetaCatalogApiException ex)
@@ -121,6 +124,7 @@ public class AdminMetaCatalogController : ControllerBase
                 ex.IsTransient,
                 ex.SafeMessage,
                 ex.RequestId,
+                null,
                 null,
                 null,
                 null,
@@ -176,7 +180,8 @@ public record MetaCatalogTestSyncResponse(
     string? ResponseContentType,
     int? ResponseBodyLength,
     IReadOnlyList<string>? ResponseTopLevelProperties,
-    string? DiagnosticResponseBody)
+    string? DiagnosticResponseBody,
+    string? DiagnosticRequestBody)
 {
     public static MetaCatalogTestSyncResponse FromDryRun(MetaCatalogMappingResult result)
     {
@@ -186,6 +191,7 @@ public record MetaCatalogTestSyncResponse(
             result.PayloadHash,
             result.Item,
             true,
+            null,
             null,
             null,
             null,
@@ -226,6 +232,7 @@ public record MetaCatalogTestSyncResponse(
             null,
             null,
             null,
+            null,
             null);
     }
 
@@ -244,7 +251,8 @@ public record MetaCatalogTestSyncResponse(
         string? responseContentType = null,
         int? responseBodyLength = null,
         IReadOnlyList<string>? responseTopLevelProperties = null,
-        string? diagnosticResponseBody = null)
+        string? diagnosticResponseBody = null,
+        string? diagnosticRequestBody = null)
     {
         return new MetaCatalogTestSyncResponse(
             result.RetailerId,
@@ -265,6 +273,7 @@ public record MetaCatalogTestSyncResponse(
             responseContentType,
             responseBodyLength,
             responseTopLevelProperties,
-            diagnosticResponseBody);
+            diagnosticResponseBody,
+            diagnosticRequestBody);
     }
 }

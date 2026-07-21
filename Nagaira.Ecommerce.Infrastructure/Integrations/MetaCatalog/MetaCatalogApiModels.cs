@@ -16,7 +16,7 @@ internal sealed class MetaCatalogBatchRequestItem
     [JsonPropertyName("method")]
     public string Method { get; set; } = string.Empty;
 
-    [JsonPropertyName("retailer_id")]
+    [JsonIgnore]
     public string RetailerId { get; set; } = string.Empty;
 
     [JsonPropertyName("data")]
@@ -26,32 +26,44 @@ internal sealed class MetaCatalogBatchRequestItem
 
 internal sealed class MetaCatalogItemData
 {
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = string.Empty;
+
     [JsonPropertyName("name")]
-    public string Name { get; set; } = string.Empty;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Name { get; set; }
 
     [JsonPropertyName("description")]
-    public string Description { get; set; } = string.Empty;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Description { get; set; }
 
     [JsonPropertyName("brand")]
-    public string Brand { get; set; } = string.Empty;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Brand { get; set; }
 
     [JsonPropertyName("availability")]
-    public string Availability { get; set; } = string.Empty;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Availability { get; set; }
 
     [JsonPropertyName("condition")]
-    public string Condition { get; set; } = string.Empty;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Condition { get; set; }
 
     [JsonPropertyName("price")]
-    public string Price { get; set; } = string.Empty;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Price { get; set; }
 
     [JsonPropertyName("currency")]
-    public string Currency { get; set; } = string.Empty;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Currency { get; set; }
 
     [JsonPropertyName("link")]
-    public string Link { get; set; } = string.Empty;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Link { get; set; }
 
     [JsonPropertyName("image_link")]
-    public string ImageLink { get; set; } = string.Empty;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ImageLink { get; set; }
 
     [JsonPropertyName("product_type")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

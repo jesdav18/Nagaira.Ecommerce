@@ -80,8 +80,9 @@ public class MetaCatalogClient : IMetaCatalogClient
 
         using var request = new HttpRequestMessage(HttpMethod.Post, BuildItemsBatchUrl());
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.AccessToken);
+        var requestBody = JsonSerializer.Serialize(BuildRequest(items), JsonOptions);
         request.Content = new StringContent(
-            JsonSerializer.Serialize(BuildRequest(items), JsonOptions),
+            requestBody,
             Encoding.UTF8,
             "application/json");
 
@@ -127,6 +128,7 @@ public class MetaCatalogClient : IMetaCatalogClient
             items,
             body,
             response.Content.Headers.ContentType?.ToString(),
+            requestBody,
             cancellationToken);
     }
 
@@ -154,11 +156,12 @@ public class MetaCatalogClient : IMetaCatalogClient
         {
             Requests = items.Select(item => new MetaCatalogBatchRequestItem
             {
-                Method = item.Action == MetaCatalogSyncAction.Upsert ? "UPDATE" : "DELETE",
+                Method = item.Action == MetaCatalogSyncAction.Upsert ? "CREATE" : "DELETE",
                 RetailerId = item.RetailerId,
                 Data = item.Action == MetaCatalogSyncAction.Upsert && item.Item != null
                     ? new MetaCatalogItemData
                     {
+                        Id = item.RetailerId,
                         Name = item.Item.Name,
                         Description = item.Item.Description,
                         Brand = item.Item.Brand,
@@ -171,7 +174,10 @@ public class MetaCatalogClient : IMetaCatalogClient
                         ProductType = item.Item.CategoryName,
                         Sku = item.Item.Sku
                     }
-                    : null
+                    : new MetaCatalogItemData
+                    {
+                        Id = item.RetailerId
+                    }
             }).ToList()
         };
     }
@@ -180,6 +186,7 @@ public class MetaCatalogClient : IMetaCatalogClient
         IReadOnlyCollection<MetaCatalogMappingResult> requestedItems,
         string body,
         string? contentType,
+        string requestBody,
         CancellationToken cancellationToken)
     {
         MetaCatalogBatchResponse? parsed;
@@ -198,7 +205,12 @@ public class MetaCatalogClient : IMetaCatalogClient
                 innerException: ex);
         }
 
-        var validationResult = BuildValidationResult(requestedItems, parsed?.ValidationStatus, null, null);
+        var validationResult = BuildValidationResult(
+            requestedItems,
+            parsed?.ValidationStatus,
+            null,
+            "validation_failed",
+            requestBody);
         if (validationResult != null)
         {
             return validationResult;
@@ -253,9 +265,7 @@ public class MetaCatalogClient : IMetaCatalogClient
         string? contentType)
     {
         var sanitizedBody = SanitizeDiagnosticBody(body, _options.AccessToken);
-        var diagnosticBody = sanitizedBody.Length <= 2000
-            ? sanitizedBody
-            : sanitizedBody[..2000];
+        var diagnosticBody = TruncateDiagnosticBody(sanitizedBody, 2000);
         var topLevelProperties = GetSanitizedTopLevelProperties(body, _options.AccessToken);
 
         return new MetaCatalogBatchResult(requestedItems.Select(i => new MetaCatalogItemResult(
@@ -280,9 +290,16 @@ public class MetaCatalogClient : IMetaCatalogClient
         IReadOnlyCollection<MetaCatalogMappingResult> requestedItems,
         List<MetaCatalogBatchValidationStatus>? validationStatuses,
         string? batchHandle,
-        string? status)
+        string? status,
+        string? requestBody = null)
     {
         if (validationStatuses == null || validationStatuses.Count == 0)
+        {
+            return null;
+        }
+
+        var hasAnyErrors = validationStatuses.Any(v => v.Errors?.Count > 0);
+        if (!hasAnyErrors)
         {
             return null;
         }
@@ -291,16 +308,16 @@ public class MetaCatalogClient : IMetaCatalogClient
             .Where(v => !string.IsNullOrWhiteSpace(v.RetailerId))
             .GroupBy(v => v.RetailerId!)
             .ToDictionary(g => g.Key, g => g.First());
-
-        var hasErrors = validationByRetailerId.Values.Any(v => v.Errors?.Count > 0);
-        if (!hasErrors)
-        {
-            return null;
-        }
+        var fallbackValidation = validationStatuses.FirstOrDefault(v => v.Errors?.Count > 0);
+        var diagnosticRequestBody = TruncateDiagnosticBody(SanitizeDiagnosticBody(requestBody, _options.AccessToken), 4000);
 
         return new MetaCatalogBatchResult(requestedItems.Select(item =>
         {
-            validationByRetailerId.TryGetValue(item.RetailerId, out var validation);
+            if (!validationByRetailerId.TryGetValue(item.RetailerId, out var validation))
+            {
+                validation = fallbackValidation;
+            }
+
             var firstError = validation?.Errors?.FirstOrDefault();
             var warnings = validation?.Warnings?
                 .Select(w => w.Message)
@@ -319,7 +336,12 @@ public class MetaCatalogClient : IMetaCatalogClient
                 status,
                 firstError?.ErrorSubcode,
                 warnings,
-                batchHandle);
+                batchHandle,
+                null,
+                null,
+                null,
+                null,
+                diagnosticRequestBody);
         }).ToList());
     }
 
@@ -668,6 +690,13 @@ public class MetaCatalogClient : IMetaCatalogClient
         return sanitized
             .Replace("Authorization", "[redacted-header]", StringComparison.OrdinalIgnoreCase)
             .Replace("Bearer", "[redacted-auth-scheme]", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string TruncateDiagnosticBody(string body, int maxLength)
+    {
+        return body.Length <= maxLength
+            ? body
+            : body[..maxLength];
     }
 
     private static IReadOnlyList<string> GetSanitizedTopLevelProperties(string body, string accessToken)

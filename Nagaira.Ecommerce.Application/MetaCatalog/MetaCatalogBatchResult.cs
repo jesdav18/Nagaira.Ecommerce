@@ -20,5 +20,6 @@ public record MetaCatalogItemResult(
     string? ResponseContentType = null,
     int? ResponseBodyLength = null,
     IReadOnlyList<string>? ResponseTopLevelProperties = null,
-    string? DiagnosticResponseBody = null
+    string? DiagnosticResponseBody = null,
+    string? DiagnosticRequestBody = null
 );

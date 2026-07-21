@@ -39,9 +39,11 @@ public class MetaCatalogClientTests
     public async Task Submit_SerializesUpsertWithCatalogFields()
     {
         JsonDocument? document = null;
+        string? serializedBody = null;
         var handler = new FakeHttpMessageHandler(request =>
         {
-            document = JsonDocument.Parse(request.Content!.ReadAsStringAsync().Result);
+            serializedBody = request.Content!.ReadAsStringAsync().Result;
+            document = JsonDocument.Parse(serializedBody);
             return JsonResponse("""{"responses":[{"retailer_id":"p-1","success":true}]}""");
         });
         var client = CreateClient(handler);
@@ -50,10 +52,11 @@ public class MetaCatalogClientTests
 
         Assert.Equal("PRODUCT_ITEM", document!.RootElement.GetProperty("item_type").GetString());
         var requestItem = document.RootElement.GetProperty("requests")[0];
-        Assert.Equal("UPDATE", requestItem.GetProperty("method").GetString());
-        Assert.Equal("p-1", requestItem.GetProperty("retailer_id").GetString());
+        Assert.Equal("CREATE", requestItem.GetProperty("method").GetString());
+        Assert.False(requestItem.TryGetProperty("retailer_id", out _));
         Assert.False(requestItem.TryGetProperty("item_type", out _));
         var data = requestItem.GetProperty("data");
+        Assert.Equal("p-1", data.GetProperty("id").GetString());
         Assert.Equal("Router WiFi", data.GetProperty("name").GetString());
         Assert.Equal("Acme", data.GetProperty("brand").GetString());
         Assert.Equal("125.50", data.GetProperty("price").GetString());
@@ -61,10 +64,11 @@ public class MetaCatalogClientTests
         Assert.Equal("in stock", data.GetProperty("availability").GetString());
         Assert.Equal("https://store.example/p/router", data.GetProperty("link").GetString());
         Assert.Equal("https://cdn.example/router.jpg", data.GetProperty("image_link").GetString());
+        Assert.Contains(@"""id"":""p-1""", serializedBody);
     }
 
     [Fact]
-    public async Task Submit_SerializesDeleteWithoutData()
+    public async Task Submit_SerializesDeleteWithDataId()
     {
         JsonDocument? document = null;
         var handler = new FakeHttpMessageHandler(request =>
@@ -79,9 +83,11 @@ public class MetaCatalogClientTests
         Assert.Equal("PRODUCT_ITEM", document!.RootElement.GetProperty("item_type").GetString());
         var requestItem = document.RootElement.GetProperty("requests")[0];
         Assert.Equal("DELETE", requestItem.GetProperty("method").GetString());
-        Assert.Equal("p-1", requestItem.GetProperty("retailer_id").GetString());
+        Assert.False(requestItem.TryGetProperty("retailer_id", out _));
         Assert.False(requestItem.TryGetProperty("item_type", out _));
-        Assert.False(requestItem.TryGetProperty("data", out _));
+        var data = requestItem.GetProperty("data");
+        Assert.Equal("p-1", data.GetProperty("id").GetString());
+        Assert.Single(data.EnumerateObject());
     }
 
     [Fact]
@@ -98,8 +104,10 @@ public class MetaCatalogClientTests
         await client.SubmitAsync([CreateUpsert("p-1"), CreateDelete("p-2")]);
 
         var requests = document!.RootElement.GetProperty("requests");
-        Assert.Equal("p-1", requests[0].GetProperty("retailer_id").GetString());
-        Assert.Equal("p-2", requests[1].GetProperty("retailer_id").GetString());
+        Assert.Equal("p-1", requests[0].GetProperty("data").GetProperty("id").GetString());
+        Assert.Equal("p-2", requests[1].GetProperty("data").GetProperty("id").GetString());
+        Assert.False(requests[0].TryGetProperty("retailer_id", out _));
+        Assert.False(requests[1].TryGetProperty("retailer_id", out _));
     }
 
     [Fact]
@@ -182,6 +190,52 @@ public class MetaCatalogClientTests
         Assert.Equal("Invalid item", failed.ErrorMessage);
         Assert.False(failed.IsTransient);
         Assert.Equal(MetaCatalogSyncAction.Delete, failed.Action);
+    }
+
+    [Fact]
+    public async Task Submit_ValidationStatusErrorWithoutRetailerId_ReturnsValidationFailedWithoutPolling()
+    {
+        string? serializedBody = null;
+        var handler = new FakeHttpMessageHandler(request =>
+        {
+            serializedBody = request.Content!.ReadAsStringAsync().Result;
+            return JsonResponse("""
+            {"validation_status":[{"errors":[{"message":"Can not find required field id"}]}]}
+            """);
+        });
+        var client = CreateClient(handler, accessToken: "secret-token");
+
+        var result = await client.SubmitAsync([CreateUpsert("p-1")]);
+
+        var item = Assert.Single(result.Items);
+        Assert.False(item.Success);
+        Assert.Equal("validation_failed", item.Status);
+        Assert.False(item.IsTransient);
+        Assert.Equal("Can not find required field id", item.ErrorMessage);
+        Assert.NotNull(item.DiagnosticRequestBody);
+        Assert.DoesNotContain("secret-token", item.DiagnosticRequestBody);
+        Assert.Contains(@"""id"":""p-1""", item.DiagnosticRequestBody);
+        Assert.Single(handler.Requests);
+
+        using var document = JsonDocument.Parse(serializedBody!);
+        Assert.Equal("p-1", document.RootElement.GetProperty("requests")[0].GetProperty("data").GetProperty("id").GetString());
+    }
+
+    [Fact]
+    public async Task Submit_ValidationStatusDiagnosticRequestBodyIsLimitedToFourThousandCharacters()
+    {
+        var longDescription = new string('x', 5000);
+        var handler = new FakeHttpMessageHandler(_ => JsonResponse("""
+        {"validation_status":[{"errors":[{"message":"Can not find required field id"}]}]}
+        """));
+        var client = CreateClient(handler);
+
+        var result = await client.SubmitAsync([CreateUpsert("p-1", longDescription)]);
+
+        var item = Assert.Single(result.Items);
+        Assert.False(item.Success);
+        Assert.Equal("validation_failed", item.Status);
+        Assert.Equal(4000, item.DiagnosticRequestBody!.Length);
     }
 
     [Theory]
@@ -606,12 +660,12 @@ public class MetaCatalogClientTests
         return new MetaCatalogClient(factory, options, NullLogger<MetaCatalogClient>.Instance, delay);
     }
 
-    private static MetaCatalogMappingResult CreateUpsert(string retailerId)
+    private static MetaCatalogMappingResult CreateUpsert(string retailerId, string description = "Router para casa")
     {
         var item = new MetaCatalogProduct(
             retailerId,
             "Router WiFi",
-            "Router para casa",
+            description,
             "Acme",
             "in stock",
             "new",

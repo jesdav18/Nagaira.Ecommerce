@@ -141,6 +141,7 @@ public class AdminMetaCatalogControllerTests
         var response = Assert.IsType<MetaCatalogTestSyncResponse>(objectResult.Value);
         Assert.False(response.Success);
         Assert.Equal(403, response.StatusCode);
+        Assert.Null(response.DiagnosticRequestBody);
         metaClient.Verify(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -251,7 +252,8 @@ public class AdminMetaCatalogControllerTests
                     "application/json",
                     125,
                     ["unexpected"],
-                    """{"unexpected":true,"message":"[redacted]"}""")
+                    """{"unexpected":true,"message":"[redacted]"}""",
+                    """{"item_type":"PRODUCT_ITEM","requests":[{"method":"CREATE","data":{"id":"11111111-1111-1111-1111-111111111111"}}]}""")
             ]));
         var controller = CreateController(
             product,
@@ -272,6 +274,7 @@ public class AdminMetaCatalogControllerTests
         Assert.Equal(125, response.ResponseBodyLength);
         Assert.Contains("unexpected", response.ResponseTopLevelProperties!);
         Assert.Contains("[redacted]", response.DiagnosticResponseBody);
+        Assert.Contains(@"""id"":""11111111-1111-1111-1111-111111111111""", response.DiagnosticRequestBody);
         Assert.DoesNotContain("super-secret-token", JsonSerializer.Serialize(response));
     }
 
