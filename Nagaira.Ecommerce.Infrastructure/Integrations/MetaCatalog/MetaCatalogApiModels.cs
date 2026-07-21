@@ -53,10 +53,6 @@ internal sealed class MetaCatalogItemData
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Price { get; set; }
 
-    [JsonPropertyName("currency")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? Currency { get; set; }
-
     [JsonPropertyName("link")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Link { get; set; }

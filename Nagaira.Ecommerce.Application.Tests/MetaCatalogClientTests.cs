@@ -1,4 +1,5 @@
 using System.Net;
+using System.Globalization;
 using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -48,7 +49,7 @@ public class MetaCatalogClientTests
         });
         var client = CreateClient(handler);
 
-        await client.SubmitAsync([CreateUpsert("p-1")]);
+        await client.SubmitAsync([CreateUpsert("p-1", price: "82.50", currency: "HNL")]);
 
         Assert.Equal("PRODUCT_ITEM", document!.RootElement.GetProperty("item_type").GetString());
         var requestItem = document.RootElement.GetProperty("requests")[0];
@@ -59,8 +60,8 @@ public class MetaCatalogClientTests
         Assert.Equal("p-1", data.GetProperty("id").GetString());
         Assert.Equal("Router WiFi", data.GetProperty("title").GetString());
         Assert.Equal("Acme", data.GetProperty("brand").GetString());
-        Assert.Equal("125.50", data.GetProperty("price").GetString());
-        Assert.Equal("HNL", data.GetProperty("currency").GetString());
+        Assert.Equal("82.50 HNL", data.GetProperty("price").GetString());
+        Assert.False(data.TryGetProperty("currency", out _));
         Assert.Equal("in stock", data.GetProperty("availability").GetString());
         Assert.Equal("https://store.example/p/router", data.GetProperty("link").GetString());
         Assert.Equal("https://cdn.example/router.jpg", data.GetProperty("image_link").GetString());
@@ -71,6 +72,36 @@ public class MetaCatalogClientTests
         Assert.False(data.TryGetProperty("retailer_id", out _));
         Assert.Contains(@"""id"":""p-1""", serializedBody);
         Assert.Contains(@"""title"":""Router WiFi""", serializedBody);
+    }
+
+    [Fact]
+    public async Task Submit_SerializesPriceWithInvariantDecimalAndUppercaseCurrency()
+    {
+        var originalCulture = CultureInfo.CurrentCulture;
+        var originalUiCulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentCulture = new CultureInfo("es-HN");
+            CultureInfo.CurrentUICulture = new CultureInfo("es-HN");
+            JsonDocument? document = null;
+            var handler = new FakeHttpMessageHandler(request =>
+            {
+                document = JsonDocument.Parse(request.Content!.ReadAsStringAsync().Result);
+                return JsonResponse("""{"responses":[{"retailer_id":"p-1","success":true}]}""");
+            });
+            var client = CreateClient(handler);
+
+            await client.SubmitAsync([CreateUpsert("p-1", price: "82.5", currency: "hnl")]);
+
+            var data = document!.RootElement.GetProperty("requests")[0].GetProperty("data");
+            Assert.Equal("82.50 HNL", data.GetProperty("price").GetString());
+            Assert.False(data.TryGetProperty("currency", out _));
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = originalCulture;
+            CultureInfo.CurrentUICulture = originalUiCulture;
+        }
     }
 
     [Fact]
@@ -666,7 +697,11 @@ public class MetaCatalogClientTests
         return new MetaCatalogClient(factory, options, NullLogger<MetaCatalogClient>.Instance, delay);
     }
 
-    private static MetaCatalogMappingResult CreateUpsert(string retailerId, string description = "Router para casa")
+    private static MetaCatalogMappingResult CreateUpsert(
+        string retailerId,
+        string description = "Router para casa",
+        string price = "125.50",
+        string currency = "HNL")
     {
         var item = new MetaCatalogProduct(
             retailerId,
@@ -675,8 +710,8 @@ public class MetaCatalogClientTests
             "Acme",
             "in stock",
             "new",
-            "125.50",
-            "HNL",
+            price,
+            currency,
             "https://store.example/p/router",
             "https://cdn.example/router.jpg",
             "Redes",

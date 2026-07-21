@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Globalization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nagaira.Ecommerce.Application.Interfaces;
@@ -167,8 +168,7 @@ public class MetaCatalogClient : IMetaCatalogClient
                         Brand = item.Item.Brand,
                         Availability = item.Item.Availability,
                         Condition = item.Item.Condition,
-                        Price = item.Item.Price,
-                        Currency = item.Item.Currency,
+                        Price = FormatMetaPrice(item.Item),
                         Link = item.Item.Url,
                         ImageLink = item.Item.ImageUrl,
                         ProductType = item.Item.CategoryName,
@@ -180,6 +180,12 @@ public class MetaCatalogClient : IMetaCatalogClient
                     }
             }).ToList()
         };
+    }
+
+    private static string FormatMetaPrice(MetaCatalogProduct payload)
+    {
+        var amount = decimal.Parse(payload.Price, NumberStyles.Number, CultureInfo.InvariantCulture);
+        return $"{amount.ToString("0.00", CultureInfo.InvariantCulture)} {payload.Currency.ToUpperInvariant()}";
     }
 
     private async Task<MetaCatalogBatchResult> ParseAcceptedBatchResponseAsync(
