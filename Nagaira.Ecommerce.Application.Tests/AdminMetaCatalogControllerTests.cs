@@ -1,11 +1,15 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Options;
 using Moq;
 using Nagaira.Ecommerce.Api.Controllers.Admin;
+using Nagaira.Ecommerce.Application.Interfaces;
 using Nagaira.Ecommerce.Application.MetaCatalog;
 using Nagaira.Ecommerce.Domain.Entities;
 using Nagaira.Ecommerce.Domain.Interfaces;
+using Nagaira.Ecommerce.Infrastructure.Integrations.MetaCatalog;
+using System.Net;
 
 namespace Nagaira.Ecommerce.Application.Tests;
 
@@ -35,6 +39,8 @@ public class AdminMetaCatalogControllerTests
         var response = Assert.IsType<MetaCatalogTestSyncResponse>(ok.Value);
         Assert.Equal(product.Id.ToString("D"), response.RetailerId);
         Assert.Equal(MetaCatalogSyncAction.Upsert.ToString(), response.Action);
+        Assert.True(response.DryRun);
+        Assert.Null(response.Success);
         Assert.NotNull(response.Payload);
         Assert.Equal("Router WiFi", response.Payload.Name);
         Assert.Equal("Acme", response.Payload.Brand);
@@ -44,14 +50,179 @@ public class AdminMetaCatalogControllerTests
     }
 
     [Fact]
-    public async Task TestSync_DryRunFalse_ReturnsBadRequest()
+    public async Task TestSync_DryRunFalseInStaging_SubmitsSingleMappingResult()
     {
         var product = CreateProduct();
-        var controller = CreateController(product);
+        MetaCatalogMappingResult? submitted = null;
+        var metaClient = new Mock<IMetaCatalogClient>();
+        metaClient
+            .Setup(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()))
+            .Callback<IReadOnlyCollection<MetaCatalogMappingResult>, CancellationToken>((items, _) => submitted = items.Single())
+            .ReturnsAsync(new MetaCatalogBatchResult([
+                new MetaCatalogItemResult(product.Id.ToString("D"), MetaCatalogSyncAction.Upsert, true, "meta-1", null, null, false)
+            ]));
+        var controller = CreateController(
+            product,
+            environmentName: "Staging",
+            syncEnabled: true,
+            catalogId: "catalog-1",
+            accessToken: "super-secret-token",
+            graphApiVersion: "v25.0",
+            metaCatalogClient: metaClient.Object);
 
         var result = await controller.TestSync(product.Id, dryRun: false);
 
-        Assert.IsType<BadRequestObjectResult>(result.Result);
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<MetaCatalogTestSyncResponse>(ok.Value);
+        Assert.False(response.DryRun);
+        Assert.True(response.Success);
+        Assert.Equal(200, response.StatusCode);
+        Assert.Equal(product.Id.ToString("D"), submitted!.RetailerId);
+        Assert.Equal(MetaCatalogSyncAction.Upsert, submitted.Action);
+        Assert.DoesNotContain("super-secret-token", JsonSerializer.Serialize(response));
+        metaClient.Verify(c => c.SubmitAsync(
+            It.Is<IReadOnlyCollection<MetaCatalogMappingResult>>(items => items.Count == 1),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task TestSync_DryRunFalseSupportsDelete()
+    {
+        var product = CreateProduct();
+        product.IsDeleted = true;
+        MetaCatalogMappingResult? submitted = null;
+        var metaClient = new Mock<IMetaCatalogClient>();
+        metaClient
+            .Setup(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()))
+            .Callback<IReadOnlyCollection<MetaCatalogMappingResult>, CancellationToken>((items, _) => submitted = items.Single())
+            .ReturnsAsync(new MetaCatalogBatchResult([
+                new MetaCatalogItemResult(product.Id.ToString("D"), MetaCatalogSyncAction.Delete, true, null, null, null, false)
+            ]));
+        var controller = CreateController(
+            product,
+            environmentName: "Development",
+            syncEnabled: true,
+            catalogId: "catalog-1",
+            accessToken: "token",
+            graphApiVersion: "v25.0",
+            metaCatalogClient: metaClient.Object);
+
+        var result = await controller.TestSync(product.Id, dryRun: false);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<MetaCatalogTestSyncResponse>(ok.Value);
+        Assert.Equal(MetaCatalogSyncAction.Delete.ToString(), response.Action);
+        Assert.True(response.Success);
+        Assert.Equal(MetaCatalogSyncAction.Delete, submitted!.Action);
+        Assert.Null(submitted.Item);
+    }
+
+    [Fact]
+    public async Task TestSync_DryRunFalseInProduction_ReturnsForbiddenWithoutCallingMeta()
+    {
+        var product = CreateProduct();
+        var metaClient = new Mock<IMetaCatalogClient>();
+        var controller = CreateController(
+            product,
+            environmentName: "Production",
+            syncEnabled: true,
+            catalogId: "catalog-1",
+            accessToken: "token",
+            graphApiVersion: "v25.0",
+            metaCatalogClient: metaClient.Object);
+
+        var result = await controller.TestSync(product.Id, dryRun: false);
+
+        var objectResult = Assert.IsType<ObjectResult>(result.Result);
+        Assert.Equal(403, objectResult.StatusCode);
+        var response = Assert.IsType<MetaCatalogTestSyncResponse>(objectResult.Value);
+        Assert.False(response.Success);
+        Assert.Equal(403, response.StatusCode);
+        metaClient.Verify(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task TestSync_DryRunFalseWithSyncDisabled_ReturnsBadRequestWithoutCallingMeta()
+    {
+        var product = CreateProduct();
+        var metaClient = new Mock<IMetaCatalogClient>();
+        var controller = CreateController(
+            product,
+            environmentName: "Staging",
+            syncEnabled: false,
+            catalogId: "catalog-1",
+            accessToken: "token",
+            graphApiVersion: "v25.0",
+            metaCatalogClient: metaClient.Object);
+
+        var result = await controller.TestSync(product.Id, dryRun: false);
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result.Result);
+        var response = Assert.IsType<MetaCatalogTestSyncResponse>(badRequest.Value);
+        Assert.False(response.Success);
+        Assert.Equal(400, response.StatusCode);
+        Assert.Contains("SyncEnabled", response.Message);
+        metaClient.Verify(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task TestSync_DryRunFalseWithMissingConfiguration_ReturnsBadRequestWithoutCallingMeta()
+    {
+        var product = CreateProduct();
+        var metaClient = new Mock<IMetaCatalogClient>();
+        var controller = CreateController(
+            product,
+            environmentName: "Staging",
+            syncEnabled: true,
+            catalogId: "",
+            accessToken: "token",
+            graphApiVersion: "v25.0",
+            metaCatalogClient: metaClient.Object);
+
+        var result = await controller.TestSync(product.Id, dryRun: false);
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result.Result);
+        var response = Assert.IsType<MetaCatalogTestSyncResponse>(badRequest.Value);
+        Assert.False(response.Success);
+        Assert.Contains("CatalogId", response.Message);
+        metaClient.Verify(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task TestSync_DryRunFalseMetaError_ReturnsSanitizedError()
+    {
+        var product = CreateProduct();
+        var metaClient = new Mock<IMetaCatalogClient>();
+        metaClient
+            .Setup(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new MetaCatalogApiException(
+                HttpStatusCode.TooManyRequests,
+                "Meta Catalog rate limit exceeded.",
+                true,
+                "4",
+                "99",
+                "trace-1"));
+        var controller = CreateController(
+            product,
+            environmentName: "Staging",
+            syncEnabled: true,
+            catalogId: "catalog-1",
+            accessToken: "super-secret-token",
+            graphApiVersion: "v25.0",
+            metaCatalogClient: metaClient.Object);
+
+        var result = await controller.TestSync(product.Id, dryRun: false);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<MetaCatalogTestSyncResponse>(ok.Value);
+        Assert.False(response.Success);
+        Assert.Equal(429, response.StatusCode);
+        Assert.Equal("4", response.ErrorCode);
+        Assert.Equal("99", response.ErrorSubcode);
+        Assert.True(response.IsTransient);
+        Assert.Equal("Meta Catalog rate limit exceeded.", response.Message);
+        Assert.Equal("trace-1", response.TraceId);
+        Assert.DoesNotContain("super-secret-token", JsonSerializer.Serialize(response));
     }
 
     [Fact]
@@ -87,7 +258,14 @@ public class AdminMetaCatalogControllerTests
         Assert.Null(response.Payload);
     }
 
-    private static AdminMetaCatalogController CreateController(Product? product, string accessToken = "")
+    private static AdminMetaCatalogController CreateController(
+        Product? product,
+        string accessToken = "",
+        string environmentName = "Development",
+        bool syncEnabled = false,
+        string catalogId = "",
+        string graphApiVersion = "",
+        IMetaCatalogClient? metaCatalogClient = null)
     {
         var productRepository = new Mock<IProductRepository>();
         productRepository
@@ -102,11 +280,22 @@ public class AdminMetaCatalogControllerTests
             Currency = "HNL",
             PublicBaseUrl = "https://store.example",
             PublicPriceLevelId = RetailPriceLevelId,
+            CatalogId = catalogId,
             AccessToken = accessToken,
-            SyncEnabled = false
+            GraphApiVersion = graphApiVersion,
+            SyncEnabled = syncEnabled
         });
 
-        return new AdminMetaCatalogController(unitOfWork.Object, options);
+        var environment = new Mock<IWebHostEnvironment>();
+        environment.SetupGet(e => e.EnvironmentName).Returns(environmentName);
+
+        metaCatalogClient ??= Mock.Of<IMetaCatalogClient>();
+
+        return new AdminMetaCatalogController(
+            unitOfWork.Object,
+            options,
+            metaCatalogClient,
+            environment.Object);
     }
 
     private static Product CreateProduct()
