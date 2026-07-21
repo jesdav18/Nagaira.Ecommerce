@@ -332,10 +332,10 @@ public class MetaCatalogClientTests
         {
             if (request.Method == HttpMethod.Post)
             {
-                return JsonResponse("""{"handles":["batch-handle-1"]}""");
+                return JsonResponse("""{"handles":["abc123"]}""");
             }
 
-            return JsonResponse("""{"data":[{"status":"finished"}]}""");
+            return JsonResponse("""{"data":[{"handle":"abc123","status":"finished","errors_total_count":0,"warnings_total_count":0}]}""");
         });
         var client = CreateClient(handler, delay: (_, _) => Task.CompletedTask);
 
@@ -344,11 +344,12 @@ public class MetaCatalogClientTests
         var item = Assert.Single(result.Items);
         Assert.True(item.Success);
         Assert.Equal("finished", item.Status);
-        Assert.Equal("batch-handle-1", item.BatchHandle);
+        Assert.Equal("abc123", item.BatchHandle);
         Assert.Equal(2, handler.Requests.Count);
         Assert.Equal(HttpMethod.Get, handler.Requests[1].Method);
         Assert.Contains("/check_batch_request_status", handler.Requests[1].RequestUri!.ToString());
-        Assert.Contains("handle=batch-handle-1", handler.Requests[1].RequestUri!.ToString());
+        Assert.Contains("handle=abc123", handler.Requests[1].RequestUri!.ToString());
+        Assert.Contains("fields=handle%2Cstatus%2Cerrors%2Cerrors_total_count%2Cwarnings%2Cwarnings_total_count%2Cids_of_invalid_requests", handler.Requests[1].RequestUri!.AbsoluteUri);
     }
 
     [Fact]
@@ -375,6 +376,34 @@ public class MetaCatalogClientTests
         Assert.Equal("batch-handle-1", item.BatchHandle);
         Assert.Equal(6, handler.Requests.Count);
         Assert.Equal(4, delayCount);
+    }
+
+    [Fact]
+    public async Task Submit_MultipleBatchHandles_PollsEachHandle()
+    {
+        var handler = new FakeHttpMessageHandler(request =>
+        {
+            if (request.Method == HttpMethod.Post)
+            {
+                return JsonResponse("""{"handles":["handle-1","handle-2"]}""");
+            }
+
+            var handle = request.RequestUri!.Query.Contains("handle-1", StringComparison.Ordinal)
+                ? "handle-1"
+                : "handle-2";
+            return JsonResponse($$"""{"data":[{"handle":"{{handle}}","status":"finished","errors_total_count":0}]}""");
+        });
+        var client = CreateClient(handler, delay: (_, _) => Task.CompletedTask);
+
+        var result = await client.SubmitAsync([CreateUpsert("p-1"), CreateDelete("p-2")]);
+
+        Assert.Equal(2, result.Items.Count);
+        Assert.True(result.Items.All(i => i.Success));
+        Assert.Equal("handle-1", result.Items.Single(i => i.RetailerId == "p-1").BatchHandle);
+        Assert.Equal("handle-2", result.Items.Single(i => i.RetailerId == "p-2").BatchHandle);
+        Assert.Equal(3, handler.Requests.Count);
+        Assert.Contains("handle=handle-1", handler.Requests[1].RequestUri!.ToString());
+        Assert.Contains("handle=handle-2", handler.Requests[2].RequestUri!.ToString());
     }
 
     [Fact]
@@ -409,7 +438,26 @@ public class MetaCatalogClientTests
     }
 
     [Fact]
-    public async Task Submit_BatchResponseWithoutHandle_ReturnsTransientFailureWithoutPolling()
+    public async Task Submit_BatchStatusWithErrorCount_ReturnsFailure()
+    {
+        var handler = new FakeHttpMessageHandler(request =>
+            request.Method == HttpMethod.Post
+                ? JsonResponse("""{"handles":["batch-handle-1"]}""")
+                : JsonResponse("""{"data":[{"handle":"batch-handle-1","status":"finished","errors_total_count":1,"ids_of_invalid_requests":["0"]}]}"""));
+        var client = CreateClient(handler, delay: (_, _) => Task.CompletedTask);
+
+        var result = await client.SubmitAsync([CreateUpsert("p-1")]);
+
+        var item = Assert.Single(result.Items);
+        Assert.False(item.Success);
+        Assert.False(item.IsTransient);
+        Assert.Equal("finished", item.Status);
+        Assert.Equal("batch-handle-1", item.BatchHandle);
+        Assert.Contains("completed with errors", item.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task Submit_EmptyHandlesArray_ReturnsTransientFailureWithoutPolling()
     {
         var handler = new FakeHttpMessageHandler(_ => JsonResponse("""{"handles":[]}"""));
         var client = CreateClient(handler);
@@ -422,6 +470,39 @@ public class MetaCatalogClientTests
         Assert.Equal("missing_handle", item.Status);
         Assert.Equal("Meta Catalog batch response did not include a handle.", item.ErrorMessage);
         Assert.Single(handler.Requests);
+    }
+
+    [Fact]
+    public async Task Submit_MissingHandlesProperty_ReturnsTransientFailureWithoutPolling()
+    {
+        var handler = new FakeHttpMessageHandler(_ => JsonResponse("""{}"""));
+        var client = CreateClient(handler);
+
+        var result = await client.SubmitAsync([CreateUpsert("p-1")]);
+
+        var item = Assert.Single(result.Items);
+        Assert.False(item.Success);
+        Assert.True(item.IsTransient);
+        Assert.Equal("missing_handle", item.Status);
+        Assert.Single(handler.Requests);
+    }
+
+    [Fact]
+    public async Task Submit_SingularHandleCompatibility_PollsHandle()
+    {
+        var handler = new FakeHttpMessageHandler(request =>
+            request.Method == HttpMethod.Post
+                ? JsonResponse("""{"handle":"abc123"}""")
+                : JsonResponse("""{"data":[{"handle":"abc123","status":"finished","errors_total_count":0}]}"""));
+        var client = CreateClient(handler, delay: (_, _) => Task.CompletedTask);
+
+        var result = await client.SubmitAsync([CreateUpsert("p-1")]);
+
+        var item = Assert.Single(result.Items);
+        Assert.True(item.Success);
+        Assert.Equal("abc123", item.BatchHandle);
+        Assert.Equal(2, handler.Requests.Count);
+        Assert.Contains("handle=abc123", handler.Requests[1].RequestUri!.ToString());
     }
 
     [Fact]

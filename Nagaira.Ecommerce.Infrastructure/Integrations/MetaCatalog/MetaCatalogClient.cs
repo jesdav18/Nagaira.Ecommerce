@@ -139,7 +139,8 @@ public class MetaCatalogClient : IMetaCatalogClient
         var version = _options.GraphApiVersion.Trim().Trim('/');
         var catalogId = Uri.EscapeDataString(_options.CatalogId.Trim());
         var escapedHandle = Uri.EscapeDataString(handle);
-        return new Uri($"{baseUrl}/{version}/{catalogId}/check_batch_request_status?handle={escapedHandle}");
+        var fields = Uri.EscapeDataString("handle,status,errors,errors_total_count,warnings,warnings_total_count,ids_of_invalid_requests");
+        return new Uri($"{baseUrl}/{version}/{catalogId}/check_batch_request_status?handle={escapedHandle}&fields={fields}");
     }
 
     private static MetaCatalogBatchRequest BuildRequest(IEnumerable<MetaCatalogMappingResult> items)
@@ -197,36 +198,60 @@ public class MetaCatalogClient : IMetaCatalogClient
             return validationResult;
         }
 
+        var handles = GetBatchHandles(parsed);
+        if (handles != null)
+        {
+            if (handles.Count == 0 || string.IsNullOrWhiteSpace(handles[0]))
+            {
+                return MissingHandleResult(requestedItems);
+            }
+
+            if (handles.Count == 1)
+            {
+                return await PollBatchStatusAsync(requestedItems, handles[0].Trim(), cancellationToken);
+            }
+
+            return await PollBatchStatusesAsync(
+                requestedItems,
+                handles.Select(h => h.Trim()).Where(h => !string.IsNullOrWhiteSpace(h)).ToList(),
+                cancellationToken);
+        }
+
         var directResult = BuildDirectResponseResult(requestedItems, parsed);
         if (directResult != null)
         {
             return directResult;
         }
 
-        var handles = (parsed?.Handles ?? (string.IsNullOrWhiteSpace(parsed?.Handle) ? null : [parsed.Handle]))
-            ?.Where(h => !string.IsNullOrWhiteSpace(h))
-            .Select(h => h.Trim())
-            .Distinct(StringComparer.Ordinal)
-            .ToList();
-        if (handles == null || handles.Count == 0)
+        return MissingHandleResult(requestedItems);
+    }
+
+    private static List<string>? GetBatchHandles(MetaCatalogBatchResponse? parsed)
+    {
+        if (parsed?.Handles != null)
         {
-            return new MetaCatalogBatchResult(requestedItems.Select(i => new MetaCatalogItemResult(
-                i.RetailerId,
-                i.Action,
-                false,
-                null,
-                null,
-                "Meta Catalog batch response did not include a handle.",
-                true,
-                "missing_handle")).ToList());
+            return parsed.Handles;
         }
 
-        if (handles.Count == 1)
+        if (!string.IsNullOrWhiteSpace(parsed?.Handle))
         {
-            return await PollBatchStatusAsync(requestedItems, handles[0], cancellationToken);
+            return [parsed.Handle];
         }
 
-        return await PollBatchStatusesAsync(requestedItems, handles, cancellationToken);
+        return null;
+    }
+
+    private static MetaCatalogBatchResult MissingHandleResult(IReadOnlyCollection<MetaCatalogMappingResult> requestedItems)
+    {
+        return new MetaCatalogBatchResult(requestedItems.Select(i => new MetaCatalogItemResult(
+            i.RetailerId,
+            i.Action,
+            false,
+            null,
+            null,
+            "Meta Catalog batch response did not include a handle.",
+            true,
+            "missing_handle")).ToList());
     }
 
     private MetaCatalogBatchResult? BuildValidationResult(
@@ -288,14 +313,7 @@ public class MetaCatalogClient : IMetaCatalogClient
 
         if (responseItems.Count == 0)
         {
-            return new MetaCatalogBatchResult(requestedItems.Select(i => new MetaCatalogItemResult(
-                i.RetailerId,
-                i.Action,
-                true,
-                null,
-                null,
-                null,
-                false)).ToList());
+            return null;
         }
 
         var actionByRetailerId = requestedItems.ToDictionary(i => i.RetailerId, i => i.Action);
@@ -443,6 +461,11 @@ public class MetaCatalogClient : IMetaCatalogClient
             return (true, validationResult);
         }
 
+        if (HasStatusErrors(statusItem, parsed))
+        {
+            return (true, BuildStatusErrorResult(requestedItems, handle, status, statusItem, parsed));
+        }
+
         if (IsCompletedStatus(normalizedStatus))
         {
             var warnings = (statusItem?.Warnings ?? parsed?.Warnings)?
@@ -463,10 +486,51 @@ public class MetaCatalogClient : IMetaCatalogClient
                 status,
                 null,
                 warnings,
-                handle)).ToList()));
+                statusItem?.Handle ?? parsed?.Handle ?? handle)).ToList()));
         }
 
         return (false, new MetaCatalogBatchResult(Array.Empty<MetaCatalogItemResult>()));
+    }
+
+    private static bool HasStatusErrors(MetaCatalogBatchStatusItem? statusItem, MetaCatalogBatchStatusResponse? parsed)
+    {
+        return (statusItem?.ErrorsTotalCount ?? parsed?.ErrorsTotalCount ?? 0) > 0
+            || (statusItem?.IdsOfInvalidRequests?.Count ?? parsed?.IdsOfInvalidRequests?.Count ?? 0) > 0;
+    }
+
+    private MetaCatalogBatchResult BuildStatusErrorResult(
+        IReadOnlyCollection<MetaCatalogMappingResult> requestedItems,
+        string handle,
+        string? status,
+        MetaCatalogBatchStatusItem? statusItem,
+        MetaCatalogBatchStatusResponse? parsed)
+    {
+        var warnings = (statusItem?.Warnings ?? parsed?.Warnings)?
+            .SelectMany(w => w.Warnings ?? Enumerable.Empty<MetaCatalogBatchItemWarning>())
+            .Select(w => w.Message)
+            .Where(m => !string.IsNullOrWhiteSpace(m))
+            .Cast<string>()
+            .ToList();
+        var invalidRequestIds = statusItem?.IdsOfInvalidRequests ?? parsed?.IdsOfInvalidRequests;
+        var invalidSuffix = invalidRequestIds is { Count: > 0 }
+            ? $" Invalid request ids: {string.Join(",", invalidRequestIds)}."
+            : string.Empty;
+        var message = SanitizeMetaMessage(
+            $"Meta Catalog batch completed with errors.{invalidSuffix}",
+            _options.AccessToken);
+
+        return new MetaCatalogBatchResult(requestedItems.Select(i => new MetaCatalogItemResult(
+            i.RetailerId,
+            i.Action,
+            false,
+            null,
+            null,
+            message,
+            false,
+            status,
+            null,
+            warnings,
+            statusItem?.Handle ?? parsed?.Handle ?? handle)).ToList());
     }
 
     private static bool IsCompletedStatus(string? normalizedStatus)

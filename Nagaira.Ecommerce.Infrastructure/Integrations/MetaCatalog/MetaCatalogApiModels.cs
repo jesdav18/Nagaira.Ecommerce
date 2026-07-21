@@ -139,24 +139,48 @@ internal sealed class MetaCatalogBatchStatusResponse
     [JsonPropertyName("data")]
     public List<MetaCatalogBatchStatusItem>? Data { get; set; }
 
+    [JsonPropertyName("handle")]
+    public string? Handle { get; set; }
+
     [JsonPropertyName("status")]
     public string? Status { get; set; }
 
     [JsonPropertyName("errors")]
     public List<MetaCatalogBatchValidationStatus>? Errors { get; set; }
 
+    [JsonPropertyName("errors_total_count")]
+    public int? ErrorsTotalCount { get; set; }
+
     [JsonPropertyName("warnings")]
     public List<MetaCatalogBatchValidationStatus>? Warnings { get; set; }
+
+    [JsonPropertyName("warnings_total_count")]
+    public int? WarningsTotalCount { get; set; }
+
+    [JsonPropertyName("ids_of_invalid_requests")]
+    public List<string>? IdsOfInvalidRequests { get; set; }
 }
 
 internal sealed class MetaCatalogBatchStatusItem
 {
+    [JsonPropertyName("handle")]
+    public string? Handle { get; set; }
+
     [JsonPropertyName("status")]
     public string? Status { get; set; }
 
     [JsonPropertyName("errors")]
     public List<MetaCatalogBatchValidationStatus>? Errors { get; set; }
 
+    [JsonPropertyName("errors_total_count")]
+    public int? ErrorsTotalCount { get; set; }
+
     [JsonPropertyName("warnings")]
     public List<MetaCatalogBatchValidationStatus>? Warnings { get; set; }
+
+    [JsonPropertyName("warnings_total_count")]
+    public int? WarningsTotalCount { get; set; }
+
+    [JsonPropertyName("ids_of_invalid_requests")]
+    public List<string>? IdsOfInvalidRequests { get; set; }
 }
