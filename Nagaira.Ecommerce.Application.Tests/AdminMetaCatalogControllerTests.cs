@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Options;
 using Moq;
 using Nagaira.Ecommerce.Api.Controllers.Admin;
@@ -586,6 +585,71 @@ public class AdminMetaCatalogControllerTests
     }
 
     [Fact]
+    public async Task BrandBackfill_DryRunFalseUpdatesNinetyFiveProductsWithSingleSaveChanges()
+    {
+        var products = Enumerable.Range(1, 95)
+            .Select(i => CreateProduct(
+                Guid.Parse($"11111111-1111-1111-1111-{i:000000000000}"),
+                name: $"Desodorante Rexona Clinical {i}",
+                brand: null))
+            .ToList();
+        var metaClient = new Mock<IMetaCatalogClient>();
+        var productRepository = new Mock<IProductRepository>();
+        productRepository
+            .Setup(r => r.GetMetaCatalogBrandBackfillPlanCandidatesAsync(It.IsAny<int>()))
+            .ReturnsAsync(products);
+        productRepository
+            .Setup(r => r.GetByIdsForBrandBackfillAsync(It.IsAny<IEnumerable<Guid>>()))
+            .ReturnsAsync((IEnumerable<Guid> ids) => products.Where(p => ids.Contains(p.Id)).ToList());
+        var unitOfWork = CreateUnitOfWork(productRepository, [], metaClient);
+        var controller = CreateController(
+            null,
+            environmentName: "Staging",
+            metaCatalogClient: metaClient.Object,
+            unitOfWorkMock: unitOfWork,
+            productRepositoryMock: productRepository);
+
+        var result = await controller.BrandBackfill(limit: 200, dryRun: false);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<MetaCatalogBrandBackfillResponse>(ok.Value);
+        Assert.Equal(95, response.Summary.Updated);
+        Assert.All(products, p => Assert.Equal("Rexona", p.Brand));
+        unitOfWork.Verify(u => u.SaveChangesAsync(), Times.Once);
+        productRepository.Verify(r => r.GetByIdsForBrandBackfillAsync(It.IsAny<IEnumerable<Guid>>()), Times.Once);
+        productRepository.Verify(r => r.GetByIdIncludingDeletedAsync(It.IsAny<Guid>()), Times.Never);
+        metaClient.Verify(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task BrandBackfill_ExceptionBeforeSaveChangesDoesNotPersistAnything()
+    {
+        var product = CreateProduct(name: "Desodorante Rexona Clinical", brand: null);
+        var metaClient = new Mock<IMetaCatalogClient>();
+        var productRepository = new Mock<IProductRepository>();
+        productRepository
+            .Setup(r => r.GetMetaCatalogBrandBackfillPlanCandidatesAsync(It.IsAny<int>()))
+            .ReturnsAsync([product]);
+        productRepository
+            .Setup(r => r.GetByIdsForBrandBackfillAsync(It.IsAny<IEnumerable<Guid>>()))
+            .ThrowsAsync(new InvalidOperationException("batch load failed"));
+        var unitOfWork = CreateUnitOfWork(productRepository, [], metaClient);
+        var controller = CreateController(
+            null,
+            environmentName: "Staging",
+            metaCatalogClient: metaClient.Object,
+            unitOfWorkMock: unitOfWork,
+            productRepositoryMock: productRepository);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => controller.BrandBackfill(dryRun: false));
+
+        Assert.Null(product.Brand);
+        unitOfWork.Verify(u => u.SaveChangesAsync(), Times.Never);
+        productRepository.Verify(r => r.GetByIdIncludingDeletedAsync(It.IsAny<Guid>()), Times.Never);
+        metaClient.Verify(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task BrandBackfill_InProduction_ReturnsForbidden()
     {
         var metaClient = new Mock<IMetaCatalogClient>();
@@ -611,18 +675,29 @@ public class AdminMetaCatalogControllerTests
         IMetaCatalogClient? metaCatalogClient = null,
         IReadOnlyList<ProductSupplier>? productSuppliers = null,
         Mock<IUnitOfWork>? unitOfWorkMock = null,
-        Product? currentProduct = null)
+        Product? currentProduct = null,
+        Mock<IProductRepository>? productRepositoryMock = null)
     {
-        var productRepository = new Mock<IProductRepository>();
-        productRepository
-            .Setup(r => r.GetByIdIncludingDeletedAsync(It.IsAny<Guid>()))
-            .ReturnsAsync(currentProduct ?? product);
-        productRepository
-            .Setup(r => r.GetMetaCatalogSyncPlanCandidatesAsync(It.IsAny<int>()))
-            .ReturnsAsync(product == null ? [] : [product]);
-        productRepository
-            .Setup(r => r.GetMetaCatalogBrandBackfillPlanCandidatesAsync(It.IsAny<int>()))
-            .ReturnsAsync(product == null ? [] : [product]);
+        var productRepository = productRepositoryMock ?? new Mock<IProductRepository>();
+        if (productRepositoryMock == null)
+        {
+            productRepository
+                .Setup(r => r.GetByIdIncludingDeletedAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(currentProduct ?? product);
+            productRepository
+                .Setup(r => r.GetMetaCatalogSyncPlanCandidatesAsync(It.IsAny<int>()))
+                .ReturnsAsync(product == null ? [] : [product]);
+            productRepository
+                .Setup(r => r.GetMetaCatalogBrandBackfillPlanCandidatesAsync(It.IsAny<int>()))
+                .ReturnsAsync(product == null ? [] : [product]);
+            productRepository
+                .Setup(r => r.GetByIdsForBrandBackfillAsync(It.IsAny<IEnumerable<Guid>>()))
+                .ReturnsAsync((IEnumerable<Guid> ids) =>
+                {
+                    var current = currentProduct ?? product;
+                    return current != null && ids.Contains(current.Id) ? [current] : [];
+                });
+        }
 
         var syncStateRepository = new Mock<IMetaProductSyncStateRepository>();
         syncStateRepository
@@ -635,21 +710,7 @@ public class AdminMetaCatalogControllerTests
             .ReturnsAsync(productSuppliers ?? []);
 
         var unitOfWork = unitOfWorkMock ?? new Mock<IUnitOfWork>();
-        unitOfWork.SetupGet(u => u.Products).Returns(productRepository.Object);
-        unitOfWork.SetupGet(u => u.MetaProductSyncStates).Returns(syncStateRepository.Object);
-        unitOfWork.SetupGet(u => u.ProductSuppliers).Returns(productSupplierRepository.Object);
-        unitOfWork
-            .Setup(u => u.BeginTransactionAsync())
-            .ReturnsAsync(Mock.Of<IDbContextTransaction>());
-        unitOfWork
-            .Setup(u => u.SaveChangesAsync())
-            .ReturnsAsync(1);
-        unitOfWork
-            .Setup(u => u.CommitTransactionAsync())
-            .Returns(Task.CompletedTask);
-        unitOfWork
-            .Setup(u => u.RollbackTransactionAsync())
-            .Returns(Task.CompletedTask);
+        ConfigureUnitOfWork(unitOfWork, productRepository, syncStateRepository, productSupplierRepository);
 
         var options = Options.Create(new MetaCatalogOptions
         {
@@ -677,6 +738,12 @@ public class AdminMetaCatalogControllerTests
     private static Product CreateProduct(string name = " Router WiFi ", string? brand = " Acme ")
     {
         var productId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
+        return CreateProduct(productId, name, brand);
+    }
+
+    private static Product CreateProduct(Guid productId, string name, string? brand)
+    {
 
         return new Product
         {
@@ -727,6 +794,40 @@ public class AdminMetaCatalogControllerTests
                 }
             ]
         };
+    }
+
+    private static Mock<IUnitOfWork> CreateUnitOfWork(
+        Mock<IProductRepository> productRepository,
+        IReadOnlyList<ProductSupplier> productSuppliers,
+        Mock<IMetaCatalogClient> _)
+    {
+        var syncStateRepository = new Mock<IMetaProductSyncStateRepository>();
+        syncStateRepository
+            .Setup(r => r.GetByProductIdsAsync(It.IsAny<IEnumerable<Guid>>()))
+            .ReturnsAsync([]);
+
+        var productSupplierRepository = new Mock<IProductSupplierRepository>();
+        productSupplierRepository
+            .Setup(r => r.GetByProductIdsAsync(It.IsAny<IEnumerable<Guid>>()))
+            .ReturnsAsync(productSuppliers);
+
+        var unitOfWork = new Mock<IUnitOfWork>();
+        ConfigureUnitOfWork(unitOfWork, productRepository, syncStateRepository, productSupplierRepository);
+        return unitOfWork;
+    }
+
+    private static void ConfigureUnitOfWork(
+        Mock<IUnitOfWork> unitOfWork,
+        Mock<IProductRepository> productRepository,
+        Mock<IMetaProductSyncStateRepository> syncStateRepository,
+        Mock<IProductSupplierRepository> productSupplierRepository)
+    {
+        unitOfWork.SetupGet(u => u.Products).Returns(productRepository.Object);
+        unitOfWork.SetupGet(u => u.MetaProductSyncStates).Returns(syncStateRepository.Object);
+        unitOfWork.SetupGet(u => u.ProductSuppliers).Returns(productSupplierRepository.Object);
+        unitOfWork
+            .Setup(u => u.SaveChangesAsync())
+            .ReturnsAsync(1);
     }
 
     private static ProductSupplier CreateProductSupplier(Guid productId, string supplierName)

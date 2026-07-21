@@ -168,6 +168,20 @@ public class ProductRepository : Repository<Product>, IProductRepository
             .ToListAsync();
     }
 
+    public async Task<IReadOnlyList<Product>> GetByIdsForBrandBackfillAsync(IEnumerable<Guid> ids)
+    {
+        var productIds = ids.Distinct().ToList();
+        if (productIds.Count == 0)
+        {
+            return [];
+        }
+
+        return await _dbSet
+            .IgnoreQueryFilters()
+            .Where(p => productIds.Contains(p.Id) && !p.IsDeleted)
+            .ToListAsync();
+    }
+
     public override async Task DeleteAsync(Guid id)
     {
         var product = await GetByIdAsync(id);

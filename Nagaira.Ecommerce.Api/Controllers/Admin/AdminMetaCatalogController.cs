@@ -211,108 +211,103 @@ public class AdminMetaCatalogController : ControllerBase
                 dryRunItems));
         }
 
+        var applicableProductIds = plan.Items
+            .Where(IsApplicablePlanItem)
+            .Select(i => i.ProductId)
+            .Distinct()
+            .ToList();
+        var currentProducts = await _unitOfWork.Products.GetByIdsForBrandBackfillAsync(applicableProductIds);
+        var currentProductsById = currentProducts.ToDictionary(p => p.Id);
+
         var appliedItems = new List<MetaCatalogBrandBackfillItem>();
-        await using var transaction = await _unitOfWork.BeginTransactionAsync();
-
-        try
+        foreach (var planItem in plan.Items)
         {
-            foreach (var planItem in plan.Items)
+            if (!IsApplicablePlanItem(planItem))
             {
-                if (!IsApplicablePlanItem(planItem))
-                {
-                    appliedItems.Add(new MetaCatalogBrandBackfillItem(
-                        planItem.ProductId,
-                        planItem.Name,
-                        planItem.CurrentBrand,
-                        planItem.SuggestedBrand,
-                        ToSkippedOrUnchangedOperation(planItem),
-                        planItem.Reason));
-                    continue;
-                }
+                appliedItems.Add(new MetaCatalogBrandBackfillItem(
+                    planItem.ProductId,
+                    planItem.Name,
+                    planItem.CurrentBrand,
+                    planItem.SuggestedBrand,
+                    ToSkippedOrUnchangedOperation(planItem),
+                    planItem.Reason));
+                continue;
+            }
 
-                var currentProduct = await _unitOfWork.Products.GetByIdIncludingDeletedAsync(planItem.ProductId);
-                if (currentProduct == null)
-                {
-                    appliedItems.Add(new MetaCatalogBrandBackfillItem(
-                        planItem.ProductId,
-                        planItem.Name,
-                        planItem.CurrentBrand,
-                        planItem.SuggestedBrand,
-                        MetaCatalogBrandBackfillApplyOperations.Skipped,
-                        "product_not_found"));
-                    continue;
-                }
+            if (!currentProductsById.TryGetValue(planItem.ProductId, out var currentProduct))
+            {
+                appliedItems.Add(new MetaCatalogBrandBackfillItem(
+                    planItem.ProductId,
+                    planItem.Name,
+                    planItem.CurrentBrand,
+                    planItem.SuggestedBrand,
+                    MetaCatalogBrandBackfillApplyOperations.Skipped,
+                    "product_not_found"));
+                continue;
+            }
 
-                var previousBrand = NormalizeBrandForBackfill(currentProduct.Brand);
-                if (!MetaCatalogBrandBackfillPlanner.CanReplaceBrandValue(previousBrand))
-                {
-                    appliedItems.Add(new MetaCatalogBrandBackfillItem(
-                        currentProduct.Id,
-                        currentProduct.Name,
-                        previousBrand,
-                        null,
-                        MetaCatalogBrandBackfillApplyOperations.Skipped,
-                        "brand_changed_since_plan"));
-                    continue;
-                }
-
-                var currentSuppliers = suppliersByProductId.TryGetValue(currentProduct.Id, out var suppliers)
-                    ? suppliers
-                    : [];
-                var currentPlan = MetaCatalogBrandBackfillPlanner.BuildPlan(
-                    [currentProduct],
-                    new Dictionary<Guid, IReadOnlyCollection<ProductSupplier>>
-                    {
-                        [currentProduct.Id] = currentSuppliers
-                    },
-                    1);
-                var currentPlanItem = currentPlan.Items.Single();
-
-                if (!IsApplicablePlanItem(currentPlanItem))
-                {
-                    appliedItems.Add(new MetaCatalogBrandBackfillItem(
-                        currentProduct.Id,
-                        currentProduct.Name,
-                        previousBrand,
-                        currentPlanItem.SuggestedBrand,
-                        MetaCatalogBrandBackfillApplyOperations.Skipped,
-                        currentPlanItem.Reason));
-                    continue;
-                }
-
-                var newBrand = NormalizeBrandForBackfill(currentPlanItem.SuggestedBrand);
-                if (newBrand == null || newBrand.Length > 255)
-                {
-                    appliedItems.Add(new MetaCatalogBrandBackfillItem(
-                        currentProduct.Id,
-                        currentProduct.Name,
-                        previousBrand,
-                        currentPlanItem.SuggestedBrand,
-                        MetaCatalogBrandBackfillApplyOperations.Skipped,
-                        "invalid_suggested_brand"));
-                    continue;
-                }
-
-                currentProduct.Brand = newBrand;
-                currentProduct.UpdatedAt = DateTime.UtcNow;
-                await _unitOfWork.Products.UpdateAsync(currentProduct);
+            var previousBrand = NormalizeBrandForBackfill(currentProduct.Brand);
+            if (!MetaCatalogBrandBackfillPlanner.CanReplaceBrandValue(previousBrand))
+            {
                 appliedItems.Add(new MetaCatalogBrandBackfillItem(
                     currentProduct.Id,
                     currentProduct.Name,
                     previousBrand,
-                    newBrand,
-                    MetaCatalogBrandBackfillApplyOperations.Updated,
-                    currentPlanItem.Reason));
+                    null,
+                    MetaCatalogBrandBackfillApplyOperations.Skipped,
+                    "brand_changed_since_plan"));
+                continue;
             }
 
-            await _unitOfWork.SaveChangesAsync();
-            await _unitOfWork.CommitTransactionAsync();
+            var currentSuppliers = suppliersByProductId.TryGetValue(currentProduct.Id, out var suppliers)
+                ? suppliers
+                : [];
+            var currentPlan = MetaCatalogBrandBackfillPlanner.BuildPlan(
+                [currentProduct],
+                new Dictionary<Guid, IReadOnlyCollection<ProductSupplier>>
+                {
+                    [currentProduct.Id] = currentSuppliers
+                },
+                1);
+            var currentPlanItem = currentPlan.Items.Single();
+
+            if (!IsApplicablePlanItem(currentPlanItem))
+            {
+                appliedItems.Add(new MetaCatalogBrandBackfillItem(
+                    currentProduct.Id,
+                    currentProduct.Name,
+                    previousBrand,
+                    currentPlanItem.SuggestedBrand,
+                    MetaCatalogBrandBackfillApplyOperations.Skipped,
+                    currentPlanItem.Reason));
+                continue;
+            }
+
+            var newBrand = NormalizeBrandForBackfill(currentPlanItem.SuggestedBrand);
+            if (newBrand == null || newBrand.Length > 255)
+            {
+                appliedItems.Add(new MetaCatalogBrandBackfillItem(
+                    currentProduct.Id,
+                    currentProduct.Name,
+                    previousBrand,
+                    currentPlanItem.SuggestedBrand,
+                    MetaCatalogBrandBackfillApplyOperations.Skipped,
+                    "invalid_suggested_brand"));
+                continue;
+            }
+
+            currentProduct.Brand = newBrand;
+            currentProduct.UpdatedAt = DateTime.UtcNow;
+            appliedItems.Add(new MetaCatalogBrandBackfillItem(
+                currentProduct.Id,
+                currentProduct.Name,
+                previousBrand,
+                newBrand,
+                MetaCatalogBrandBackfillApplyOperations.Updated,
+                currentPlanItem.Reason));
         }
-        catch
-        {
-            await _unitOfWork.RollbackTransactionAsync();
-            throw;
-        }
+
+        await _unitOfWork.SaveChangesAsync();
 
         return Ok(new MetaCatalogBrandBackfillResponse(
             false,

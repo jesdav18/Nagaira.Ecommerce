@@ -12,6 +12,7 @@ public interface IProductRepository : IRepository<Product>
     Task<Product?> GetByIdIncludingDeletedAsync(Guid id);
     Task<IReadOnlyList<Product>> GetMetaCatalogSyncPlanCandidatesAsync(int limit);
     Task<IReadOnlyList<Product>> GetMetaCatalogBrandBackfillPlanCandidatesAsync(int limit);
+    Task<IReadOnlyList<Product>> GetByIdsForBrandBackfillAsync(IEnumerable<Guid> ids);
     Task<bool> SkuExistsAsync(string sku);
     Task<Product?> GetBySlugAsync(string slug);
     Task<bool> SlugExistsAsync(string slug, Guid? excludeId = null);
