@@ -382,9 +382,120 @@ public class AdminMetaCatalogControllerTests
         var response = Assert.IsType<MetaCatalogSyncExecutionResponse>(ok.Value);
         Assert.Equal(2, response.Summary.Scanned);
         Assert.Equal(1, response.Summary.Submitted);
-        Assert.Contains(response.Items, i => i.Operation == MetaCatalogSyncPlanOperations.Create);
-        Assert.Contains(response.Items, i => i.Operation == MetaCatalogSyncPlanOperations.Skipped && i.Message == "missing_brand");
+        Assert.Equal(1, response.Summary.Skipped);
+        Assert.Equal(MetaCatalogSyncPlanOperations.Create, Assert.Single(response.Items).Operation);
         metaClient.Verify(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Sync_DryRunSkipsUnchangedAndInvalidProductsToReachLaterCreate()
+    {
+        var products = Enumerable.Range(1, 21)
+            .Select(i => CreateProduct(
+                Guid.Parse($"11111111-1111-1111-1111-{i:000000000000}"),
+                $"Producto {i}",
+                i == 20 ? null : "Acme"))
+            .ToList();
+        var states = products.Take(19)
+            .Select(product => CreateSyncState(product, MetaCatalogProductMapper.Map(product, CreateMetaOptions()).PayloadHash))
+            .ToList();
+        var productRepository = CreateMetaSyncProductRepository(products);
+        var metaClient = new Mock<IMetaCatalogClient>();
+        var controller = CreateController(
+            null,
+            environmentName: "Staging",
+            metaCatalogClient: metaClient.Object,
+            syncStates: states,
+            productRepositoryMock: productRepository);
+
+        var result = await controller.Sync(limit: 20, dryRun: true);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<MetaCatalogSyncExecutionResponse>(ok.Value);
+        var item = Assert.Single(response.Items);
+        Assert.Equal(products[20].Id, item.ProductId);
+        Assert.Equal(MetaCatalogSyncPlanOperations.Create, item.Operation);
+        Assert.Equal(21, response.Summary.Scanned);
+        Assert.Equal(1, response.Summary.Submitted);
+        Assert.Equal(19, response.Summary.Unchanged);
+        Assert.Equal(1, response.Summary.Skipped);
+        metaClient.Verify(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Sync_DryRunSkippedProductsDoNotConsumeExecutionLimit()
+    {
+        var skipped = Enumerable.Range(1, 30)
+            .Select(i => CreateProduct(
+                Guid.Parse($"11111111-1111-1111-1111-{i:000000000000}"),
+                $"Producto sin marca {i}",
+                null));
+        var valid = Enumerable.Range(31, 20)
+            .Select(i => CreateProduct(
+                Guid.Parse($"11111111-1111-1111-1111-{i:000000000000}"),
+                $"Producto valido {i}",
+                "Acme"));
+        var products = skipped.Concat(valid).ToList();
+        var productRepository = CreateMetaSyncProductRepository(products);
+        var metaClient = new Mock<IMetaCatalogClient>();
+        var controller = CreateController(null, environmentName: "Staging", metaCatalogClient: metaClient.Object, productRepositoryMock: productRepository);
+
+        var result = await controller.Sync(limit: 50, dryRun: true);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<MetaCatalogSyncExecutionResponse>(ok.Value);
+        Assert.Equal(50, response.Summary.Scanned);
+        Assert.Equal(20, response.Summary.Submitted);
+        Assert.Equal(30, response.Summary.Skipped);
+        Assert.Equal(20, response.Items.Count);
+        Assert.All(response.Items, i => Assert.Equal(MetaCatalogSyncPlanOperations.Create, i.Operation));
+        metaClient.Verify(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Sync_DryRunSelectsAtMostTwentyExecutableOperations()
+    {
+        var products = Enumerable.Range(1, 25)
+            .Select(i => CreateProduct(
+                Guid.Parse($"11111111-1111-1111-1111-{i:000000000000}"),
+                $"Producto valido {i}",
+                "Acme"))
+            .ToList();
+        var productRepository = CreateMetaSyncProductRepository(products);
+        var metaClient = new Mock<IMetaCatalogClient>();
+        var controller = CreateController(null, environmentName: "Staging", metaCatalogClient: metaClient.Object, productRepositoryMock: productRepository);
+
+        var result = await controller.Sync(limit: 50, dryRun: true);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<MetaCatalogSyncExecutionResponse>(ok.Value);
+        Assert.Equal(25, response.Summary.Scanned);
+        Assert.Equal(20, response.Summary.Submitted);
+        Assert.Equal(20, response.Items.Count);
+    }
+
+    [Fact]
+    public async Task Sync_DryRunProcessingStatesAreNotSelectedForSubmission()
+    {
+        var processingProduct = CreateProduct(Guid.Parse("11111111-1111-1111-1111-000000000001"), "Producto processing", "Acme");
+        var createProduct = CreateProduct(Guid.Parse("11111111-1111-1111-1111-000000000002"), "Producto nuevo", "Acme");
+        var processingState = CreateProcessingState(processingProduct);
+        var productRepository = CreateMetaSyncProductRepository([processingProduct, createProduct]);
+        var metaClient = new Mock<IMetaCatalogClient>();
+        var controller = CreateController(
+            null,
+            environmentName: "Staging",
+            metaCatalogClient: metaClient.Object,
+            syncStates: [processingState],
+            productRepositoryMock: productRepository);
+
+        var result = await controller.Sync(limit: 20, dryRun: true);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<MetaCatalogSyncExecutionResponse>(ok.Value);
+        var item = Assert.Single(response.Items);
+        Assert.Equal(createProduct.Id, item.ProductId);
+        Assert.Equal(1, response.Summary.Submitted);
     }
 
     [Fact]
@@ -431,6 +542,52 @@ public class AdminMetaCatalogControllerTests
         Assert.Equal(1, response.Summary.Unchanged);
         metaClient.Verify(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()), Times.Never);
         unitOfWork.Verify(u => u.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task Sync_DryRunFalseSecondExecutionAdvancesToLaterProducts()
+    {
+        var products = Enumerable.Range(1, 25)
+            .Select(i => CreateProduct(
+                Guid.Parse($"11111111-1111-1111-1111-{i:000000000000}"),
+                $"Producto valido {i}",
+                "Acme"))
+            .ToList();
+        var states = new List<MetaProductSyncState>();
+        var productRepository = CreateMetaSyncProductRepository(products);
+        var metaClient = new Mock<IMetaCatalogClient>();
+        metaClient.Setup(c => c.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyCollection<MetaCatalogMappingResult> items, CancellationToken _) => new MetaCatalogBatchResult(
+                items.Select(i => new MetaCatalogItemResult(i.RetailerId, i.Action, true, null, null, null, false)).ToList()));
+        var unitOfWork = new Mock<IUnitOfWork>();
+        var controller = CreateController(
+            null,
+            environmentName: "Staging",
+            syncEnabled: true,
+            catalogId: "catalog",
+            accessToken: "secret-token",
+            graphApiVersion: "v25.0",
+            metaCatalogClient: metaClient.Object,
+            unitOfWorkMock: unitOfWork,
+            productRepositoryMock: productRepository);
+        unitOfWork.SetupGet(u => u.MetaProductSyncStates).Returns(MockMetaStates(states).Object);
+
+        var firstResult = await controller.Sync(limit: 50, dryRun: false);
+        var secondResult = await controller.Sync(limit: 50, dryRun: false);
+
+        var firstOk = Assert.IsType<OkObjectResult>(firstResult.Result);
+        var firstResponse = Assert.IsType<MetaCatalogSyncExecutionResponse>(firstOk.Value);
+        var secondOk = Assert.IsType<OkObjectResult>(secondResult.Result);
+        var secondResponse = Assert.IsType<MetaCatalogSyncExecutionResponse>(secondOk.Value);
+        Assert.Equal(20, firstResponse.Summary.Submitted);
+        Assert.Equal(5, secondResponse.Summary.Submitted);
+        Assert.Equal(25, states.Count);
+        metaClient.Verify(c => c.SubmitAsync(
+            It.Is<IReadOnlyCollection<MetaCatalogMappingResult>>(items => items.Count == 20),
+            It.IsAny<CancellationToken>()), Times.Once);
+        metaClient.Verify(c => c.SubmitAsync(
+            It.Is<IReadOnlyCollection<MetaCatalogMappingResult>>(items => items.Count == 5),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -1000,10 +1157,16 @@ public class AdminMetaCatalogControllerTests
     private static MetaProductSyncState CreateProcessingState()
     {
         var productId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var product = CreateProduct(productId, "Producto processing", "Acme");
+        return CreateProcessingState(product);
+    }
+
+    private static MetaProductSyncState CreateProcessingState(Product product)
+    {
         return new MetaProductSyncState
         {
-            ProductId = productId,
-            RetailerId = productId.ToString("D"),
+            ProductId = product.Id,
+            RetailerId = product.Id.ToString("D"),
             Status = MetaProductSyncStatuses.Processing,
             LastAction = MetaCatalogSyncAction.Upsert.ToString(),
             BatchHandle = "batch-1",
@@ -1093,6 +1256,22 @@ public class AdminMetaCatalogControllerTests
                 }
             ]
         };
+    }
+
+    private static Mock<IProductRepository> CreateMetaSyncProductRepository(IReadOnlyList<Product> products)
+    {
+        var productRepository = new Mock<IProductRepository>();
+        productRepository
+            .Setup(r => r.GetMetaCatalogSyncPlanCandidatesAsync(It.IsAny<int>()))
+            .ReturnsAsync((int limit) => products.Take(limit).ToList());
+        productRepository
+            .Setup(r => r.GetByIdsForMetaCatalogSyncAsync(It.IsAny<IEnumerable<Guid>>()))
+            .ReturnsAsync((IEnumerable<Guid> ids) =>
+            {
+                var idSet = ids.ToHashSet();
+                return products.Where(p => idSet.Contains(p.Id)).ToList();
+            });
+        return productRepository;
     }
 
     private static Mock<IUnitOfWork> CreateUnitOfWork(

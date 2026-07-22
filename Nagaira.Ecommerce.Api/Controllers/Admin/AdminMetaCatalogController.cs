@@ -185,23 +185,27 @@ public class AdminMetaCatalogController : ControllerBase
         }
 
         var safeLimit = Math.Clamp(limit, 1, 50);
-        var executionLimit = Math.Min(safeLimit, 20);
-        var products = await _unitOfWork.Products.GetMetaCatalogSyncPlanCandidatesAsync(executionLimit);
+        const int planScanLimit = 200;
+        const int maxExecutionBatchSize = 20;
+        var executionLimit = Math.Min(safeLimit, maxExecutionBatchSize);
+        var products = await _unitOfWork.Products.GetMetaCatalogSyncPlanCandidatesAsync(planScanLimit);
         var productIds = products.Select(p => p.Id).ToList();
         var states = await _unitOfWork.MetaProductSyncStates.GetByProductIdsAsync(productIds);
         var statesByProductId = states
             .GroupBy(s => s.ProductId)
             .ToDictionary(g => g.Key, g => g.First());
-        var plan = MetaCatalogSyncPlanner.BuildPlan(products, statesByProductId, _options, executionLimit);
+        var plan = MetaCatalogSyncPlanner.BuildPlan(products, statesByProductId, _options, planScanLimit);
+        var executablePlanItems = plan.Items
+            .Where(item => IsExecutableSyncOperation(item, statesByProductId))
+            .Take(executionLimit)
+            .ToList();
 
         if (dryRun)
         {
-            var dryRunItems = plan.Items.Select(CreateDryRunSyncItem).ToList();
+            var dryRunItems = executablePlanItems.Select(CreateDryRunSyncItem).ToList();
             return Ok(new MetaCatalogSyncExecutionResponse(
                 true,
-                MetaCatalogSyncExecutionSummary.FromItems(
-                    dryRunItems,
-                    plan.Items.Count(IsExecutableSyncOperation)),
+                MetaCatalogSyncExecutionSummary.FromPlan(plan.Items, executablePlanItems.Count),
                 dryRunItems));
         }
 
@@ -210,7 +214,7 @@ public class AdminMetaCatalogController : ControllerBase
         {
             return BadRequest(new MetaCatalogSyncExecutionResponse(
                 false,
-                new MetaCatalogSyncExecutionSummary(plan.Summary.Scanned, 0, 0, 0, 0, 0, plan.Items.Count),
+                MetaCatalogSyncExecutionSummary.FromPlan(plan.Items, 0),
                 plan.Items.Select(item => new MetaCatalogSyncExecutionItem(
                     item.ProductId,
                     item.Name,
@@ -221,10 +225,7 @@ public class AdminMetaCatalogController : ControllerBase
                     validationMessage)).ToList()));
         }
 
-        var executablePlanItems = plan.Items
-            .Where(IsExecutableSyncOperation)
-            .Take(executionLimit)
-            .ToList();
+        var selectedExecutableIds = executablePlanItems.Select(i => i.ProductId).ToHashSet();
         var executableIds = executablePlanItems.Select(i => i.ProductId).ToList();
         var currentProducts = await _unitOfWork.Products.GetByIdsForMetaCatalogSyncAsync(executableIds);
         var currentProductsById = currentProducts.ToDictionary(p => p.Id);
@@ -233,9 +234,22 @@ public class AdminMetaCatalogController : ControllerBase
 
         foreach (var planItem in plan.Items)
         {
-            if (!IsExecutableSyncOperation(planItem))
+            if (!IsExecutableSyncOperation(planItem, statesByProductId))
             {
                 responseItems.Add(CreateNonSubmittedSyncItem(planItem));
+                continue;
+            }
+
+            if (!selectedExecutableIds.Contains(planItem.ProductId))
+            {
+                responseItems.Add(new MetaCatalogSyncExecutionItem(
+                    planItem.ProductId,
+                    planItem.Name,
+                    planItem.Operation,
+                    MetaCatalogSyncExecutionStatuses.Skipped,
+                    planItem.PayloadHash,
+                    null,
+                    "execution_limit_reached"));
                 continue;
             }
 
@@ -321,7 +335,7 @@ public class AdminMetaCatalogController : ControllerBase
             .ToList();
         return Ok(new MetaCatalogSyncExecutionResponse(
             false,
-            MetaCatalogSyncExecutionSummary.FromItems(orderedItems),
+            MetaCatalogSyncExecutionSummary.FromItems(orderedItems, executablePlanItems.Count),
             orderedItems));
     }
 
@@ -582,9 +596,7 @@ public class AdminMetaCatalogController : ControllerBase
             item.ProductId,
             item.Name,
             item.Operation,
-            IsExecutableSyncOperation(item)
-                ? MetaCatalogSyncExecutionStatuses.Skipped
-                : ToSkippedStatus(item),
+            MetaCatalogSyncExecutionStatuses.Skipped,
             item.PayloadHash,
             null,
             item.Reason);
@@ -602,8 +614,16 @@ public class AdminMetaCatalogController : ControllerBase
             item.Reason);
     }
 
-    private static bool IsExecutableSyncOperation(MetaCatalogSyncPlanItem item)
+    private static bool IsExecutableSyncOperation(
+        MetaCatalogSyncPlanItem item,
+        IReadOnlyDictionary<Guid, MetaProductSyncState> statesByProductId)
     {
+        if (statesByProductId.TryGetValue(item.ProductId, out var state)
+            && string.Equals(state.Status, MetaProductSyncStatuses.Processing, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
         return item.Operation is MetaCatalogSyncPlanOperations.Create
             or MetaCatalogSyncPlanOperations.Update
             or MetaCatalogSyncPlanOperations.Delete;
@@ -868,6 +888,21 @@ public record MetaCatalogSyncExecutionSummary(
             CountStatus(items, MetaCatalogSyncExecutionStatuses.Error),
             CountStatus(items, MetaCatalogSyncExecutionStatuses.Unchanged),
             CountStatus(items, MetaCatalogSyncExecutionStatuses.Skipped));
+    }
+
+    public static MetaCatalogSyncExecutionSummary FromPlan(
+        IReadOnlyCollection<MetaCatalogSyncPlanItem> planItems,
+        int submitted)
+    {
+        return new MetaCatalogSyncExecutionSummary(
+            planItems.Count,
+            submitted,
+            0,
+            0,
+            0,
+            planItems.Count(i => string.Equals(i.Operation, MetaCatalogSyncPlanOperations.Unchanged, StringComparison.Ordinal)),
+            planItems.Count(i => string.Equals(i.Operation, MetaCatalogSyncPlanOperations.Skipped, StringComparison.Ordinal)
+                || string.Equals(i.Operation, MetaCatalogSyncPlanOperations.AlreadyDeleted, StringComparison.Ordinal)));
     }
 
     private static int CountStatus(IEnumerable<MetaCatalogSyncExecutionItem> items, string status)
