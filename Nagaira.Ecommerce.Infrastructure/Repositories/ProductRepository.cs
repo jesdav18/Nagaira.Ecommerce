@@ -154,6 +154,26 @@ public class ProductRepository : Repository<Product>, IProductRepository
             .ToList();
     }
 
+    public async Task<IReadOnlyList<Product>> GetByIdsForMetaCatalogSyncAsync(IEnumerable<Guid> ids)
+    {
+        var productIds = ids.Distinct().ToList();
+        if (productIds.Count == 0)
+        {
+            return [];
+        }
+
+        return await _dbSet
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Include(p => p.Category)
+            .Include(p => p.Images)
+            .Include(p => p.Prices)
+                .ThenInclude(pp => pp.PriceLevel)
+            .Include(p => p.InventoryBalance)
+            .Where(p => productIds.Contains(p.Id))
+            .ToListAsync();
+    }
+
     public async Task<IReadOnlyList<Product>> GetMetaCatalogBrandBackfillPlanCandidatesAsync(int limit)
     {
         var safeLimit = Math.Clamp(limit, 1, 500);

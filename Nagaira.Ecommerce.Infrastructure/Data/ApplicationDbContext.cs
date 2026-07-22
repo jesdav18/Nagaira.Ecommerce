@@ -197,10 +197,15 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.RetailerId).IsRequired().HasMaxLength(64);
             entity.Property(e => e.Status).IsRequired().HasMaxLength(30);
             entity.Property(e => e.LastPayloadHash).HasMaxLength(128);
+            entity.Property(e => e.PendingPayloadHash).HasMaxLength(128);
+            entity.Property(e => e.LastAction).HasMaxLength(20);
+            entity.Property(e => e.BatchHandle).HasMaxLength(255);
             entity.Property(e => e.LastErrorCode).HasMaxLength(100);
+            entity.Property(e => e.LastErrorSubcode).HasMaxLength(100);
             entity.Property(e => e.LastErrorMessage).HasMaxLength(2000);
             entity.HasIndex(e => e.RetailerId).IsUnique();
             entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.BatchHandle);
             entity.HasIndex(e => e.LockedUntilAt);
             entity.HasOne(e => e.Product).WithOne()
                 .HasForeignKey<MetaProductSyncState>(e => e.ProductId)

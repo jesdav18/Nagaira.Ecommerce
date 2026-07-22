@@ -388,6 +388,38 @@ public class MetaCatalogClient : IMetaCatalogClient
         return new MetaCatalogBatchResult(results);
     }
 
+    public async Task<MetaCatalogBatchResult> CheckBatchStatusAsync(
+        IReadOnlyCollection<MetaCatalogMappingResult> items,
+        string batchHandle,
+        CancellationToken cancellationToken = default)
+    {
+        if (items.Count == 0)
+        {
+            return new MetaCatalogBatchResult(Array.Empty<MetaCatalogItemResult>());
+        }
+
+        ValidateReadyForCall();
+
+        var statusResult = await GetBatchStatusAsync(items, batchHandle, cancellationToken);
+        if (statusResult.IsTerminal)
+        {
+            return statusResult.Result;
+        }
+
+        return new MetaCatalogBatchResult(items.Select(i => new MetaCatalogItemResult(
+            i.RetailerId,
+            i.Action,
+            false,
+            null,
+            null,
+            "Meta Catalog batch is still processing.",
+            true,
+            "processing",
+            null,
+            null,
+            batchHandle)).ToList());
+    }
+
     private async Task<MetaCatalogBatchResult> PollBatchStatusAsync(
         IReadOnlyCollection<MetaCatalogMappingResult> requestedItems,
         string handle,

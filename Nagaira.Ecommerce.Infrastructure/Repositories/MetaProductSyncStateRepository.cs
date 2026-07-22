@@ -29,6 +29,18 @@ public class MetaProductSyncStateRepository : Repository<MetaProductSyncState>, 
             .ToListAsync();
     }
 
+    public async Task<IReadOnlyList<MetaProductSyncState>> GetProcessingWithBatchHandleAsync(int limit)
+    {
+        var safeLimit = Math.Clamp(limit, 1, 50);
+
+        return await _dbSet
+            .Where(s => s.Status == MetaProductSyncStatuses.Processing && !string.IsNullOrWhiteSpace(s.BatchHandle))
+            .OrderBy(s => s.LastAttemptAt ?? s.CreatedAt)
+            .ThenBy(s => s.ProductId)
+            .Take(safeLimit)
+            .ToListAsync();
+    }
+
     public async Task<MetaProductSyncState> MarkPendingAsync(Guid productId, string retailerId)
     {
         var now = DateTime.UtcNow;
@@ -51,7 +63,10 @@ public class MetaProductSyncStateRepository : Repository<MetaProductSyncState>, 
         state.Status = MetaProductSyncStatuses.Pending;
         state.UpdatedAt = now;
         state.LastErrorCode = null;
+        state.LastErrorSubcode = null;
         state.LastErrorMessage = null;
+        state.BatchHandle = null;
+        state.PendingPayloadHash = null;
         state.LockId = null;
         state.LockedUntilAt = null;
         await UpdateAsync(state);

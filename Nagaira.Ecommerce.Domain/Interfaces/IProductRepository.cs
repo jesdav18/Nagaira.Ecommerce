@@ -11,6 +11,7 @@ public interface IProductRepository : IRepository<Product>
     Task<Product?> GetBySkuIncludingDeletedAsync(string sku);
     Task<Product?> GetByIdIncludingDeletedAsync(Guid id);
     Task<IReadOnlyList<Product>> GetMetaCatalogSyncPlanCandidatesAsync(int limit);
+    Task<IReadOnlyList<Product>> GetByIdsForMetaCatalogSyncAsync(IEnumerable<Guid> ids);
     Task<IReadOnlyList<Product>> GetMetaCatalogBrandBackfillPlanCandidatesAsync(int limit);
     Task<IReadOnlyList<Product>> GetByIdsForBrandBackfillAsync(IEnumerable<Guid> ids);
     Task<bool> SkuExistsAsync(string sku);

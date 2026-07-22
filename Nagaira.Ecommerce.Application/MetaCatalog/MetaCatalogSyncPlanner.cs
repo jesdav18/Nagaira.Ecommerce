@@ -48,7 +48,7 @@ public static class MetaCatalogSyncPlanner
         var mapping = outcome.MappingResult!;
         if (mapping.Action == MetaCatalogSyncAction.Delete)
         {
-            if (!IsSuccessfulState(state))
+            if (!HasSuccessfulPayloadHash(state))
             {
                 return CreateItem(
                     product,
@@ -79,7 +79,7 @@ public static class MetaCatalogSyncPlanner
                 null);
         }
 
-        if (!IsSuccessfulState(state))
+        if (!HasSuccessfulPayloadHash(state))
         {
             return CreateItem(
                 product,
@@ -110,10 +110,9 @@ public static class MetaCatalogSyncPlanner
             null);
     }
 
-    private static bool IsSuccessfulState(MetaProductSyncState? state)
+    private static bool HasSuccessfulPayloadHash(MetaProductSyncState? state)
     {
         return state != null
-            && string.Equals(state.Status, MetaProductSyncStatuses.Synced, StringComparison.Ordinal)
             && !string.IsNullOrWhiteSpace(state.LastPayloadHash);
     }
 
