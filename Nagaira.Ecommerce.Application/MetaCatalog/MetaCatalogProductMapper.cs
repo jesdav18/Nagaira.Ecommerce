@@ -72,9 +72,10 @@ public static class MetaCatalogProductMapper
         }
 
         var image = product.Images
-            .Where(i => !i.IsDeleted && !string.IsNullOrWhiteSpace(i.ImageUrl))
+            .Where(i => !i.IsDeleted && IsValidCloudinaryImageUrl(i.ImageUrl))
             .OrderByDescending(i => i.IsPrimary)
             .ThenBy(i => i.DisplayOrder)
+            .ThenBy(i => i.CreatedAt)
             .FirstOrDefault();
         if (image == null)
         {
@@ -156,6 +157,20 @@ public static class MetaCatalogProductMapper
         }
 
         return $"{publicBaseUrl.TrimEnd('/')}/p/{slug.TrimStart('/')}";
+    }
+
+    private static bool IsValidCloudinaryImageUrl(string? imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl)
+            || !imageUrl.StartsWith("https://res.cloudinary.com/", StringComparison.Ordinal)
+            || !Uri.TryCreate(imageUrl, UriKind.Absolute, out var uri))
+        {
+            return false;
+        }
+
+        return string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(uri.Host, "res.cloudinary.com", StringComparison.OrdinalIgnoreCase)
+            && uri.AbsolutePath.Contains("/image/upload/", StringComparison.OrdinalIgnoreCase);
     }
 }
 

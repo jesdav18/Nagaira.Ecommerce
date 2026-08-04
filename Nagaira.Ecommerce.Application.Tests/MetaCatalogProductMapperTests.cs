@@ -6,6 +6,8 @@ namespace Nagaira.Ecommerce.Application.Tests;
 
 public class MetaCatalogProductMapperTests
 {
+    private const string PrimaryCloudinaryImage = "https://res.cloudinary.com/ddn7oafvd/image/upload/v1783612614/products/svj0utysio3twzcrdmpg.jpg";
+    private const string SecondaryCloudinaryImage = "https://res.cloudinary.com/ddn7oafvd/image/upload/v1783612615/products/secondary.jpg";
     private static readonly Guid RetailPriceLevelId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static readonly Guid WholesalePriceLevelId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
@@ -24,7 +26,7 @@ public class MetaCatalogProductMapperTests
         Assert.Equal("125.50", result.Item.Price);
         Assert.Equal("HNL", result.Item.Currency);
         Assert.Equal("https://store.example/p/router-wifi", result.Item.Url);
-        Assert.Equal("https://cdn.example/router-primary.jpg", result.Item.ImageUrl);
+        Assert.Equal(PrimaryCloudinaryImage, result.Item.ImageUrl);
         Assert.Equal("in stock", result.Item.Availability);
         Assert.False(string.IsNullOrWhiteSpace(result.PayloadHash));
     }
@@ -156,7 +158,7 @@ public class MetaCatalogProductMapperTests
     }
 
     [Fact]
-    public void TryMap_ProductWithoutPrimaryImageReturnsSkipped()
+    public void TryMap_ProductWithoutCloudinaryImageReturnsSkipped()
     {
         var product = CreateProduct();
         product.Images.Clear();
@@ -176,7 +178,7 @@ public class MetaCatalogProductMapperTests
         {
             Id = Guid.NewGuid(),
             ProductId = product.Id,
-            ImageUrl = "https://cdn.example/router-secondary.jpg",
+            ImageUrl = SecondaryCloudinaryImage,
             DisplayOrder = 0,
             IsPrimary = false
         });
@@ -184,7 +186,80 @@ public class MetaCatalogProductMapperTests
         var result = MetaCatalogProductMapper.Map(product, CreateOptions());
 
         Assert.NotNull(result.Item);
-        Assert.Equal("https://cdn.example/router-primary.jpg", result.Item.ImageUrl);
+        Assert.Equal(PrimaryCloudinaryImage, result.Item.ImageUrl);
+    }
+
+    [Fact]
+    public void Map_ValidNonPrimaryCloudinaryImageIsUsedAsFallback()
+    {
+        var product = CreateProduct();
+        product.Images[0].ImageUrl = "https://nagaira.com/ecommerce/p/router-wifi";
+        product.Images.Add(new ProductImage
+        {
+            Id = Guid.NewGuid(),
+            ProductId = product.Id,
+            ImageUrl = SecondaryCloudinaryImage,
+            DisplayOrder = 2,
+            IsPrimary = false,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        var result = MetaCatalogProductMapper.Map(product, CreateOptions());
+
+        Assert.Equal(SecondaryCloudinaryImage, result.Item!.ImageUrl);
+    }
+
+    [Theory]
+    [InlineData("https://nagaira.com/ecommerce/p/router-wifi")]
+    [InlineData("https://l.facebook.com/l.php?u=https%3A%2F%2Fres.cloudinary.com%2Fimage.jpg")]
+    [InlineData("https://images.example.com/image/upload/router.jpg")]
+    [InlineData("http://res.cloudinary.com/ddn7oafvd/image/upload/router.jpg")]
+    [InlineData(" HTTPS://res.cloudinary.com/ddn7oafvd/image/upload/router.jpg")]
+    [InlineData("https://RES.CLOUDINARY.COM/ddn7oafvd/image/upload/router.jpg")]
+    [InlineData("https://res.cloudinary.com/ddn7oafvd/raw/upload/page.html")]
+    public void TryMap_NonCloudinaryImageIsRejected(string imageUrl)
+    {
+        var product = CreateProduct();
+        product.Images[0].ImageUrl = imageUrl;
+
+        var result = MetaCatalogProductMapper.TryMap(product, CreateOptions());
+
+        Assert.Equal(MetaCatalogProductMappingStatus.Skipped, result.Status);
+        Assert.Equal("missing_image", result.Reason);
+        Assert.Null(result.MappingResult);
+    }
+
+    [Fact]
+    public void Map_LinkAndImageLinkAreNeverInterchanged()
+    {
+        var product = CreateProduct();
+        var options = CreateOptions();
+        options.PublicBaseUrl = "https://nagaira.com/ecommerce";
+
+        var result = MetaCatalogProductMapper.Map(product, options);
+
+        Assert.Equal("https://nagaira.com/ecommerce/p/router-wifi", result.Item!.Url);
+        Assert.Equal(PrimaryCloudinaryImage, result.Item.ImageUrl);
+        Assert.NotEqual(result.Item.Url, result.Item.ImageUrl);
+    }
+
+    [Fact]
+    public void Map_StagingHeadAndShouldersProductUsesExpectedDirectCloudinaryImage()
+    {
+        var product = CreateProduct();
+        product.Id = Guid.Parse("cbfc1ce9-17e3-4715-9b9a-73a9d9ea8022");
+        product.Name = "Shampoo Head & Shoulders Aceite de Argan 375ml";
+        product.Slug = "shampoo-head-shoulders-aceite-de-argan-375ml";
+        product.Images[0].ProductId = product.Id;
+        product.Images[0].ImageUrl = PrimaryCloudinaryImage;
+        var options = CreateOptions();
+        options.PublicBaseUrl = "https://nagaira.com/ecommerce";
+
+        var result = MetaCatalogProductMapper.Map(product, options);
+
+        Assert.Equal(product.Id.ToString("D"), result.RetailerId);
+        Assert.Equal("https://nagaira.com/ecommerce/p/shampoo-head-shoulders-aceite-de-argan-375ml", result.Item!.Url);
+        Assert.Equal(PrimaryCloudinaryImage, result.Item.ImageUrl);
     }
 
     [Fact]
@@ -214,7 +289,7 @@ public class MetaCatalogProductMapperTests
             "125.5",
             "HNL",
             "https://store.example/p/router-wifi",
-            "https://cdn.example/router-primary.jpg",
+            PrimaryCloudinaryImage,
             " Redes ",
             " RTR-001 "
         );
@@ -236,8 +311,8 @@ public class MetaCatalogProductMapperTests
     public void Hash_ImageChangeChangesHash()
     {
         var hasher = new MetaCatalogPayloadHasher();
-        var first = CreateMetaProduct(imageUrl: "https://cdn.example/router-primary.jpg");
-        var second = CreateMetaProduct(imageUrl: "https://cdn.example/router-new.jpg");
+        var first = CreateMetaProduct(imageUrl: PrimaryCloudinaryImage);
+        var second = CreateMetaProduct(imageUrl: SecondaryCloudinaryImage);
 
         Assert.NotEqual(hasher.HashUpsert(first), hasher.HashUpsert(second));
     }
@@ -331,7 +406,7 @@ public class MetaCatalogProductMapperTests
 
     private static MetaCatalogProduct CreateMetaProduct(
         string price = "125.50",
-        string imageUrl = "https://cdn.example/router-primary.jpg",
+        string imageUrl = PrimaryCloudinaryImage,
         string availability = "in stock",
         string? categoryName = "Redes")
     {
@@ -386,9 +461,10 @@ public class MetaCatalogProductMapperTests
                 {
                     Id = Guid.NewGuid(),
                     ProductId = productId,
-                    ImageUrl = "https://cdn.example/router-primary.jpg",
+                    ImageUrl = PrimaryCloudinaryImage,
                     DisplayOrder = 10,
-                    IsPrimary = true
+                    IsPrimary = true,
+                    CreatedAt = DateTime.UtcNow
                 }
             ],
             Prices =

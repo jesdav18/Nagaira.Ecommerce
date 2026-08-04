@@ -213,7 +213,7 @@ public class MetaCatalogSyncPlannerTests
                 {
                     Id = Guid.NewGuid(),
                     ProductId = productId,
-                    ImageUrl = "https://cdn.example/router-primary.jpg",
+                    ImageUrl = "https://res.cloudinary.com/ddn7oafvd/image/upload/products/router-primary.jpg",
                     DisplayOrder = 10,
                     IsPrimary = true
                 }

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Moq;
 using Nagaira.Ecommerce.Api.Controllers.Admin;
@@ -47,6 +48,58 @@ public class AdminMetaCatalogControllerTests
         Assert.Equal("125.50", response.Payload.Price);
         Assert.Equal("HNL", response.Payload.Currency);
         Assert.DoesNotContain("super-secret-token", JsonSerializer.Serialize(response));
+    }
+
+    [Fact]
+    public async Task InvalidateSync_InStaging_PreservesRetailerIdAndForcesUpdate()
+    {
+        var product = CreateProduct();
+        var state = CreateSyncState(product, MetaCatalogProductMapper.Map(product, CreateMetaOptions()).PayloadHash);
+        var stateRepository = new Mock<IMetaProductSyncStateRepository>();
+        stateRepository.Setup(r => r.GetByProductIdAsync(product.Id)).ReturnsAsync(state);
+        stateRepository.Setup(r => r.UpdateAsync(state)).Returns(Task.CompletedTask);
+        var unitOfWork = new Mock<IUnitOfWork>();
+        var controller = CreateController(
+            product,
+            environmentName: "Staging",
+            unitOfWorkMock: unitOfWork,
+            syncStateRepositoryMock: stateRepository);
+
+        var result = await controller.InvalidateSync(product.Id);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<MetaCatalogSyncInvalidationResponse>(ok.Value);
+        Assert.True(response.Invalidated);
+        Assert.Equal(product.Id.ToString("D"), response.RetailerId);
+        Assert.Equal(product.Id.ToString("D"), state.RetailerId);
+        Assert.Equal(MetaProductSyncStatuses.Pending, state.Status);
+        Assert.StartsWith("invalidated:", state.LastPayloadHash);
+
+        var plan = MetaCatalogSyncPlanner.BuildPlan(
+            [product],
+            new Dictionary<Guid, MetaProductSyncState> { [product.Id] = state },
+            CreateMetaOptions(),
+            1);
+        Assert.Equal(MetaCatalogSyncPlanOperations.Update, Assert.Single(plan.Items).Operation);
+        unitOfWork.Verify(u => u.SaveChangesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task InvalidateSync_InProduction_IsForbiddenWithoutChangingState()
+    {
+        var product = CreateProduct();
+        var stateRepository = new Mock<IMetaProductSyncStateRepository>();
+        var controller = CreateController(
+            product,
+            environmentName: "Production",
+            syncStateRepositoryMock: stateRepository);
+
+        var result = await controller.InvalidateSync(product.Id);
+
+        var forbidden = Assert.IsType<StatusCodeResult>(result.Result);
+        Assert.Equal(StatusCodes.Status403Forbidden, forbidden.StatusCode);
+        stateRepository.Verify(r => r.GetByProductIdAsync(It.IsAny<Guid>()), Times.Never);
+        stateRepository.Verify(r => r.UpdateAsync(It.IsAny<MetaProductSyncState>()), Times.Never);
     }
 
     [Fact]
@@ -1054,7 +1107,8 @@ public class AdminMetaCatalogControllerTests
         IReadOnlyList<MetaProductSyncState>? processingStates = null,
         Mock<IUnitOfWork>? unitOfWorkMock = null,
         Product? currentProduct = null,
-        Mock<IProductRepository>? productRepositoryMock = null)
+        Mock<IProductRepository>? productRepositoryMock = null,
+        Mock<IMetaProductSyncStateRepository>? syncStateRepositoryMock = null)
     {
         var productRepository = productRepositoryMock ?? new Mock<IProductRepository>();
         if (productRepositoryMock == null)
@@ -1084,7 +1138,7 @@ public class AdminMetaCatalogControllerTests
                 });
         }
 
-        var syncStateRepository = new Mock<IMetaProductSyncStateRepository>();
+        var syncStateRepository = syncStateRepositoryMock ?? new Mock<IMetaProductSyncStateRepository>();
         syncStateRepository
             .Setup(r => r.GetByProductIdsAsync(It.IsAny<IEnumerable<Guid>>()))
             .ReturnsAsync((IEnumerable<Guid> ids) => (syncStates ?? [])
@@ -1238,7 +1292,7 @@ public class AdminMetaCatalogControllerTests
                 {
                     Id = Guid.NewGuid(),
                     ProductId = productId,
-                    ImageUrl = "https://cdn.example/router-primary.jpg",
+                    ImageUrl = "https://res.cloudinary.com/ddn7oafvd/image/upload/products/router-primary.jpg",
                     DisplayOrder = 10,
                     IsPrimary = true
                 }

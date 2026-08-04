@@ -21,7 +21,7 @@ public class MetaCatalogPayloadHasher : IMetaCatalogPayloadHasher
             Field("price", NormalizeDecimalString(item.Price)),
             Field("currency", item.Currency),
             Field("url", item.Url),
-            Field("image_url", item.ImageUrl),
+            Field("image_link", item.ImageUrl),
             Field("category_name", item.CategoryName),
             Field("sku", item.Sku)
         ]);

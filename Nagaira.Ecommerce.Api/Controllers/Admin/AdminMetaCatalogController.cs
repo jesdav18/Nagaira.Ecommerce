@@ -155,6 +155,62 @@ public class AdminMetaCatalogController : ControllerBase
         return Ok(MetaCatalogSyncPlanner.BuildPlan(products, statesByProductId, _options, safeLimit));
     }
 
+    [HttpPost("products/{productId:guid}/invalidate-sync")]
+    public async Task<ActionResult<MetaCatalogSyncInvalidationResponse>> InvalidateSync(Guid productId)
+    {
+        if (!_environment.IsStaging())
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        var product = await _unitOfWork.Products.GetByIdIncludingDeletedAsync(productId);
+        if (product == null)
+        {
+            return NotFound();
+        }
+
+        var outcome = MetaCatalogProductMapper.TryMap(product, _options);
+        if (outcome.MappingResult == null)
+        {
+            return BadRequest(new MetaCatalogSyncInvalidationResponse(
+                productId,
+                outcome.RetailerId,
+                false,
+                outcome.Reason));
+        }
+
+        var state = await _unitOfWork.MetaProductSyncStates.GetByProductIdAsync(productId);
+        if (state == null || string.IsNullOrWhiteSpace(state.LastPayloadHash))
+        {
+            return BadRequest(new MetaCatalogSyncInvalidationResponse(
+                productId,
+                outcome.RetailerId,
+                false,
+                "product_not_previously_synced"));
+        }
+
+        state.RetailerId = outcome.RetailerId;
+        state.Status = MetaProductSyncStatuses.Pending;
+        state.LastPayloadHash = $"invalidated:{state.LastPayloadHash}";
+        state.PendingPayloadHash = null;
+        state.BatchHandle = null;
+        state.LastErrorCode = null;
+        state.LastErrorSubcode = null;
+        state.LastErrorMessage = null;
+        state.LockId = null;
+        state.LockedUntilAt = null;
+        state.UpdatedAt = DateTime.UtcNow;
+
+        await _unitOfWork.MetaProductSyncStates.UpdateAsync(state);
+        await _unitOfWork.SaveChangesAsync();
+
+        return Ok(new MetaCatalogSyncInvalidationResponse(
+            productId,
+            outcome.RetailerId,
+            true,
+            null));
+    }
+
     [HttpPost("brand-backfill-plan")]
     public async Task<ActionResult<MetaCatalogBrandBackfillPlanResponse>> BrandBackfillPlan([FromQuery] int limit = 200)
     {
@@ -859,6 +915,12 @@ public static class MetaCatalogSyncExecutionStatuses
     public const string Skipped = "SKIPPED";
     public const string Unchanged = "UNCHANGED";
 }
+
+public record MetaCatalogSyncInvalidationResponse(
+    Guid ProductId,
+    string RetailerId,
+    bool Invalidated,
+    string? Reason);
 
 public record MetaCatalogSyncExecutionResponse(
     bool DryRun,
