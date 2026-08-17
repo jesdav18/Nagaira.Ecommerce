@@ -31,6 +31,13 @@ export class AdminMetaCatalogComponent implements OnInit {
     });
   }
   filter(): void { this.page = 1; this.selected.set(new Set()); this.refresh(); }
+  eligibleCount(): number { const s = this.summary(); return s ? Math.max(0, s.total - s.notEligible) : 0; }
+  percentage(value: number, total: number): number { return total ? Math.round(value * 100 / total) : 0; }
+  rangeStart(): number { return this.totalCount() ? ((this.page - 1) * this.pageSize) + 1 : 0; }
+  rangeEnd(): number { return Math.min(this.page * this.pageSize, this.totalCount()); }
+  totalPages(): number { return Math.max(1, Math.ceil(this.totalCount() / this.pageSize)); }
+  goToPage(page: number): void { if (page < 1 || page > this.totalPages() || page === this.page) return; this.page = page; this.selected.set(new Set()); this.refresh(); }
+  changePageSize(): void { this.page = 1; this.selected.set(new Set()); this.refresh(); }
   toggle(product: MetaCatalogAdminProduct): void { if (!product.isEligible || product.metaStatus === 'PROCESSING') return; const next = new Set(this.selected()); next.has(product.productId) ? next.delete(product.productId) : next.add(product.productId); this.selected.set(next); }
   togglePage(): void { const selectable = this.products().filter(x => x.isEligible && x.metaStatus !== 'PROCESSING'); const all = selectable.every(x => this.selected().has(x.productId)); const next = new Set(this.selected()); selectable.forEach(x => all ? next.delete(x.productId) : next.add(x.productId)); this.selected.set(next); }
   syncSelected(): void { this.execute([...this.selected()], false); }
