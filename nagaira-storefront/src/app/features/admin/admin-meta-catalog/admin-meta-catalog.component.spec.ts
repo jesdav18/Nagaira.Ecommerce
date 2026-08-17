@@ -5,20 +5,29 @@ import { AdminService } from '../../../core/services/admin.service';
 import { NotificationService } from '../../../core/services/notification.service';
 
 describe('AdminMetaCatalogComponent', () => {
+  let requestedParams: any;
   const api = {
     getBrands: () => of([]),
     getMetaCatalogSummary: () => of({ total: 1, synced: 0, notSynced: 0, updateAvailable: 0, processing: 0, errors: 0, notEligible: 1, adminSyncEnabled: true }),
-    getMetaCatalogProducts: () => of({ page: 1, pageSize: 20, totalCount: 1, adminSyncEnabled: true, items: [] }),
+    getMetaCatalogProducts: (params?: any) => {
+      requestedParams = params;
+      return of({ page: 1, pageSize: 20, totalCount: 1, adminSyncEnabled: true, items: [] });
+    },
     syncMetaCatalogSelected: () => of({ summary: { synced: 1, processing: 0, skipped: 0, unchanged: 0, failed: 0 } })
   };
-  beforeEach(() => TestBed.configureTestingModule({ imports: [AdminMetaCatalogComponent], providers: [
-    { provide: AdminService, useValue: api }, { provide: NotificationService, useValue: { confirm: () => Promise.resolve(true), success: () => {}, error: () => {} } }
-  ] }));
+  beforeEach(() => {
+    requestedParams = undefined;
+    TestBed.configureTestingModule({ imports: [AdminMetaCatalogComponent], providers: [
+      { provide: AdminService, useValue: api }, { provide: NotificationService, useValue: { confirm: () => Promise.resolve(true), success: () => {}, error: () => {} } }
+    ] });
+  });
 
   it('creates the Meta Catalog admin screen', () => {
     const fixture = TestBed.createComponent(AdminMetaCatalogComponent); fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Meta Catalog');
     expect(fixture.componentInstance.status).toBe('');
+    expect(requestedParams.status).toBeUndefined();
+    expect(Object.prototype.hasOwnProperty.call(requestedParams, 'status')).toBeFalse();
   });
 
   it('supports multiple selection for eligible products', () => {

@@ -19,7 +19,14 @@ export class AdminMetaCatalogComponent implements OnInit {
   refresh(): void {
     this.loading.set(true);
     this.api.getMetaCatalogSummary().subscribe(x => this.summary.set(x));
-    this.api.getMetaCatalogProducts({ page: this.page, pageSize: this.pageSize, search: this.search || undefined, status: this.status || undefined, brandId: this.brandId || undefined }).subscribe({
+    const params = {
+      page: this.page,
+      pageSize: this.pageSize,
+      ...(this.search ? { search: this.search } : {}),
+      ...(this.status ? { status: this.status } : {}),
+      ...(this.brandId ? { brandId: this.brandId } : {})
+    };
+    this.api.getMetaCatalogProducts(params).subscribe({
       next: x => { this.products.set(x.items); this.totalCount.set(x.totalCount); this.loading.set(false); }, error: () => this.loading.set(false)
     });
   }
