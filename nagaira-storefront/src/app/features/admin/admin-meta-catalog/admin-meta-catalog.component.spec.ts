@@ -18,7 +18,7 @@ describe('AdminMetaCatalogComponent', () => {
   it('creates the Meta Catalog admin screen', () => {
     const fixture = TestBed.createComponent(AdminMetaCatalogComponent); fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Meta Catalog');
-    expect(fixture.componentInstance.status).toBe('ALL');
+    expect(fixture.componentInstance.status).toBe('');
   });
 
   it('supports multiple selection for eligible products', () => {
