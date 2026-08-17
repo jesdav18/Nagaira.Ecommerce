@@ -181,7 +181,8 @@ public class AdminMetaCatalogController : ControllerBase
         IEnumerable<MetaCatalogAdminProduct> query = await BuildAdminRowsAsync();
         if (!string.IsNullOrWhiteSpace(search))
             query = query.Where(x => x.Name.Contains(search, StringComparison.OrdinalIgnoreCase) || x.Sku.Contains(search, StringComparison.OrdinalIgnoreCase));
-        if (!string.IsNullOrWhiteSpace(status)) query = query.Where(x => x.MetaStatus == status);
+        if (!string.IsNullOrWhiteSpace(status) && !string.Equals(status, "ALL", StringComparison.OrdinalIgnoreCase))
+            query = query.Where(x => x.MetaStatus == status);
         if (brandId.HasValue) query = query.Where(x => x.BrandId == brandId);
         var filtered = query.ToList();
         return Ok(new MetaCatalogAdminProductsResponse(safePage, safePageSize, filtered.Count, _options.AdminSyncEnabled,
@@ -668,7 +669,7 @@ public class AdminMetaCatalogController : ControllerBase
 
     private async Task<List<MetaCatalogAdminProduct>> BuildAdminRowsAsync()
     {
-        var products = (await _unitOfWork.Products.GetAllAsync()).ToList();
+        var products = (await _unitOfWork.Products.GetAllForMetaCatalogAdminAsync()).ToList();
         var states = await _unitOfWork.MetaProductSyncStates.GetByProductIdsAsync(products.Select(p => p.Id));
         var stateById = states.GroupBy(s => s.ProductId).ToDictionary(g => g.Key, g => g.First());
         return products.Select(product =>

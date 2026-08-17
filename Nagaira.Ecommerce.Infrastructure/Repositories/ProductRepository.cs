@@ -163,6 +163,20 @@ public class ProductRepository : Repository<Product>, IProductRepository
             .ToList();
     }
 
+    public async Task<IReadOnlyList<Product>> GetAllForMetaCatalogAdminAsync()
+    {
+        return await _dbSet
+            .AsNoTracking()
+            .Include(p => p.BrandEntity)
+            .Include(p => p.Images)
+            .Include(p => p.Prices)
+                .ThenInclude(pp => pp.PriceLevel)
+            .Include(p => p.InventoryBalance)
+            .Include(p => p.Category)
+            .Where(p => !p.IsDeleted)
+            .ToListAsync();
+    }
+
     public async Task<IReadOnlyList<Product>> GetByIdsForMetaCatalogSyncAsync(IEnumerable<Guid> ids)
     {
         var productIds = ids.Distinct().ToList();

@@ -18,6 +18,7 @@ describe('AdminMetaCatalogComponent', () => {
   it('creates the Meta Catalog admin screen', () => {
     const fixture = TestBed.createComponent(AdminMetaCatalogComponent); fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Meta Catalog');
+    expect(fixture.componentInstance.status).toBe('ALL');
   });
 
   it('supports multiple selection for eligible products', () => {
@@ -31,5 +32,14 @@ describe('AdminMetaCatalogComponent', () => {
     const component = TestBed.createComponent(AdminMetaCatalogComponent).componentInstance;
     component.toggle({ productId: '1', isEligible: false, metaStatus: 'NOT_ELIGIBLE' } as any);
     expect(component.selected().size).toBe(0);
+  });
+
+  it('translates eligibility reasons for non-eligible products', () => {
+    const component = TestBed.createComponent(AdminMetaCatalogComponent).componentInstance;
+    expect(component.eligibilityLabel('missing_brand')).toBe('Falta marca');
+    expect(component.eligibilityLabel('missing_image')).toBe('Falta imagen');
+    expect(component.eligibilityLabel('missing_public_price')).toBe('Falta precio público');
+    expect(component.eligibilityLabel('missing_slug')).toBe('Falta enlace/slug');
+    expect(component.eligibilityLabel('missing_public_base_url')).toBe('Configuración Meta incompleta');
   });
 });

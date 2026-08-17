@@ -10,16 +10,16 @@ export class AdminMetaCatalogComponent implements OnInit {
   private api = inject(AdminService); private notifications = inject(NotificationService);
   summary = signal<MetaCatalogSummary | null>(null); products = signal<MetaCatalogAdminProduct[]>([]); brands = signal<Brand[]>([]);
   selected = signal(new Set<string>()); loading = signal(false); syncing = signal(false); totalCount = signal(0);
-  page = 1; pageSize = 20; search = ''; status = ''; brandId = '';
+  page = 1; pageSize = 20; search = ''; status = 'ALL'; brandId = '';
   readonly statuses = [
-    ['', 'Todos'], ['NOT_SYNCED', 'No migrados'], ['SYNCED', 'Sincronizados'], ['UPDATE_AVAILABLE', 'Actualización pendiente'],
+    ['ALL', 'Todos'], ['NOT_SYNCED', 'No migrados'], ['SYNCED', 'Sincronizados'], ['UPDATE_AVAILABLE', 'Actualización pendiente'],
     ['NOT_ELIGIBLE', 'No elegibles'], ['PROCESSING', 'Procesando'], ['ERROR', 'Errores']
   ];
   ngOnInit(): void { this.api.getBrands('', true).subscribe(x => this.brands.set(x)); this.refresh(); }
   refresh(): void {
     this.loading.set(true);
     this.api.getMetaCatalogSummary().subscribe(x => this.summary.set(x));
-    this.api.getMetaCatalogProducts({ page: this.page, pageSize: this.pageSize, search: this.search || undefined, status: this.status || undefined, brandId: this.brandId || undefined }).subscribe({
+    this.api.getMetaCatalogProducts({ page: this.page, pageSize: this.pageSize, search: this.search || undefined, status: this.status, brandId: this.brandId || undefined }).subscribe({
       next: x => { this.products.set(x.items); this.totalCount.set(x.totalCount); this.loading.set(false); }, error: () => this.loading.set(false)
     });
   }
@@ -30,6 +30,13 @@ export class AdminMetaCatalogComponent implements OnInit {
   syncOne(product: MetaCatalogAdminProduct): void { this.execute([product.productId], false); }
   async force(product: MetaCatalogAdminProduct): Promise<void> { if (await this.notifications.confirm(`¿Forzar actualización de ${product.name}?`)) this.execute([product.productId], true); }
   showError(product: MetaCatalogAdminProduct): void { this.notifications.error(product.lastErrorMessage || 'No hay detalle de error.'); }
+  eligibilityLabel(reason?: string): string {
+    const labels: Record<string, string> = {
+      missing_brand: 'Falta marca', missing_image: 'Falta imagen', missing_public_price: 'Falta precio público',
+      missing_slug: 'Falta enlace/slug', missing_public_base_url: 'Configuración Meta incompleta'
+    };
+    return reason ? (labels[reason] || reason) : 'No elegible';
+  }
   private execute(ids: string[], force: boolean): void {
     if (!ids.length || !this.summary()?.adminSyncEnabled) return;
     this.syncing.set(true);

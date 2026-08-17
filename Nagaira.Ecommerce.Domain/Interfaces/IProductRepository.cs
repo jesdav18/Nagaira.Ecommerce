@@ -10,6 +10,7 @@ public interface IProductRepository : IRepository<Product>
     Task<Product?> GetBySkuAsync(string sku);
     Task<Product?> GetBySkuIncludingDeletedAsync(string sku);
     Task<Product?> GetByIdIncludingDeletedAsync(Guid id);
+    Task<IReadOnlyList<Product>> GetAllForMetaCatalogAdminAsync();
     Task<IReadOnlyList<Product>> GetMetaCatalogSyncPlanCandidatesAsync(int limit);
     Task<IReadOnlyList<Product>> GetByIdsForMetaCatalogSyncAsync(IEnumerable<Guid> ids);
     Task<IReadOnlyList<Product>> GetMetaCatalogBrandBackfillPlanCandidatesAsync(int limit);
