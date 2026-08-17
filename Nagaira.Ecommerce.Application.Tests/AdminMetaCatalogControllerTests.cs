@@ -32,13 +32,21 @@ public class AdminMetaCatalogControllerTests
         };
         states[2].Status = MetaProductSyncStatuses.Processing; states[3].Status = MetaProductSyncStatuses.Error;
         products[5].BrandId = null; products[5].BrandEntity = null;
-        var productRepo = new Mock<IProductRepository>(); productRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(products);
+        var productRepo = new Mock<IProductRepository>(); productRepo.Setup(r => r.GetAllForMetaCatalogAdminAsync()).ReturnsAsync(products);
         var controller = CreateController(null, productRepositoryMock: productRepo, syncStates: states);
 
         var summaryResult = await controller.Summary();
         var summary = Assert.IsType<MetaCatalogAdminSummary>(Assert.IsType<OkObjectResult>(summaryResult.Result).Value);
         Assert.Equal(6, summary.Total); Assert.Equal(1, summary.NotSynced); Assert.Equal(1, summary.Synced); Assert.Equal(1, summary.UpdateAvailable);
         Assert.Equal(1, summary.Processing); Assert.Equal(1, summary.Errors); Assert.Equal(1, summary.NotEligible);
+
+        foreach (var noFilter in new string?[] { null, string.Empty, "ALL", "all" })
+        {
+            var allResult = await controller.Products(status: noFilter);
+            var all = Assert.IsType<MetaCatalogAdminProductsResponse>(Assert.IsType<OkObjectResult>(allResult.Result).Value);
+            Assert.Equal(6, all.TotalCount);
+            Assert.False(all.AdminSyncEnabled);
+        }
 
         foreach (var status in new[] { "NOT_SYNCED", "SYNCED", "UPDATE_AVAILABLE", "PROCESSING", "ERROR", "NOT_ELIGIBLE" })
         {
@@ -1188,6 +1196,9 @@ public class AdminMetaCatalogControllerTests
             productRepository
                 .Setup(r => r.GetByIdIncludingDeletedAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(currentProduct ?? product);
+            productRepository
+                .Setup(r => r.GetAllForMetaCatalogAdminAsync())
+                .ReturnsAsync(product == null ? [] : [product]);
             productRepository
                 .Setup(r => r.GetMetaCatalogSyncPlanCandidatesAsync(It.IsAny<int>()))
                 .ReturnsAsync(product == null ? [] : [product]);

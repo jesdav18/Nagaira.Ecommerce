@@ -8,6 +8,27 @@ namespace Nagaira.Ecommerce.Application.Tests;
 public class ProductRepositoryTests
 {
     [Fact]
+    public async Task GetAllForMetaCatalogAdmin_LoadsRequiredRelationships()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString("N")).Options;
+        await using var context = new ApplicationDbContext(options);
+        var brand = new Brand { Id = Guid.NewGuid(), Name = "Acme", NormalizedName = "acme", IsActive = true };
+        var category = new Category { Id = Guid.NewGuid(), Name = "Redes", Slug = "redes", IsActive = true };
+        var level = new PriceLevel { Id = Guid.NewGuid(), Name = "Retail", Priority = 1, IsActive = true };
+        var product = new Product { Id = Guid.NewGuid(), Name = "Router", Description = "Router", Brand = brand.Name, BrandId = brand.Id, Sku = "RTR-META", Slug = "router", CategoryId = category.Id, IsActive = true };
+        context.AddRange(brand, category, level, product,
+            new ProductImage { Id = Guid.NewGuid(), ProductId = product.Id, ImageUrl = "https://res.cloudinary.com/demo/image/upload/router.jpg", IsPrimary = true },
+            new ProductPrice { Id = Guid.NewGuid(), ProductId = product.Id, PriceLevelId = level.Id, Price = 100, MinQuantity = 1, IsActive = true },
+            new InventoryBalance { ProductId = product.Id, AvailableQuantity = 2, LastUpdatedAt = DateTime.UtcNow });
+        await context.SaveChangesAsync();
+
+        var item = Assert.Single(await new ProductRepository(context).GetAllForMetaCatalogAdminAsync());
+
+        Assert.Equal(brand.Id, item.BrandEntity!.Id); Assert.Single(item.Images); Assert.NotNull(Assert.Single(item.Prices).PriceLevel);
+        Assert.NotNull(item.InventoryBalance); Assert.Equal(category.Id, item.Category.Id);
+    }
+
+    [Fact]
     public async Task GetMetaCatalogSyncPlanCandidates_DoesNotThrowWhenProductUpdatedAtIsNotMapped()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
