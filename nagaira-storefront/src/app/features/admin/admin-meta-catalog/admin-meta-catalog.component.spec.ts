@@ -51,4 +51,14 @@ describe('AdminMetaCatalogComponent', () => {
     expect(component.eligibilityLabel('missing_slug')).toBe('Falta enlace/slug');
     expect(component.eligibilityLabel('missing_public_base_url')).toBe('Configuración Meta incompleta');
   });
+
+  it('shows the filtered row count and calculates pagination ranges', () => {
+    const component = TestBed.createComponent(AdminMetaCatalogComponent).componentInstance;
+    component.totalCount.set(253);
+    component.page = 2;
+    component.pageSize = 20;
+    expect(component.rangeStart()).toBe(21);
+    expect(component.rangeEnd()).toBe(40);
+    expect(component.totalPages()).toBe(13);
+  });
 });
