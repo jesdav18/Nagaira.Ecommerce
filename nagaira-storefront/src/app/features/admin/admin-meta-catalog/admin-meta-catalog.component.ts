@@ -10,16 +10,16 @@ export class AdminMetaCatalogComponent implements OnInit {
   private api = inject(AdminService); private notifications = inject(NotificationService);
   summary = signal<MetaCatalogSummary | null>(null); products = signal<MetaCatalogAdminProduct[]>([]); brands = signal<Brand[]>([]);
   selected = signal(new Set<string>()); loading = signal(false); syncing = signal(false); totalCount = signal(0);
-  page = 1; pageSize = 20; search = ''; status = 'ALL'; brandId = '';
+  page = 1; pageSize = 20; search = ''; status = ''; brandId = '';
   readonly statuses = [
-    ['ALL', 'Todos'], ['NOT_SYNCED', 'No migrados'], ['SYNCED', 'Sincronizados'], ['UPDATE_AVAILABLE', 'Actualización pendiente'],
+    ['', 'Todos'], ['NOT_SYNCED', 'No migrados'], ['SYNCED', 'Sincronizados'], ['UPDATE_AVAILABLE', 'Actualización pendiente'],
     ['NOT_ELIGIBLE', 'No elegibles'], ['PROCESSING', 'Procesando'], ['ERROR', 'Errores']
   ];
   ngOnInit(): void { this.api.getBrands('', true).subscribe(x => this.brands.set(x)); this.refresh(); }
   refresh(): void {
     this.loading.set(true);
     this.api.getMetaCatalogSummary().subscribe(x => this.summary.set(x));
-    this.api.getMetaCatalogProducts({ page: this.page, pageSize: this.pageSize, search: this.search || undefined, status: this.status, brandId: this.brandId || undefined }).subscribe({
+    this.api.getMetaCatalogProducts({ page: this.page, pageSize: this.pageSize, search: this.search || undefined, status: this.status || undefined, brandId: this.brandId || undefined }).subscribe({
       next: x => { this.products.set(x.items); this.totalCount.set(x.totalCount); this.loading.set(false); }, error: () => this.loading.set(false)
     });
   }
