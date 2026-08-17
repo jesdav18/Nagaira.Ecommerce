@@ -1,17 +1,6 @@
 name: Deploy Nagaira Ecommerce API - Staging
 
 on:
-  push:
-    branches:
-      - staging
-    paths:
-      - 'Nagaira.Ecommerce.Api/**'
-      - 'Nagaira.Ecommerce.Application/**'
-      - 'Nagaira.Ecommerce.Domain/**'
-      - 'Nagaira.Ecommerce.Infrastructure/**'
-      - 'Nagaira.Ecommerce.Application.Tests/**'
-      - 'Nagaira.Ecommerce.sln'
-      - '.github/workflows/deploy-nagaira-api-staging.yml'
   workflow_dispatch:
 
 permissions:
@@ -105,7 +94,7 @@ jobs:
 
             sudo /usr/bin/systemctl start "$SERVICE_NAME"
             sleep 5
-            /usr/bin/systemctl --no-pager --full status "$SERVICE_NAME"
-            /usr/bin/systemctl is-active --quiet "$SERVICE_NAME"
+            sudo /usr/bin/systemctl --no-pager --full status "$SERVICE_NAME"
+            sudo /usr/bin/systemctl is-active --quiet "$SERVICE_NAME"
             ss -ltn | grep -q '127.0.0.1:5012'
           EOF
