@@ -136,6 +136,8 @@ public class MetaCatalogProductMapperTests
     {
         var product = CreateProduct();
         product.Brand = null;
+        product.BrandId = null;
+        product.BrandEntity = null;
 
         var result = MetaCatalogProductMapper.TryMap(product, CreateOptions());
 
@@ -436,6 +438,8 @@ public class MetaCatalogProductMapperTests
             Name = " Router WiFi ",
             Description = " Router para casa ",
             Brand = " Acme ",
+            BrandId = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"),
+            BrandEntity = new Brand { Id = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"), Name = "Acme", NormalizedName = "acme", IsActive = true },
             Sku = "RTR-001",
             Slug = "router-wifi",
             IsActive = true,

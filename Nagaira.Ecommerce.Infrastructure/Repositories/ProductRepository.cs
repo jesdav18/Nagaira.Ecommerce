@@ -15,6 +15,7 @@ public class ProductRepository : Repository<Product>, IProductRepository
     {
         return await _dbSet
             .Include(p => p.Category)
+            .Include(p => p.BrandEntity)
             .Include(p => p.Images)
             .Include(p => p.Prices)
                 .ThenInclude(pp => pp.PriceLevel)
@@ -26,6 +27,7 @@ public class ProductRepository : Repository<Product>, IProductRepository
     {
         return await _dbSet
             .Include(p => p.Category)
+            .Include(p => p.BrandEntity)
             .Include(p => p.Images)
             .Include(p => p.Prices)
                 .ThenInclude(pp => pp.PriceLevel)
@@ -57,6 +59,7 @@ public class ProductRepository : Repository<Product>, IProductRepository
         
         return await _dbSet
             .Include(p => p.Category)
+            .Include(p => p.BrandEntity)
             .Include(p => p.Images)
             .Include(p => p.Prices)
                 .ThenInclude(pp => pp.PriceLevel)
@@ -69,6 +72,7 @@ public class ProductRepository : Repository<Product>, IProductRepository
     {
         return await _dbSet
             .Include(p => p.Category)
+            .Include(p => p.BrandEntity)
             .Include(p => p.Images)
             .Include(p => p.Prices)
                 .ThenInclude(pp => pp.PriceLevel)
@@ -81,6 +85,7 @@ public class ProductRepository : Repository<Product>, IProductRepository
     {
         return await _dbSet
             .Include(p => p.Category)
+            .Include(p => p.BrandEntity)
             .Include(p => p.Images)
             .Include(p => p.Prices)
                 .ThenInclude(pp => pp.PriceLevel)
@@ -93,6 +98,7 @@ public class ProductRepository : Repository<Product>, IProductRepository
     {
         return await _dbSet
             .Include(p => p.Category)
+            .Include(p => p.BrandEntity)
             .Include(p => p.Images)
             .Include(p => p.Prices)
                 .ThenInclude(pp => pp.PriceLevel)
@@ -104,6 +110,7 @@ public class ProductRepository : Repository<Product>, IProductRepository
     {
         return await _dbSet
             .Include(p => p.Category)
+            .Include(p => p.BrandEntity)
             .Include(p => p.Images)
             .Include(p => p.Prices)
                 .ThenInclude(pp => pp.PriceLevel)
@@ -124,6 +131,7 @@ public class ProductRepository : Repository<Product>, IProductRepository
         return await _dbSet
             .IgnoreQueryFilters()
             .Include(p => p.Category)
+            .Include(p => p.BrandEntity)
             .Include(p => p.Images)
             .Include(p => p.Prices)
                 .ThenInclude(pp => pp.PriceLevel)
@@ -140,6 +148,7 @@ public class ProductRepository : Repository<Product>, IProductRepository
             .IgnoreQueryFilters()
             .AsNoTracking()
             .Include(p => p.Category)
+            .Include(p => p.BrandEntity)
             .Include(p => p.Images)
             .Include(p => p.Prices)
                 .ThenInclude(pp => pp.PriceLevel)
@@ -166,6 +175,7 @@ public class ProductRepository : Repository<Product>, IProductRepository
             .IgnoreQueryFilters()
             .AsNoTracking()
             .Include(p => p.Category)
+            .Include(p => p.BrandEntity)
             .Include(p => p.Images)
             .Include(p => p.Prices)
                 .ThenInclude(pp => pp.PriceLevel)
@@ -239,6 +249,7 @@ public class ProductRepository : Repository<Product>, IProductRepository
         var searchPattern = $"%{searchTerm}%";
         return await _dbSet
             .Include(p => p.Category)
+            .Include(p => p.BrandEntity)
             .Include(p => p.Images)
             .Include(p => p.Prices)
                 .ThenInclude(pp => pp.PriceLevel)

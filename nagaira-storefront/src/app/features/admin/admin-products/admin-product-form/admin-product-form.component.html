@@ -23,14 +23,22 @@
           <label>Marca</label>
           <input
             type="text"
-            [(ngModel)]="formData.brand"
-            name="brand"
+            [ngModel]="brandSearch"
+            (ngModelChange)="onBrandSearch($event)"
+            name="brandSearch"
+            list="brand-options"
             maxlength="255"
-            placeholder="Marca real del producto"
+            placeholder="Buscar marca"
           />
-          @if (!formData.brand || !formData.brand.trim()) {
+          <datalist id="brand-options">
+            @for (brand of brands(); track brand.id) { <option [value]="brand.name"></option> }
+          </datalist>
+          @if (brandSearch.trim() && !formData.brandId) {
+          <button type="button" class="btn-link create-brand" (click)="openCreateBrand()">+ Crear marca "{{ brandSearch.trim() }}"</button>
+          }
+          @if (!formData.brandId) {
           <small class="warning">
-            Este producto no podrá sincronizarse con Meta Catalog.
+            Selecciona una marca existente para habilitar Meta Catalog.
           </small>
           }
         </div>
@@ -715,3 +723,16 @@
   </form>
   }
 </div>
+
+@if (showBrandModal()) {
+<div class="brand-modal-backdrop" (click)="showBrandModal.set(false)">
+  <div class="brand-modal" (click)="$event.stopPropagation()">
+    <h3>Crear marca</h3>
+    <input type="text" [(ngModel)]="newBrandName" name="newBrandName" maxlength="255" autofocus />
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" (click)="showBrandModal.set(false)">Cancelar</button>
+      <button type="button" class="btn-primary" (click)="createBrand()" [disabled]="!newBrandName.trim()">Crear y seleccionar</button>
+    </div>
+  </div>
+</div>
+}

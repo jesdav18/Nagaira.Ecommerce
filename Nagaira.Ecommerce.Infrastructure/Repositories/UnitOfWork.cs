@@ -7,6 +7,8 @@ namespace Nagaira.Ecommerce.Infrastructure.Repositories;
 
 public class UnitOfWork : IUnitOfWork
 {
+    private IBrandRepository? _brands;
+    public IBrandRepository Brands => _brands ??= new BrandRepository(_context);
     private readonly ApplicationDbContext _context;
     private IDbContextTransaction? _transaction;
 

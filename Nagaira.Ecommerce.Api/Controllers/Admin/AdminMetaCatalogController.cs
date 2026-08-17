@@ -155,10 +155,55 @@ public class AdminMetaCatalogController : ControllerBase
         return Ok(MetaCatalogSyncPlanner.BuildPlan(products, statesByProductId, _options, safeLimit));
     }
 
+    [HttpGet("summary")]
+    public async Task<ActionResult<MetaCatalogAdminSummary>> Summary()
+    {
+        var rows = await BuildAdminRowsAsync();
+        return Ok(new MetaCatalogAdminSummary(
+            rows.Count,
+            rows.Count(x => x.MetaStatus == MetaCatalogAdminStatuses.Synced),
+            rows.Count(x => x.MetaStatus == MetaCatalogAdminStatuses.NotSynced),
+            rows.Count(x => x.MetaStatus == MetaCatalogAdminStatuses.UpdateAvailable),
+            rows.Count(x => x.MetaStatus == MetaCatalogAdminStatuses.Processing),
+            rows.Count(x => x.MetaStatus == MetaCatalogAdminStatuses.Error),
+            rows.Count(x => x.MetaStatus == MetaCatalogAdminStatuses.NotEligible),
+            _options.AdminSyncEnabled));
+    }
+
+    [HttpGet("products")]
+    public async Task<ActionResult<MetaCatalogAdminProductsResponse>> Products(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 20,
+        [FromQuery] string? search = null, [FromQuery] string? status = null,
+        [FromQuery] Guid? brandId = null)
+    {
+        var safePage = Math.Max(page, 1);
+        var safePageSize = Math.Clamp(pageSize, 1, 100);
+        IEnumerable<MetaCatalogAdminProduct> query = await BuildAdminRowsAsync();
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(x => x.Name.Contains(search, StringComparison.OrdinalIgnoreCase) || x.Sku.Contains(search, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(status)) query = query.Where(x => x.MetaStatus == status);
+        if (brandId.HasValue) query = query.Where(x => x.BrandId == brandId);
+        var filtered = query.ToList();
+        return Ok(new MetaCatalogAdminProductsResponse(safePage, safePageSize, filtered.Count, _options.AdminSyncEnabled,
+            filtered.Skip((safePage - 1) * safePageSize).Take(safePageSize).ToList()));
+    }
+
+    [HttpPost("sync-selected")]
+    public Task<ActionResult<MetaCatalogSyncExecutionResponse>> SyncSelected(MetaCatalogSyncSelectedRequest request) =>
+        ExecuteSelectedAsync(request.ProductIds, request.Force);
+
+    [HttpPost("products/{productId:guid}/sync")]
+    public Task<ActionResult<MetaCatalogSyncExecutionResponse>> SyncProduct(Guid productId, MetaCatalogSyncOneRequest request) =>
+        ExecuteSelectedAsync([productId], request.Force);
+
     [HttpPost("products/{productId:guid}/invalidate-sync")]
     public async Task<ActionResult<MetaCatalogSyncInvalidationResponse>> InvalidateSync(Guid productId)
     {
         if (!_environment.IsStaging())
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+        if (!_options.AdminSyncEnabled)
         {
             return StatusCode(StatusCodes.Status403Forbidden);
         }
@@ -598,6 +643,10 @@ public class AdminMetaCatalogController : ControllerBase
         {
             return "MetaCatalog:SyncEnabled must be true for dryRun=false.";
         }
+        if (!_options.AdminSyncEnabled)
+        {
+            return "MetaCatalog:AdminSyncEnabled must be true for Meta write operations.";
+        }
 
         if (string.IsNullOrWhiteSpace(_options.CatalogId))
         {
@@ -615,6 +664,84 @@ public class AdminMetaCatalogController : ControllerBase
         }
 
         return null;
+    }
+
+    private async Task<List<MetaCatalogAdminProduct>> BuildAdminRowsAsync()
+    {
+        var products = (await _unitOfWork.Products.GetAllAsync()).ToList();
+        var states = await _unitOfWork.MetaProductSyncStates.GetByProductIdsAsync(products.Select(p => p.Id));
+        var stateById = states.GroupBy(s => s.ProductId).ToDictionary(g => g.Key, g => g.First());
+        return products.Select(product =>
+        {
+            stateById.TryGetValue(product.Id, out var state);
+            var outcome = MetaCatalogProductMapper.TryMap(product, _options);
+            var eligible = outcome.Status == MetaCatalogProductMappingStatus.Upsert;
+            var currentHash = outcome.MappingResult?.PayloadHash;
+            var changed = eligible && !string.IsNullOrWhiteSpace(state?.LastPayloadHash) && state.LastPayloadHash != currentHash;
+            var status = !eligible ? MetaCatalogAdminStatuses.NotEligible
+                : state?.Status == MetaProductSyncStatuses.Processing ? MetaCatalogAdminStatuses.Processing
+                : state?.Status is MetaProductSyncStatuses.Error or MetaProductSyncStatuses.Failed ? MetaCatalogAdminStatuses.Error
+                : string.IsNullOrWhiteSpace(state?.LastPayloadHash) ? MetaCatalogAdminStatuses.NotSynced
+                : changed ? MetaCatalogAdminStatuses.UpdateAvailable
+                : MetaCatalogAdminStatuses.Synced;
+            var operation = status == MetaCatalogAdminStatuses.NotSynced ? MetaCatalogSyncPlanOperations.Create
+                : status == MetaCatalogAdminStatuses.UpdateAvailable ? MetaCatalogSyncPlanOperations.Update
+                : status == MetaCatalogAdminStatuses.Synced ? MetaCatalogSyncPlanOperations.Unchanged
+                : MetaCatalogSyncPlanOperations.Skipped;
+            return new MetaCatalogAdminProduct(product.Id, product.Name, product.Sku, product.BrandId,
+                product.BrandEntity?.Name ?? product.Brand, outcome.MappingResult?.Item?.ImageUrl,
+                eligible, eligible ? null : outcome.Reason, status, operation,
+                state?.LastSyncedAt, state?.LastAttemptAt, state?.LastErrorMessage, changed);
+        }).OrderBy(x => x.Name).ToList();
+    }
+
+    private async Task<ActionResult<MetaCatalogSyncExecutionResponse>> ExecuteSelectedAsync(IReadOnlyList<Guid> productIds, bool force)
+    {
+        if (!_environment.IsDevelopment() && !_environment.IsStaging()) return StatusCode(StatusCodes.Status403Forbidden);
+        if (!_options.AdminSyncEnabled)
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "MetaCatalog:AdminSyncEnabled is false." });
+        var validation = ValidateLiveTestConfiguration();
+        if (validation != null) return BadRequest(new { message = validation });
+        var ids = productIds.Distinct().ToList();
+        if (ids.Count is 0 or > 100) return BadRequest(new { message = "productIds must contain between 1 and 100 unique IDs." });
+
+        var products = await _unitOfWork.Products.GetByIdsForMetaCatalogSyncAsync(ids);
+        var productById = products.ToDictionary(p => p.Id);
+        var states = await _unitOfWork.MetaProductSyncStates.GetByProductIdsAsync(ids);
+        var stateById = states.ToDictionary(s => s.ProductId);
+        var responses = new List<MetaCatalogSyncExecutionItem>();
+        var pending = new List<(Product Product, MetaCatalogMappingResult Mapping, string Operation)>();
+        foreach (var id in ids)
+        {
+            if (!productById.TryGetValue(id, out var product)) { responses.Add(new(id, string.Empty, MetaCatalogSyncPlanOperations.Skipped, MetaCatalogSyncExecutionStatuses.Skipped, null, null, "product_not_found")); continue; }
+            var outcome = MetaCatalogProductMapper.TryMap(product, _options);
+            if (outcome.Status != MetaCatalogProductMappingStatus.Upsert) { responses.Add(new(id, product.Name, MetaCatalogSyncPlanOperations.Skipped, MetaCatalogSyncExecutionStatuses.Skipped, null, null, outcome.Reason)); continue; }
+            stateById.TryGetValue(id, out var state);
+            if (state?.Status == MetaProductSyncStatuses.Processing) { responses.Add(new(id, product.Name, MetaCatalogSyncPlanOperations.Skipped, MetaCatalogSyncExecutionStatuses.Processing, outcome.MappingResult!.PayloadHash, state.BatchHandle, "already_processing")); continue; }
+            var mapping = outcome.MappingResult!;
+            var hasPrevious = !string.IsNullOrWhiteSpace(state?.LastPayloadHash);
+            var unchanged = hasPrevious && state!.LastPayloadHash == mapping.PayloadHash;
+            if (unchanged && !force) { responses.Add(new(id, product.Name, MetaCatalogSyncPlanOperations.Unchanged, MetaCatalogSyncExecutionStatuses.Unchanged, mapping.PayloadHash, null, null)); continue; }
+            pending.Add((product, mapping, hasPrevious ? MetaCatalogSyncPlanOperations.Update : MetaCatalogSyncPlanOperations.Create));
+        }
+
+        foreach (var batch in pending.Chunk(20))
+        {
+            var result = await _metaCatalogClient.SubmitAsync(batch.Select(x => x.Mapping).ToList(), HttpContext?.RequestAborted ?? CancellationToken.None);
+            var resultById = result.Items.GroupBy(x => x.RetailerId).ToDictionary(g => g.Key, g => g.First());
+            var now = DateTime.UtcNow;
+            foreach (var item in batch)
+            {
+                resultById.TryGetValue(item.Mapping.RetailerId, out var metaResult);
+                var (state, isNew) = GetOrCreateSyncState(stateById, item.Product.Id, item.Mapping.RetailerId, now);
+                if (isNew) await _unitOfWork.MetaProductSyncStates.AddAsync(state);
+                ApplyMetaResultToState(state, item.Mapping, metaResult, now);
+                responses.Add(new(item.Product.Id, item.Product.Name, item.Operation, ToExecutionStatus(metaResult), item.Mapping.PayloadHash, metaResult?.BatchHandle, metaResult?.ErrorMessage));
+            }
+        }
+        if (pending.Count > 0) await _unitOfWork.SaveChangesAsync();
+        var ordered = ids.Select(id => responses.First(x => x.ProductId == id)).ToList();
+        return Ok(new MetaCatalogSyncExecutionResponse(false, MetaCatalogSyncExecutionSummary.FromItems(ordered, pending.Count), ordered));
     }
 
     private static string ToDryRunApplyOperation(MetaCatalogBrandBackfillPlanItem item)

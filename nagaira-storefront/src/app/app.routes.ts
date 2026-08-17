@@ -96,6 +96,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/admin-products/admin-product-form/admin-product-form.component').then(m => m.AdminProductFormComponent)
       },
       {
+        path: 'meta-catalog',
+        loadComponent: () => import('./features/admin/admin-meta-catalog/admin-meta-catalog.component').then(m => m.AdminMetaCatalogComponent)
+      },
+      {
         path: 'kardex',
         loadComponent: () => import('./features/admin/admin-kardex/admin-kardex.component').then(m => m.AdminKardexComponent)
       },

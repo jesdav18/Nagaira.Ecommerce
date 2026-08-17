@@ -79,12 +79,14 @@ public class ProductService : IProductService
         if (skuExists)
             throw new Exception($"El SKU '{dto.Sku}' ya existe. Por favor, use un SKU diferente.");
 
+        var brand = await ResolveBrandAsync(dto.BrandId);
         var product = new Product
         {
             Id = Guid.NewGuid(),
             Name = dto.Name,
             Description = dto.Description,
-            Brand = NormalizeBrand(dto.Brand),
+            BrandId = brand.Id,
+            Brand = brand.Name,
             Sku = dto.Sku,
             Slug = await GenerateUniqueSlugAsync(dto.Name),
             CategoryId = dto.CategoryId,
@@ -191,9 +193,11 @@ public class ProductService : IProductService
             }
         }
 
+        var brand = await ResolveBrandAsync(dto.BrandId);
         product.Name = dto.Name;
         product.Description = dto.Description;
-        product.Brand = NormalizeBrand(dto.Brand);
+        product.BrandId = brand.Id;
+        product.Brand = brand.Name;
         product.Cost = dto.Cost;
         product.IsActive = dto.IsActive;
         product.HasVirtualStock = dto.HasVirtualStock;
@@ -229,7 +233,8 @@ public class ProductService : IProductService
             product.Id,
             product.Name,
             product.Description,
-            product.Brand,
+            product.BrandEntity?.Name ?? product.Brand,
+            product.BrandId,
             product.Sku,
             product.Slug,
             product.IsActive,
@@ -273,7 +278,8 @@ public class ProductService : IProductService
             product.Id,
             product.Name,
             product.Description,
-            product.Brand,
+            product.BrandEntity?.Name ?? product.Brand,
+            product.BrandId,
             product.Sku,
             product.Slug,
             product.IsActive,
@@ -530,5 +536,13 @@ public class ProductService : IProductService
         }
 
         return normalized;
+    }
+
+    private async Task<Brand> ResolveBrandAsync(Guid? brandId)
+    {
+        if (!brandId.HasValue) throw new Exception("Brand is required");
+        var brand = await _unitOfWork.Brands.GetByIdAsync(brandId.Value);
+        if (brand == null || brand.IsDeleted || !brand.IsActive) throw new Exception("Brand not found or inactive");
+        return brand;
     }
 }

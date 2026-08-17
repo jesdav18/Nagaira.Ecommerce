@@ -10,9 +10,10 @@ public class ProductServiceBrandTests
 {
     private static readonly Guid CategoryId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static readonly Guid PriceLevelId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+    private static readonly Guid BrandId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
 
     [Fact]
-    public async Task CreateProduct_WithBrand_TrimsAndReturnsBrand()
+    public async Task CreateProduct_WithBrandIdStoresCanonicalBrand()
     {
         Product? capturedProduct = null;
         var unitOfWork = CreateUnitOfWork();
@@ -25,9 +26,10 @@ public class ProductServiceBrandTests
             .ReturnsAsync(() => CreateProduct(capturedProduct!.Id, capturedProduct.Brand));
         var service = new ProductService(unitOfWork.UnitOfWork.Object);
 
-        var result = await service.CreateProductAsync(CreateCreateDto(" Rexona "));
+        var result = await service.CreateProductAsync(CreateCreateDto(BrandId));
 
         Assert.Equal("Rexona", capturedProduct!.Brand);
+        Assert.Equal(BrandId, capturedProduct.BrandId);
         Assert.Equal("Rexona", result.Brand);
     }
 
@@ -38,35 +40,31 @@ public class ProductServiceBrandTests
         var unitOfWork = CreateUnitOfWork(product);
         var service = new ProductService(unitOfWork.UnitOfWork.Object);
 
-        await service.UpdateProductAsync(CreateUpdateDto(product, " Rexona "));
+        await service.UpdateProductAsync(CreateUpdateDto(product, BrandId));
 
         Assert.Equal("Rexona", product.Brand);
         unitOfWork.Products.Verify(r => r.UpdateAsync(product), Times.Once);
     }
 
     [Fact]
-    public async Task UpdateProduct_EmptyBrandStoresNull()
+    public async Task UpdateProduct_MissingBrandFails()
     {
         var product = CreateProduct(brand: "Old Brand");
         var unitOfWork = CreateUnitOfWork(product);
         var service = new ProductService(unitOfWork.UnitOfWork.Object);
 
-        await service.UpdateProductAsync(CreateUpdateDto(product, "   "));
-
-        Assert.Null(product.Brand);
+        var ex = await Assert.ThrowsAsync<Exception>(() => service.UpdateProductAsync(CreateUpdateDto(product, null)));
+        Assert.Equal("Brand is required", ex.Message);
     }
 
     [Fact]
-    public async Task UpdateProduct_BrandLongerThanTwoHundredFiftyFiveFails()
+    public async Task UpdateProduct_UnknownBrandFails()
     {
         var product = CreateProduct(brand: "Old Brand");
         var unitOfWork = CreateUnitOfWork(product);
         var service = new ProductService(unitOfWork.UnitOfWork.Object);
-        var brand = new string('x', 256);
-
-        var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.UpdateProductAsync(CreateUpdateDto(product, brand)));
-
-        Assert.Contains("marca", ex.Message, StringComparison.OrdinalIgnoreCase);
+        var ex = await Assert.ThrowsAsync<Exception>(() => service.UpdateProductAsync(CreateUpdateDto(product, Guid.NewGuid())));
+        Assert.Contains("Brand not found", ex.Message);
     }
 
     private static TestUnitOfWork CreateUnitOfWork(Product? product = null)
@@ -103,6 +101,9 @@ public class ProductServiceBrandTests
         productPrices.Setup(r => r.AddAsync(It.IsAny<ProductPrice>())).ReturnsAsync((ProductPrice p) => p);
 
         var unitOfWork = new Mock<IUnitOfWork>();
+        var brands = new Mock<IBrandRepository>();
+        brands.Setup(r => r.GetByIdAsync(BrandId)).ReturnsAsync(new Brand { Id = BrandId, Name = "Rexona", NormalizedName = "rexona", IsActive = true });
+        unitOfWork.SetupGet(u => u.Brands).Returns(brands.Object);
         unitOfWork.SetupGet(u => u.Products).Returns(products.Object);
         unitOfWork.SetupGet(u => u.PriceLevels).Returns(priceLevels.Object);
         unitOfWork.SetupGet(u => u.ProductPrices).Returns(productPrices.Object);
@@ -112,12 +113,13 @@ public class ProductServiceBrandTests
         return new TestUnitOfWork(unitOfWork, products);
     }
 
-    private static CreateProductDto CreateCreateDto(string? brand)
+    private static CreateProductDto CreateCreateDto(Guid? brandId)
     {
         return new CreateProductDto(
             "Desodorante",
             "Desodorante en barra",
-            brand,
+            "legacy",
+            brandId,
             "RX-001",
             CategoryId,
             10m,
@@ -134,13 +136,14 @@ public class ProductServiceBrandTests
             null);
     }
 
-    private static UpdateProductDto CreateUpdateDto(Product product, string? brand)
+    private static UpdateProductDto CreateUpdateDto(Product product, Guid? brandId)
     {
         return new UpdateProductDto(
             product.Id,
             product.Name,
             product.Description,
-            brand,
+            product.Brand,
+            brandId,
             product.Sku,
             product.CategoryId,
             product.Cost,

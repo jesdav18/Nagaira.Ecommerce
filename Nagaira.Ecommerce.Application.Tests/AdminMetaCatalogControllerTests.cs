@@ -19,6 +19,77 @@ public class AdminMetaCatalogControllerTests
     private static readonly Guid RetailPriceLevelId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 
     [Fact]
+    public async Task Summary_AndProductsExposeAllAdministrativeStatuses()
+    {
+        var products = Enumerable.Range(1, 6).Select(i => CreateProduct(Guid.Parse($"11111111-1111-1111-1111-{i:000000000000}"), $"Product {i}", "Acme")).ToList();
+        var options = CreateMetaOptions();
+        var syncedHash = MetaCatalogProductMapper.Map(products[1], options).PayloadHash;
+        var states = new List<MetaProductSyncState>
+        {
+            CreateSyncState(products[1], syncedHash), CreateSyncState(products[2], "old-hash"),
+            CreateSyncState(products[3], MetaCatalogProductMapper.Map(products[3], options).PayloadHash),
+            CreateSyncState(products[4], MetaCatalogProductMapper.Map(products[4], options).PayloadHash)
+        };
+        states[2].Status = MetaProductSyncStatuses.Processing; states[3].Status = MetaProductSyncStatuses.Error;
+        products[5].BrandId = null; products[5].BrandEntity = null;
+        var productRepo = new Mock<IProductRepository>(); productRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(products);
+        var controller = CreateController(null, productRepositoryMock: productRepo, syncStates: states);
+
+        var summaryResult = await controller.Summary();
+        var summary = Assert.IsType<MetaCatalogAdminSummary>(Assert.IsType<OkObjectResult>(summaryResult.Result).Value);
+        Assert.Equal(6, summary.Total); Assert.Equal(1, summary.NotSynced); Assert.Equal(1, summary.Synced); Assert.Equal(1, summary.UpdateAvailable);
+        Assert.Equal(1, summary.Processing); Assert.Equal(1, summary.Errors); Assert.Equal(1, summary.NotEligible);
+
+        foreach (var status in new[] { "NOT_SYNCED", "SYNCED", "UPDATE_AVAILABLE", "PROCESSING", "ERROR", "NOT_ELIGIBLE" })
+        {
+            var result = await controller.Products(status: status);
+            Assert.Single(Assert.IsType<MetaCatalogAdminProductsResponse>(Assert.IsType<OkObjectResult>(result.Result).Value).Items);
+        }
+    }
+
+    [Fact]
+    public async Task SyncSelected_UsesBatchesOfAtMostTwentyAndStableRetailerIds()
+    {
+        var products = Enumerable.Range(1, 21).Select(i => CreateProduct(Guid.Parse($"22222222-2222-2222-2222-{i:000000000000}"), $"Product {i}", "Acme")).ToList();
+        var productRepo = new Mock<IProductRepository>();
+        productRepo.Setup(r => r.GetByIdsForMetaCatalogSyncAsync(It.IsAny<IEnumerable<Guid>>())).ReturnsAsync(products);
+        var submitted = new List<MetaCatalogMappingResult>();
+        var client = new Mock<IMetaCatalogClient>();
+        client.Setup(x => x.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyCollection<MetaCatalogMappingResult> items, CancellationToken _) => { submitted.AddRange(items); return new MetaCatalogBatchResult(items.Select(x => new MetaCatalogItemResult(x.RetailerId, x.Action, true, null, null, null, false)).ToList()); });
+        var controller = CreateController(null, environmentName: "Staging", syncEnabled: true, catalogId: "catalog", accessToken: "token", graphApiVersion: "v25", metaCatalogClient: client.Object, productRepositoryMock: productRepo);
+
+        var result = await controller.SyncSelected(new MetaCatalogSyncSelectedRequest(products.Select(x => x.Id).ToList()));
+
+        var response = Assert.IsType<MetaCatalogSyncExecutionResponse>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        Assert.Equal(21, response.Summary.Submitted); Assert.Equal(products.Select(x => x.Id.ToString("D")).Order(), submitted.Select(x => x.RetailerId).Order());
+        client.Verify(x => x.SubmitAsync(It.Is<IReadOnlyCollection<MetaCatalogMappingResult>>(c => c.Count <= 20), It.IsAny<CancellationToken>()), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task SyncSelected_AdminSyncDisabledIsForbiddenWithoutCallingMeta()
+    {
+        var product = CreateProduct(); var client = new Mock<IMetaCatalogClient>();
+        var controller = CreateController(product, environmentName: "Staging", syncEnabled: false, metaCatalogClient: client.Object);
+        var result = await controller.SyncSelected(new MetaCatalogSyncSelectedRequest([product.Id]));
+        Assert.Equal(403, Assert.IsType<ObjectResult>(result.Result).StatusCode);
+        client.Verify(x => x.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SyncSelected_ForceResendsUnchangedAsUpdate()
+    {
+        var product = CreateProduct(); var state = CreateSyncState(product, MetaCatalogProductMapper.Map(product, CreateMetaOptions()).PayloadHash);
+        var client = new Mock<IMetaCatalogClient>(); client.Setup(x => x.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>())).ReturnsAsync(new MetaCatalogBatchResult([new(product.Id.ToString("D"), MetaCatalogSyncAction.Upsert, true, null, null, null, false)]));
+        var controller = CreateController(product, environmentName: "Staging", syncEnabled: true, catalogId: "catalog", accessToken: "token", graphApiVersion: "v25", metaCatalogClient: client.Object, syncStates: [state]);
+
+        var result = await controller.SyncProduct(product.Id, new MetaCatalogSyncOneRequest(true));
+
+        var item = Assert.Single(Assert.IsType<MetaCatalogSyncExecutionResponse>(Assert.IsType<OkObjectResult>(result.Result).Value).Items);
+        Assert.Equal(MetaCatalogSyncPlanOperations.Update, item.Operation); client.Verify(x => x.SubmitAsync(It.IsAny<IReadOnlyCollection<MetaCatalogMappingResult>>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task TestSync_ProductNotFound_ReturnsNotFound()
     {
         var controller = CreateController(null);
@@ -62,6 +133,7 @@ public class AdminMetaCatalogControllerTests
         var controller = CreateController(
             product,
             environmentName: "Staging",
+            syncEnabled: true,
             unitOfWorkMock: unitOfWork,
             syncStateRepositoryMock: stateRepository);
 
@@ -1166,6 +1238,7 @@ public class AdminMetaCatalogControllerTests
             Currency = "HNL",
             PublicBaseUrl = "https://store.example",
             PublicPriceLevelId = RetailPriceLevelId,
+            AdminSyncEnabled = syncEnabled,
             CatalogId = catalogId,
             AccessToken = accessToken,
             GraphApiVersion = graphApiVersion,
@@ -1267,6 +1340,8 @@ public class AdminMetaCatalogControllerTests
             Name = name,
             Description = " Router para casa ",
             Brand = brand,
+            BrandId = brand == null ? null : Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"),
+            BrandEntity = brand == null ? null : new Brand { Id = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"), Name = brand.Trim(), NormalizedName = brand.Trim().ToLowerInvariant(), IsActive = true },
             Sku = "RTR-001",
             Slug = "router-wifi",
             IsActive = true,

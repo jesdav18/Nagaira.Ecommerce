@@ -111,6 +111,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 });
 
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IBrandRepository, BrandRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IPriceLevelRepository, PriceLevelRepository>();
@@ -136,6 +137,7 @@ var jwtExpirationDays = int.TryParse(builder.Configuration["Jwt:ExpirationDays"]
 var refreshTokenDays = int.TryParse(builder.Configuration["Jwt:RefreshTokenDays"], out var refreshDays) ? refreshDays : 30;
 
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IBrandService, BrandService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IPriceLevelService, PriceLevelService>();

@@ -64,8 +64,8 @@ public static class MetaCatalogProductMapper
     {
         reason = null;
 
-        var brand = product.Brand?.Trim();
-        if (string.IsNullOrWhiteSpace(brand))
+        var brand = product.BrandEntity;
+        if (!product.BrandId.HasValue || brand == null || brand.IsDeleted || !brand.IsActive)
         {
             reason = "missing_brand";
             return null;
@@ -119,7 +119,7 @@ public static class MetaCatalogProductMapper
             retailerId,
             product.Name.Trim(),
             product.Description?.Trim() ?? string.Empty,
-            brand,
+            brand.Name.Trim(),
             availability,
             "new",
             price.Value.ToString("0.00", CultureInfo.InvariantCulture),

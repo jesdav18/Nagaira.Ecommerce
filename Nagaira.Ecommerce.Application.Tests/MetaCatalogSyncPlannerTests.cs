@@ -78,6 +78,8 @@ public class MetaCatalogSyncPlannerTests
     {
         var product = CreateProduct();
         product.Brand = null;
+        product.BrandId = null;
+        product.BrandEntity = null;
 
         var plan = BuildPlan([product], []);
 
@@ -118,6 +120,8 @@ public class MetaCatalogSyncPlannerTests
         var product = CreateProduct();
         product.IsActive = false;
         product.Brand = null;
+        product.BrandId = null;
+        product.BrandEntity = null;
         var state = SyncedState(product, "previous-upsert-hash");
 
         var plan = BuildPlan([product], [state]);
@@ -186,6 +190,8 @@ public class MetaCatalogSyncPlannerTests
             Name = "Router WiFi",
             Description = "Router para casa",
             Brand = "Acme",
+            BrandId = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"),
+            BrandEntity = new Brand { Id = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"), Name = "Acme", NormalizedName = "acme", IsActive = true },
             Sku = $"RTR-{productId.ToString("N")[..6]}",
             Slug = $"router-{productId.ToString("N")[..6]}",
             IsActive = true,

@@ -14,6 +14,7 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<User> Users { get; set; }
     public DbSet<Product> Products { get; set; }
+    public DbSet<Brand> Brands { get; set; }
     public DbSet<Category> Categories { get; set; }
     public DbSet<ProductImage> ProductImages { get; set; }
     public DbSet<Order> Orders { get; set; }
@@ -53,6 +54,17 @@ public class ApplicationDbContext : DbContext
         
         // Entities that don't have UpdatedAt column
         var entitiesWithoutUpdatedAt = new[] { "Offer", "AuditLog", "InventoryMovement", "OfferProduct", "OfferCategory", "OfferExcludedProduct", "OfferExcludedCategory", "OfferRule", "User", "Product", "Category", "PaymentMethod", "PaymentMethodType", "RefreshToken", "AnalyticsEvent", "Quote", "QuoteItem" };
+
+        modelBuilder.Entity<Brand>(entity =>
+        {
+            entity.ToTable("brands");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.NormalizedName).IsRequired().HasMaxLength(255);
+            entity.HasIndex(e => e.NormalizedName).IsUnique();
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+        });
 
         modelBuilder.Entity<User>(entity =>
         {
@@ -167,6 +179,8 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.Category).WithMany(e => e.Products)
                 .HasForeignKey(e => e.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.BrandEntity).WithMany(e => e.Products)
+                .HasForeignKey(e => e.BrandId).OnDelete(DeleteBehavior.SetNull);
             entity.HasOne(e => e.InventoryBalance).WithOne(e => e.Product)
                 .HasForeignKey<InventoryBalance>(e => e.ProductId).OnDelete(DeleteBehavior.Cascade);
         });

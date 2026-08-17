@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { Brand, MetaCatalogProductsResponse, MetaCatalogSummary } from '../models/models';
 
 @Injectable({
   providedIn: 'root'
@@ -9,6 +10,13 @@ import { environment } from '../../../environments/environment';
 export class AdminService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/admin`;
+
+  getBrands(search = '', activeOnly = true) { return this.http.get<Brand[]>(`${this.apiUrl}/brands`, { params: { search, activeOnly } }); }
+  createBrand(name: string) { return this.http.post<Brand>(`${this.apiUrl}/brands`, { name, isActive: true }); }
+  getMetaCatalogSummary() { return this.http.get<MetaCatalogSummary>(`${this.apiUrl}/meta-catalog/summary`); }
+  getMetaCatalogProducts(params: { page: number; pageSize: number; search?: string; status?: string; brandId?: string }) { return this.http.get<MetaCatalogProductsResponse>(`${this.apiUrl}/meta-catalog/products`, { params: params as any }); }
+  syncMetaCatalogSelected(productIds: string[], force = false) { return this.http.post<any>(`${this.apiUrl}/meta-catalog/sync-selected`, { productIds, force }); }
+  syncMetaCatalogProduct(productId: string, force = false) { return this.http.post<any>(`${this.apiUrl}/meta-catalog/products/${productId}/sync`, { force }); }
 
   getDashboardStats() {
     return this.http.get(`${this.apiUrl}/dashboard/stats`);

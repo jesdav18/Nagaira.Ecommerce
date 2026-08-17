@@ -2,6 +2,7 @@ namespace Nagaira.Ecommerce.Application.MetaCatalog;
 
 public class MetaCatalogOptions
 {
+    public bool AdminSyncEnabled { get; set; }
     public string ApiBaseUrl { get; set; } = "https://graph.facebook.com";
     public string GraphApiVersion { get; set; } = string.Empty;
     public string CatalogId { get; set; } = string.Empty;

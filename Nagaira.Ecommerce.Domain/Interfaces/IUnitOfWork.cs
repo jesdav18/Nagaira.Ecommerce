@@ -6,6 +6,7 @@ namespace Nagaira.Ecommerce.Domain.Interfaces;
 
 public interface IUnitOfWork : IDisposable
 {
+    IBrandRepository Brands { get; }
     IProductRepository Products { get; }
     IUserRepository Users { get; }
     IOrderRepository Orders { get; }
