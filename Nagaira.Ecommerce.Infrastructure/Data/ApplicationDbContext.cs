@@ -14,6 +14,7 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<User> Users { get; set; }
     public DbSet<Product> Products { get; set; }
+    public DbSet<Brand> Brands { get; set; }
     public DbSet<Category> Categories { get; set; }
     public DbSet<ProductImage> ProductImages { get; set; }
     public DbSet<Order> Orders { get; set; }
@@ -45,6 +46,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<AnalyticsEvent> AnalyticsEvents { get; set; }
     public DbSet<Quote> Quotes { get; set; }
     public DbSet<QuoteItem> QuoteItems { get; set; }
+    public DbSet<MetaProductSyncState> MetaProductSyncStates { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -52,6 +54,17 @@ public class ApplicationDbContext : DbContext
         
         // Entities that don't have UpdatedAt column
         var entitiesWithoutUpdatedAt = new[] { "Offer", "AuditLog", "InventoryMovement", "OfferProduct", "OfferCategory", "OfferExcludedProduct", "OfferExcludedCategory", "OfferRule", "User", "Product", "Category", "PaymentMethod", "PaymentMethodType", "RefreshToken", "AnalyticsEvent", "Quote", "QuoteItem" };
+
+        modelBuilder.Entity<Brand>(entity =>
+        {
+            entity.ToTable("brands");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.NormalizedName).IsRequired().HasMaxLength(255);
+            entity.HasIndex(e => e.NormalizedName).IsUnique();
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+        });
 
         modelBuilder.Entity<User>(entity =>
         {
@@ -156,6 +169,7 @@ public class ApplicationDbContext : DbContext
             entity.ToTable("products");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.Brand).HasMaxLength(255);
             entity.Property(e => e.Sku).IsRequired().HasMaxLength(50);
             entity.Property(e => e.Slug).IsRequired().HasMaxLength(255);
             entity.HasIndex(e => e.Sku).IsUnique();
@@ -165,6 +179,8 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.Category).WithMany(e => e.Products)
                 .HasForeignKey(e => e.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.BrandEntity).WithMany(e => e.Products)
+                .HasForeignKey(e => e.BrandId).OnDelete(DeleteBehavior.SetNull);
             entity.HasOne(e => e.InventoryBalance).WithOne(e => e.Product)
                 .HasForeignKey<InventoryBalance>(e => e.ProductId).OnDelete(DeleteBehavior.Cascade);
         });
@@ -186,6 +202,28 @@ public class ApplicationDbContext : DbContext
             entity.ToTable("product_images");
             entity.HasKey(e => e.Id);
             entity.HasOne(e => e.Product).WithMany(e => e.Images).HasForeignKey(e => e.ProductId);
+        });
+
+        modelBuilder.Entity<MetaProductSyncState>(entity =>
+        {
+            entity.ToTable("meta_product_sync_states");
+            entity.HasKey(e => e.ProductId);
+            entity.Property(e => e.RetailerId).IsRequired().HasMaxLength(64);
+            entity.Property(e => e.Status).IsRequired().HasMaxLength(30);
+            entity.Property(e => e.LastPayloadHash).HasMaxLength(128);
+            entity.Property(e => e.PendingPayloadHash).HasMaxLength(128);
+            entity.Property(e => e.LastAction).HasMaxLength(20);
+            entity.Property(e => e.BatchHandle).HasMaxLength(255);
+            entity.Property(e => e.LastErrorCode).HasMaxLength(100);
+            entity.Property(e => e.LastErrorSubcode).HasMaxLength(100);
+            entity.Property(e => e.LastErrorMessage).HasMaxLength(2000);
+            entity.HasIndex(e => e.RetailerId).IsUnique();
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.BatchHandle);
+            entity.HasIndex(e => e.LockedUntilAt);
+            entity.HasOne(e => e.Product).WithOne()
+                .HasForeignKey<MetaProductSyncState>(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Order>(entity =>

@@ -110,6 +110,8 @@ public class AdminService : IAdminService
             p.Id,
             p.Name,
             p.Description,
+            p.BrandEntity?.Name ?? p.Brand,
+            p.BrandId,
             p.Sku,
             p.Slug,
             p.IsActive,

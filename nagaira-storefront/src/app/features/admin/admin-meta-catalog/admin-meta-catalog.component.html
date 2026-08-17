@@ -1,0 +1,27 @@
+<section class="meta-page">
+  <header><div><h1>Meta Catalog</h1><p>Migración y sincronización del catálogo de productos.</p></div></header>
+  @if (summary(); as s) {
+  <div class="summary-grid">
+    <article><strong>{{s.total}}</strong><span>Total</span></article><article><strong>{{s.synced}}</strong><span>Migrados</span></article>
+    <article><strong>{{s.notSynced}}</strong><span>No migrados</span></article><article><strong>{{s.updateAvailable}}</strong><span>Actualización pendiente</span></article>
+    <article><strong>{{s.notEligible}}</strong><span>No elegibles</span></article><article><strong>{{s.processing}}</strong><span>Procesando</span></article>
+    <article><strong>{{s.errors}}</strong><span>Errores</span></article>
+  </div>
+  @if (!s.adminSyncEnabled) { <div class="disabled-banner">La escritura hacia Meta está deshabilitada en este entorno.</div> }
+  }
+  <div class="filters">
+    <input [(ngModel)]="search" (keyup.enter)="filter()" placeholder="Buscar por nombre o SKU" />
+    <select [(ngModel)]="status" (change)="filter()">@for (item of statuses; track item[0]) { <option [value]="item[0]">{{item[1]}}</option> }</select>
+    <select [(ngModel)]="brandId" (change)="filter()"><option value="">Todas las marcas</option>@for (brand of brands(); track brand.id) { <option [value]="brand.id">{{brand.name}}</option> }</select>
+    <button (click)="filter()">Buscar</button>
+  </div>
+  <div class="selection"><span>{{selected().size}} productos seleccionados</span><button (click)="syncSelected()" [disabled]="!selected().size || syncing() || !summary()?.adminSyncEnabled">Sincronizar seleccionados</button></div>
+  <div class="table-wrap"><table><thead><tr><th><input type="checkbox" (change)="togglePage()" /></th><th>Imagen</th><th>Producto</th><th>SKU</th><th>Marca</th><th>Estado imagen</th><th>Estado Meta</th><th>Operación</th><th>Última sincronización</th><th>Último error</th><th>Acciones</th></tr></thead>
+    <tbody>@for (p of products(); track p.productId) {<tr>
+      <td><input type="checkbox" [checked]="selected().has(p.productId)" [disabled]="!p.isEligible || p.metaStatus === 'PROCESSING'" (change)="toggle(p)" /></td>
+      <td>@if(p.imageUrl){<img [src]="p.imageUrl" [alt]="p.name" />}@else{—}</td><td>{{p.name}}</td><td>{{p.sku}}</td><td>{{p.brandName || '—'}}</td>
+      <td><span [class.bad]="!p.imageUrl">{{p.imageUrl ? 'Válida' : 'Faltante'}}</span></td><td><span class="status">{{p.metaStatus}}</span></td><td>{{p.plannedOperation}}</td>
+      <td>{{p.lastSyncedAt ? (p.lastSyncedAt | date:'short') : '—'}}</td><td class="error-cell">{{p.lastErrorMessage || '—'}}</td>
+      <td class="actions"><button (click)="syncOne(p)" [disabled]="!p.isEligible || p.metaStatus === 'PROCESSING' || !summary()?.adminSyncEnabled">Sincronizar ahora</button><button (click)="force(p)" [disabled]="!p.isEligible || p.metaStatus === 'PROCESSING' || !summary()?.adminSyncEnabled">Forzar actualización</button>@if(p.lastErrorMessage){<button (click)="showError(p)">Ver último error</button>}</td>
+    </tr>} @empty {<tr><td colspan="11">No hay productos para mostrar.</td></tr>}</tbody></table></div>
+</section>

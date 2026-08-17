@@ -79,11 +79,14 @@ public class ProductService : IProductService
         if (skuExists)
             throw new Exception($"El SKU '{dto.Sku}' ya existe. Por favor, use un SKU diferente.");
 
+        var brand = await ResolveBrandAsync(dto.BrandId);
         var product = new Product
         {
             Id = Guid.NewGuid(),
             Name = dto.Name,
             Description = dto.Description,
+            BrandId = brand.Id,
+            Brand = brand.Name,
             Sku = dto.Sku,
             Slug = await GenerateUniqueSlugAsync(dto.Name),
             CategoryId = dto.CategoryId,
@@ -190,8 +193,11 @@ public class ProductService : IProductService
             }
         }
 
+        var brand = await ResolveBrandAsync(dto.BrandId);
         product.Name = dto.Name;
         product.Description = dto.Description;
+        product.BrandId = brand.Id;
+        product.Brand = brand.Name;
         product.Cost = dto.Cost;
         product.IsActive = dto.IsActive;
         product.HasVirtualStock = dto.HasVirtualStock;
@@ -205,6 +211,7 @@ public class ProductService : IProductService
     public async Task DeleteProductAsync(Guid id)
     {
         await _unitOfWork.Products.DeleteAsync(id);
+        await _unitOfWork.MetaProductSyncStates.MarkPendingAsync(id, id.ToString("D"));
         await _unitOfWork.SaveChangesAsync();
     }
 
@@ -226,6 +233,8 @@ public class ProductService : IProductService
             product.Id,
             product.Name,
             product.Description,
+            product.BrandEntity?.Name ?? product.Brand,
+            product.BrandId,
             product.Sku,
             product.Slug,
             product.IsActive,
@@ -269,6 +278,8 @@ public class ProductService : IProductService
             product.Id,
             product.Name,
             product.Description,
+            product.BrandEntity?.Name ?? product.Brand,
+            product.BrandId,
             product.Sku,
             product.Slug,
             product.IsActive,
@@ -509,5 +520,29 @@ public class ProductService : IProductService
         return decimal.TryParse(setting.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out var rate)
             ? rate
             : 0.16m;
+    }
+
+    private static string? NormalizeBrand(string? brand)
+    {
+        var normalized = brand?.Trim();
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return null;
+        }
+
+        if (normalized.Length > 255)
+        {
+            throw new ArgumentException("La marca no puede exceder 255 caracteres.");
+        }
+
+        return normalized;
+    }
+
+    private async Task<Brand> ResolveBrandAsync(Guid? brandId)
+    {
+        if (!brandId.HasValue) throw new Exception("Brand is required");
+        var brand = await _unitOfWork.Brands.GetByIdAsync(brandId.Value);
+        if (brand == null || brand.IsDeleted || !brand.IsActive) throw new Exception("Brand not found or inactive");
+        return brand;
     }
 }

@@ -2,6 +2,8 @@ export interface Product {
   id: string;
   name: string;
   description: string;
+  brand?: string | null;
+  brandId?: string | null;
   sku: string;
   slug: string;
   isActive: boolean;
@@ -24,6 +26,11 @@ export interface Product {
   priceByQuantity?: number;
   minimumQuantity?: number;
 }
+
+export interface Brand { id: string; name: string; isActive: boolean; createdAt: string; updatedAt?: string; }
+export interface MetaCatalogSummary { total: number; synced: number; notSynced: number; updateAvailable: number; processing: number; errors: number; notEligible: number; adminSyncEnabled: boolean; }
+export interface MetaCatalogAdminProduct { productId: string; name: string; sku: string; brandId?: string; brandName?: string; imageUrl?: string; isEligible: boolean; eligibilityReason?: string; metaStatus: string; plannedOperation: string; lastSyncedAt?: string; lastAttemptAt?: string; lastErrorMessage?: string; payloadChanged: boolean; }
+export interface MetaCatalogProductsResponse { page: number; pageSize: number; totalCount: number; adminSyncEnabled: boolean; items: MetaCatalogAdminProduct[]; }
 
 export interface ProductImage {
   id: string;

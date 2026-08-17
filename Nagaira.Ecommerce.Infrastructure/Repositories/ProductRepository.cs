@@ -15,6 +15,7 @@ public class ProductRepository : Repository<Product>, IProductRepository
     {
         return await _dbSet
             .Include(p => p.Category)
+            .Include(p => p.BrandEntity)
             .Include(p => p.Images)
             .Include(p => p.Prices)
                 .ThenInclude(pp => pp.PriceLevel)
@@ -26,6 +27,7 @@ public class ProductRepository : Repository<Product>, IProductRepository
     {
         return await _dbSet
             .Include(p => p.Category)
+            .Include(p => p.BrandEntity)
             .Include(p => p.Images)
             .Include(p => p.Prices)
                 .ThenInclude(pp => pp.PriceLevel)
@@ -57,6 +59,7 @@ public class ProductRepository : Repository<Product>, IProductRepository
         
         return await _dbSet
             .Include(p => p.Category)
+            .Include(p => p.BrandEntity)
             .Include(p => p.Images)
             .Include(p => p.Prices)
                 .ThenInclude(pp => pp.PriceLevel)
@@ -69,6 +72,7 @@ public class ProductRepository : Repository<Product>, IProductRepository
     {
         return await _dbSet
             .Include(p => p.Category)
+            .Include(p => p.BrandEntity)
             .Include(p => p.Images)
             .Include(p => p.Prices)
                 .ThenInclude(pp => pp.PriceLevel)
@@ -81,6 +85,7 @@ public class ProductRepository : Repository<Product>, IProductRepository
     {
         return await _dbSet
             .Include(p => p.Category)
+            .Include(p => p.BrandEntity)
             .Include(p => p.Images)
             .Include(p => p.Prices)
                 .ThenInclude(pp => pp.PriceLevel)
@@ -93,6 +98,7 @@ public class ProductRepository : Repository<Product>, IProductRepository
     {
         return await _dbSet
             .Include(p => p.Category)
+            .Include(p => p.BrandEntity)
             .Include(p => p.Images)
             .Include(p => p.Prices)
                 .ThenInclude(pp => pp.PriceLevel)
@@ -104,6 +110,7 @@ public class ProductRepository : Repository<Product>, IProductRepository
     {
         return await _dbSet
             .Include(p => p.Category)
+            .Include(p => p.BrandEntity)
             .Include(p => p.Images)
             .Include(p => p.Prices)
                 .ThenInclude(pp => pp.PriceLevel)
@@ -117,6 +124,106 @@ public class ProductRepository : Repository<Product>, IProductRepository
         return await _dbSet
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(p => p.Sku == sku);
+    }
+
+    public async Task<Product?> GetByIdIncludingDeletedAsync(Guid id)
+    {
+        return await _dbSet
+            .IgnoreQueryFilters()
+            .Include(p => p.Category)
+            .Include(p => p.BrandEntity)
+            .Include(p => p.Images)
+            .Include(p => p.Prices)
+                .ThenInclude(pp => pp.PriceLevel)
+            .Include(p => p.InventoryBalance)
+            .FirstOrDefaultAsync(p => p.Id == id);
+    }
+
+    public async Task<IReadOnlyList<Product>> GetMetaCatalogSyncPlanCandidatesAsync(int limit)
+    {
+        var safeLimit = Math.Clamp(limit, 1, 200);
+        var syncedProductIds = _context.MetaProductSyncStates.Select(s => s.ProductId);
+
+        var products = await _dbSet
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Include(p => p.Category)
+            .Include(p => p.BrandEntity)
+            .Include(p => p.Images)
+            .Include(p => p.Prices)
+                .ThenInclude(pp => pp.PriceLevel)
+            .Include(p => p.InventoryBalance)
+            .Where(p => (p.IsActive && !p.IsDeleted) || syncedProductIds.Contains(p.Id))
+            .ToListAsync();
+
+        return products
+            .OrderBy(p => p.UpdatedAt ?? p.CreatedAt)
+            .ThenBy(p => p.Id)
+            .Take(safeLimit)
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<Product>> GetByIdsForMetaCatalogSyncAsync(IEnumerable<Guid> ids)
+    {
+        var productIds = ids.Distinct().ToList();
+        if (productIds.Count == 0)
+        {
+            return [];
+        }
+
+        return await _dbSet
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Include(p => p.Category)
+            .Include(p => p.BrandEntity)
+            .Include(p => p.Images)
+            .Include(p => p.Prices)
+                .ThenInclude(pp => pp.PriceLevel)
+            .Include(p => p.InventoryBalance)
+            .Where(p => productIds.Contains(p.Id))
+            .ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<Product>> GetMetaCatalogBrandBackfillPlanCandidatesAsync(int limit)
+    {
+        var safeLimit = Math.Clamp(limit, 1, 500);
+
+        return await _dbSet
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(p => !p.IsDeleted)
+            .OrderBy(p => p.CreatedAt)
+            .ThenBy(p => p.Id)
+            .Take(safeLimit)
+            .ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<Product>> GetByIdsForBrandBackfillAsync(IEnumerable<Guid> ids)
+    {
+        var productIds = ids.Distinct().ToList();
+        if (productIds.Count == 0)
+        {
+            return [];
+        }
+
+        return await _dbSet
+            .IgnoreQueryFilters()
+            .Where(p => productIds.Contains(p.Id) && !p.IsDeleted)
+            .ToListAsync();
+    }
+
+    public override async Task DeleteAsync(Guid id)
+    {
+        var product = await GetByIdAsync(id);
+        if (product == null)
+        {
+            return;
+        }
+
+        product.IsDeleted = true;
+        product.IsActive = false;
+        product.UpdatedAt = DateTime.UtcNow;
+        await UpdateAsync(product);
     }
 
     public async Task<bool> SkuExistsAsync(string sku)
@@ -142,6 +249,7 @@ public class ProductRepository : Repository<Product>, IProductRepository
         var searchPattern = $"%{searchTerm}%";
         return await _dbSet
             .Include(p => p.Category)
+            .Include(p => p.BrandEntity)
             .Include(p => p.Images)
             .Include(p => p.Prices)
                 .ThenInclude(pp => pp.PriceLevel)

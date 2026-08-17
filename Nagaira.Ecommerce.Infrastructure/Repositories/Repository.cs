@@ -43,7 +43,7 @@ public class Repository<T> : IRepository<T> where T : class
         await Task.CompletedTask;
     }
 
-    public async Task DeleteAsync(Guid id)
+    public virtual async Task DeleteAsync(Guid id)
     {
         var entity = await GetByIdAsync(id);
         if (entity != null)

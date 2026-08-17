@@ -8,7 +8,7 @@ import { CategoryService } from '../../../../core/services/category.service';
 import { AppSettingsService } from '../../../../core/services/app-settings.service';
 import { SupplierService } from '../../../../core/services/supplier.service';
 import { AppCurrencyPipe } from '../../../../core/pipes/currency.pipe';
-import { Product, ProductPrice, ProductImage, PriceLevel, Supplier, ProductSupplier, SupplierCostHistory } from '../../../../core/models/models';
+import { Product, ProductPrice, ProductImage, PriceLevel, Supplier, ProductSupplier, SupplierCostHistory, Brand } from '../../../../core/models/models';
 import { NotificationService } from '../../../../core/services/notification.service';
 
 @Component({
@@ -44,10 +44,16 @@ export class AdminProductFormComponent implements OnInit {
   editingCost = signal<number>(0);
   costHistory = signal<any[]>([]);
   showingHistory = signal<string | null>(null);
+  brands = signal<Brand[]>([]);
+  brandSearch = '';
+  showBrandModal = signal(false);
+  newBrandName = '';
   
   formData = {
     name: '',
     description: '',
+    brand: '',
+    brandId: '',
     sku: '',
     categoryId: '',
     cost: null as number | null,
@@ -171,6 +177,7 @@ export class AdminProductFormComponent implements OnInit {
     this.loadCategories();
     this.loadPriceLevels();
     this.loadSuppliers();
+    this.loadBrands();
     
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
@@ -180,6 +187,33 @@ export class AdminProductFormComponent implements OnInit {
       } else {
         this.loading.set(false);
       }
+    });
+  }
+
+  loadBrands(search = ''): void {
+    this.adminService.getBrands(search, true).subscribe(data => this.brands.set(data));
+  }
+
+  onBrandSearch(value: string): void {
+    this.brandSearch = value;
+    const exact = this.brands().find(b => b.name.toLocaleLowerCase() === value.trim().toLocaleLowerCase());
+    this.formData.brandId = exact?.id || '';
+    this.formData.brand = exact?.name || value;
+    this.loadBrands(value);
+  }
+
+  selectBrand(brand: Brand): void {
+    this.formData.brandId = brand.id;
+    this.formData.brand = brand.name;
+    this.brandSearch = brand.name;
+  }
+
+  openCreateBrand(): void { this.newBrandName = this.brandSearch.trim(); this.showBrandModal.set(true); }
+  createBrand(): void {
+    if (!this.newBrandName.trim()) return;
+    this.adminService.createBrand(this.newBrandName).subscribe({
+      next: brand => { this.brands.update(items => [brand, ...items.filter(x => x.id !== brand.id)]); this.selectBrand(brand); this.showBrandModal.set(false); },
+      error: err => this.notificationService.error(err.error?.message || 'No se pudo crear la marca')
     });
   }
 
@@ -236,6 +270,8 @@ export class AdminProductFormComponent implements OnInit {
         this.formData = {
           name: product.name,
           description: product.description,
+          brand: product.brand || '',
+          brandId: product.brandId || '',
           sku: product.sku,
           categoryId: product.categoryId,
           cost: product.cost,
@@ -243,6 +279,7 @@ export class AdminProductFormComponent implements OnInit {
           hasVirtualStock: product.hasVirtualStock || false,
           isFeatured: product.isFeatured || false
         };
+        this.brandSearch = product.brand || '';
         const prices = product.prices || [];
         this.productPrices.set(prices);
         this.originalPrices.set(prices.map((price: ProductPrice) => ({ ...price })));
@@ -561,6 +598,8 @@ export class AdminProductFormComponent implements OnInit {
         id: currentProductId,
         name: this.formData.name,
         description: this.formData.description,
+        brand: this.formData.brand,
+        brandId: this.formData.brandId,
         sku: this.formData.sku,
         categoryId: this.formData.categoryId,
         cost: this.formData.cost,
@@ -572,6 +611,8 @@ export class AdminProductFormComponent implements OnInit {
       productData = {
         name: this.formData.name,
         description: this.formData.description,
+        brand: this.formData.brand,
+        brandId: this.formData.brandId,
         sku: this.formData.sku,
         categoryId: this.formData.categoryId,
         cost: this.formData.cost,

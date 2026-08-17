@@ -5,6 +5,7 @@ namespace Nagaira.Ecommerce.Domain.Interfaces;
 public interface IProductSupplierRepository : IRepository<ProductSupplier>
 {
     Task<IEnumerable<ProductSupplier>> GetByProductIdAsync(Guid productId);
+    Task<IReadOnlyList<ProductSupplier>> GetByProductIdsAsync(IEnumerable<Guid> productIds);
     Task<IEnumerable<ProductSupplier>> GetBySupplierIdAsync(Guid supplierId);
     Task<ProductSupplier?> GetPrimarySupplierByProductIdAsync(Guid productId);
     Task<ProductSupplier?> GetByProductAndSupplierAsync(Guid productId, Guid supplierId);

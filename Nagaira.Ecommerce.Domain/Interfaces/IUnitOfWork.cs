@@ -6,6 +6,7 @@ namespace Nagaira.Ecommerce.Domain.Interfaces;
 
 public interface IUnitOfWork : IDisposable
 {
+    IBrandRepository Brands { get; }
     IProductRepository Products { get; }
     IUserRepository Users { get; }
     IOrderRepository Orders { get; }
@@ -23,6 +24,7 @@ public interface IUnitOfWork : IDisposable
     ISupplierRepository Suppliers { get; }
     IProductSupplierRepository ProductSuppliers { get; }
     IRefreshTokenRepository RefreshTokens { get; }
+    IMetaProductSyncStateRepository MetaProductSyncStates { get; }
     IRepository<T> Repository<T>() where T : class;
     Task<int> SaveChangesAsync();
     Task<IDbContextTransaction> BeginTransactionAsync();

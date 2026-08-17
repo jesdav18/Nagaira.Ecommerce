@@ -13,6 +13,9 @@ using Nagaira.Ecommerce.Domain.Interfaces;
 using Nagaira.Ecommerce.Infrastructure.Data;
 using Nagaira.Ecommerce.Infrastructure.Repositories;
 using Nagaira.Ecommerce.Api.WhatsApp;
+using Nagaira.Ecommerce.Application.MetaCatalog;
+using Nagaira.Ecommerce.Infrastructure.Integrations.MetaCatalog;
+using Microsoft.Extensions.Options;
 
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
@@ -108,6 +111,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 });
 
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IBrandRepository, BrandRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IPriceLevelRepository, PriceLevelRepository>();
@@ -124,6 +128,7 @@ builder.Services.AddScoped<IAppSettingRepository, AppSettingRepository>();
 builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
 builder.Services.AddScoped<IProductSupplierRepository, ProductSupplierRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped<IMetaProductSyncStateRepository, MetaProductSyncStateRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 var jwtSecret = builder.Configuration["Jwt:Secret"] ?? throw new InvalidOperationException("JWT Secret not configured");
@@ -132,6 +137,7 @@ var jwtExpirationDays = int.TryParse(builder.Configuration["Jwt:ExpirationDays"]
 var refreshTokenDays = int.TryParse(builder.Configuration["Jwt:RefreshTokenDays"], out var refreshDays) ? refreshDays : 30;
 
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IBrandService, BrandService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IPriceLevelService, PriceLevelService>();
@@ -159,6 +165,10 @@ builder.Services.AddScoped<IAuthService>(sp =>
         refreshTokenDays));
 
 builder.Services.Configure<WhatsAppOptions>(builder.Configuration.GetSection("WhatsApp"));
+builder.Services.Configure<MetaCatalogOptions>(builder.Configuration.GetSection("MetaCatalog"));
+builder.Services.AddSingleton<IValidateOptions<MetaCatalogOptions>, MetaCatalogOptionsValidator>();
+builder.Services.AddHttpClient(MetaCatalogClient.HttpClientName);
+builder.Services.AddScoped<IMetaCatalogClient, MetaCatalogClient>();
 builder.Services.AddSingleton<IWhatsAppBotState, InMemoryWhatsAppBotState>();
 builder.Services.AddScoped<IWhatsAppBot, WhatsAppBot>();
 builder.Services.AddHttpClient<MetaWhatsAppClient>();

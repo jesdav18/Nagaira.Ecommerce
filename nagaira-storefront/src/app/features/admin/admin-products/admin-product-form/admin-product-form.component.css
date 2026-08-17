@@ -519,3 +519,8 @@
     min-width: 600px;
   }
 }
+.create-brand { display: block; margin-top: .4rem; }
+.brand-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: grid; place-items: center; z-index: 1000; }
+.brand-modal { background: white; border-radius: 12px; padding: 1.5rem; width: min(420px, 90vw); box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+.brand-modal input { width: 100%; margin: 1rem 0; }
+.modal-actions { display: flex; justify-content: flex-end; gap: .75rem; }
