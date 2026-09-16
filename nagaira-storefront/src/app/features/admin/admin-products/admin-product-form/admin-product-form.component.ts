@@ -47,6 +47,7 @@ export class AdminProductFormComponent implements OnInit {
   brands = signal<Brand[]>([]);
   brandSearch = '';
   showBrandModal = signal(false);
+  creatingBrand = signal(false);
   newBrandName = '';
   
   formData = {
@@ -208,12 +209,25 @@ export class AdminProductFormComponent implements OnInit {
     this.brandSearch = brand.name;
   }
 
-  openCreateBrand(): void { this.newBrandName = this.brandSearch.trim(); this.showBrandModal.set(true); }
+  openCreateBrand(): void { this.newBrandName = this.formData.brandId ? '' : this.brandSearch.trim(); this.showBrandModal.set(true); }
+  closeCreateBrand(): void { if (!this.creatingBrand()) this.showBrandModal.set(false); }
   createBrand(): void {
-    if (!this.newBrandName.trim()) return;
-    this.adminService.createBrand(this.newBrandName).subscribe({
-      next: brand => { this.brands.update(items => [brand, ...items.filter(x => x.id !== brand.id)]); this.selectBrand(brand); this.showBrandModal.set(false); },
-      error: err => this.notificationService.error(err.error?.message || 'No se pudo crear la marca')
+    const name = this.newBrandName.trim();
+    if (!name || this.creatingBrand()) return;
+    this.creatingBrand.set(true);
+    this.adminService.createBrand(name).subscribe({
+      next: brand => {
+        this.brands.update(items => [brand, ...items.filter(x => x.id !== brand.id)]);
+        this.selectBrand(brand);
+        this.newBrandName = '';
+        this.creatingBrand.set(false);
+        this.showBrandModal.set(false);
+        this.notificationService.success(`Marca ${brand.name} creada y seleccionada`);
+      },
+      error: err => {
+        this.creatingBrand.set(false);
+        this.notificationService.error(err.status === 409 ? 'Ya existe una marca con ese nombre' : (err.error?.message || 'No se pudo crear la marca'));
+      }
     });
   }
 
@@ -559,6 +573,10 @@ export class AdminProductFormComponent implements OnInit {
   save(): void {
     if (!this.formData.name || !this.formData.sku || !this.formData.categoryId) {
       this.notificationService.warning('Por favor complete todos los campos requeridos');
+      return;
+    }
+    if (!this.formData.brandId) {
+      this.notificationService.warning('Selecciona una marca existente o crea una nueva');
       return;
     }
 
