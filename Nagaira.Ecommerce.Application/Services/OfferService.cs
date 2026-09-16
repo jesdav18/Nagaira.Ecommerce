@@ -37,6 +37,8 @@ public class OfferService : IOfferService
         if (!Enum.TryParse<OfferType>(dto.OfferType, true, out var offerType))
             throw new Exception("Invalid offer type");
 
+        ValidateOfferConfiguration(offerType, dto.DiscountPercentage, dto.DiscountAmount);
+
         if (dto.StartDate >= dto.EndDate)
             throw new Exception("Start date must be before end date");
 
@@ -154,6 +156,8 @@ public class OfferService : IOfferService
 
         if (dto.StartDate >= dto.EndDate)
             throw new Exception("Start date must be before end date");
+
+        ValidateOfferConfiguration(offer.OfferType, dto.DiscountPercentage, dto.DiscountAmount);
 
         offer.Name = dto.Name;
         offer.Description = dto.Description;
@@ -338,6 +342,8 @@ public class OfferService : IOfferService
         var offer = await _unitOfWork.Offers.GetByIdAsync(id);
         if (offer == null) throw new Exception("Offer not found");
 
+        ValidateOfferConfiguration(offer.OfferType, offer.DiscountPercentage, offer.DiscountAmount);
+
         offer.Status = OfferStatus.Active;
         offer.IsActive = true;
         // UpdatedAt no existe en la tabla offers
@@ -400,6 +406,25 @@ public class OfferService : IOfferService
             offer.ExcludedCategories.Where(c => !c.IsDeleted).Select(c => c.CategoryId).ToList(),
             offer.Rules.Where(r => !r.IsDeleted).Select(r => new OfferRuleDto(r.RuleType, r.Value)).ToList()
         );
+    }
+
+    private static void ValidateOfferConfiguration(
+        OfferType offerType,
+        decimal? discountPercentage,
+        decimal? discountAmount)
+    {
+        switch (offerType)
+        {
+            case OfferType.Percentage when discountPercentage is > 0 and <= 100:
+            case OfferType.FixedAmount when discountAmount is > 0:
+                return;
+            case OfferType.Percentage:
+                throw new Exception("Percentage offers require a discount between 0 and 100");
+            case OfferType.FixedAmount:
+                throw new Exception("Fixed amount offers require a positive discount amount");
+            default:
+                throw new Exception($"Offer type {offerType} is not supported yet");
+        }
     }
 }
 

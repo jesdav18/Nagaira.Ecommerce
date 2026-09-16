@@ -1,3 +1,4 @@
+using System.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Nagaira.Ecommerce.Domain.Interfaces;
@@ -91,6 +92,11 @@ public class UnitOfWork : IUnitOfWork
         }
         _transaction = await _context.Database.BeginTransactionAsync();
         return _transaction;
+    }
+
+    public async Task<IDbContextTransaction> BeginTransactionAsync(IsolationLevel isolationLevel)
+    {
+        return await _context.Database.BeginTransactionAsync(isolationLevel);
     }
 
     public async Task CommitTransactionAsync()

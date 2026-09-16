@@ -207,6 +207,19 @@ export class AdminOfferFormComponent implements OnInit {
     this.formData.rules = this.formData.rules.filter((_, i) => i !== index);
   }
 
+  getRuleLabel(ruleType: string): string {
+    return this.ruleTypeOptions.find(option => option.value === ruleType)?.label ?? ruleType;
+  }
+
+  isOfferEnabled(): boolean {
+    return this.formData.isActive && this.formData.status === 'Active';
+  }
+
+  setOfferEnabled(enabled: boolean): void {
+    this.formData.isActive = enabled;
+    this.formData.status = enabled ? 'Active' : 'Draft';
+  }
+
   save(): void {
     if (!this.formData.name) {
       this.notificationService.warning('El nombre es requerido');
@@ -215,6 +228,18 @@ export class AdminOfferFormComponent implements OnInit {
 
     if (!this.formData.startDate || !this.formData.endDate) {
       this.notificationService.warning('Las fechas de inicio y fin son requeridas');
+      return;
+    }
+
+    if (this.formData.offerType === 'Percentage'
+        && (!this.formData.discountPercentage || this.formData.discountPercentage <= 0 || this.formData.discountPercentage > 100)) {
+      this.notificationService.warning('Ingresa un porcentaje de descuento mayor que 0 y menor o igual a 100');
+      return;
+    }
+
+    if (this.formData.offerType === 'FixedAmount'
+        && (!this.formData.discountAmount || this.formData.discountAmount <= 0)) {
+      this.notificationService.warning('Ingresa un descuento fijo por unidad mayor que 0');
       return;
     }
 

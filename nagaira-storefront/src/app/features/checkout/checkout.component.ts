@@ -79,7 +79,7 @@ export class CheckoutComponent implements OnInit {
     return fullName || 'Cliente';
   });
   discountTotal = computed(() => {
-    if (!this.isAuthenticated()) return 0;
+    const cartBaseTotal = this.getCartBaseTotal();
     return this.cartService.cartItems().reduce((total, item) => {
       const base = getProductDisplayPriceByQuantity(
         item.product,
@@ -87,7 +87,7 @@ export class CheckoutComponent implements OnInit {
         undefined,
         this.isAuthenticated()
       );
-      const offer = this.getItemOfferPrice(item.product);
+      const offer = this.getItemOfferPrice(item.product, item.quantity, cartBaseTotal);
       if (offer === null || offer >= base) return total;
       return total + ((base - offer) * item.quantity);
     }, 0);
@@ -530,9 +530,8 @@ export class CheckoutComponent implements OnInit {
     );
   }
 
-  getItemOfferPrice(product: Product): number | null {
-    if (!this.isAuthenticated()) return null;
-    return getProductOfferPrice(product);
+  getItemOfferPrice(product: Product, quantity = 1, cartBaseTotal = this.getCartBaseTotal()): number | null {
+    return getProductOfferPrice(product, quantity, cartBaseTotal);
   }
 
   getItemDisplayPrice(product: Product, quantity: number): number {
@@ -542,9 +541,16 @@ export class CheckoutComponent implements OnInit {
       undefined,
       this.isAuthenticated()
     );
-    const offer = this.getItemOfferPrice(product);
+    const offer = this.getItemOfferPrice(product, quantity);
     if (offer !== null && offer < base) return offer;
     return base;
+  }
+
+  getCartBaseTotal(): number {
+    return this.cartService.cartItems().reduce(
+      (total, item) => total + this.getItemPrice(item.product, item.quantity) * item.quantity,
+      0
+    );
   }
 
   getTaxLabel(): string {
