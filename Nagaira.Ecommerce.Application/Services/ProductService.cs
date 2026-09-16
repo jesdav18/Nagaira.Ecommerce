@@ -1,6 +1,7 @@
 using System.Globalization;
 using Nagaira.Ecommerce.Application.DTOs;
 using Nagaira.Ecommerce.Application.Interfaces;
+using Nagaira.Ecommerce.Application.Pricing;
 using Nagaira.Ecommerce.Domain.Entities;
 using Nagaira.Ecommerce.Domain.Interfaces;
 using System.Text.RegularExpressions;
@@ -272,7 +273,11 @@ public class ProductService : IProductService
 
     private async Task<ProductDto> MapToDtoAsync(Product product, User? user)
     {
-        var offerPrice = user != null ? await GetOfferPriceAsync(product, user) : null;
+        var applicableOffers = await GetEligibleOffersAsync(product, user);
+        var basePrice = GetBasePrice(product, user?.PriceLevelId);
+        var offerPrice = OfferPriceCalculator
+            .SelectOffer(applicableOffers, basePrice, 1, basePrice)
+            ?.FinalUnitPrice;
 
         return new ProductDto(
             product.Id,
@@ -301,68 +306,43 @@ public class ProductService : IProductService
                 p.PriceWithoutTax,
                 p.MinQuantity,
                 p.IsActive
+            )).ToList(),
+            applicableOffers.Select(o => new ProductOfferDto(
+                o.Id,
+                o.OfferType.ToString(),
+                o.DiscountPercentage,
+                o.DiscountAmount,
+                o.MinPurchaseAmount,
+                o.MinQuantity,
+                o.Priority,
+                o.Rules.Where(r => !r.IsDeleted)
+                    .Select(r => new OfferRuleDto(r.RuleType, r.Value))
+                    .ToList()
             )).ToList()
         );
     }
 
-    private async Task<decimal?> GetOfferPriceAsync(Product product, User user)
+    private async Task<List<Offer>> GetEligibleOffersAsync(Product product, User? user)
     {
-        var basePrice = GetBasePrice(product, user.PriceLevelId);
-        if (basePrice <= 0)
-        {
-            return null;
-        }
-
         var offers = await _unitOfWork.Offers.GetOffersForProductAsync(product.Id, DateTime.UtcNow);
-        if (!offers.Any())
-        {
-            return null;
-        }
-
-        var quantity = 1;
-        var cartTotal = basePrice;
-        var finalPrice = basePrice;
-        var hasDiscount = false;
-
-        foreach (var offer in offers.OrderByDescending(o => o.Priority))
+        var eligibleOffers = new List<Offer>();
+        foreach (var offer in offers)
         {
             if (offer.TotalMaxUses.HasValue && offer.CurrentUses >= offer.TotalMaxUses.Value)
                 continue;
 
             if (offer.MaxUsesPerCustomer.HasValue)
             {
+                if (user == null)
+                    continue;
                 var userUsage = await _unitOfWork.Offers.GetUsageCountAsync(offer.Id, user.Id);
                 if (userUsage >= offer.MaxUsesPerCustomer.Value)
                     continue;
             }
-
-            if (offer.MinQuantity.HasValue && quantity < offer.MinQuantity.Value)
-                continue;
-
-            if (!OfferRulesSatisfied(offer, finalPrice, quantity, cartTotal))
-                continue;
-
-            decimal discount = 0;
-            if (offer.OfferType == OfferType.Percentage && offer.DiscountPercentage.HasValue)
-            {
-                discount = finalPrice * (offer.DiscountPercentage.Value / 100);
-            }
-            else if (offer.OfferType == OfferType.FixedAmount && offer.DiscountAmount.HasValue)
-            {
-                discount = offer.DiscountAmount.Value;
-            }
-
-            if (discount <= 0)
-                continue;
-
-            finalPrice -= discount;
-            if (finalPrice < 0)
-                finalPrice = 0;
-
-            hasDiscount = true;
+            eligibleOffers.Add(offer);
         }
 
-        return hasDiscount && finalPrice < basePrice ? finalPrice : null;
+        return eligibleOffers;
     }
 
     private static decimal GetBasePrice(Product product, Guid? priceLevelId)
@@ -383,41 +363,6 @@ public class ProductService : IProductService
         }
 
         return activePrices.OrderBy(p => p.MinQuantity).First().Price;
-    }
-
-    private static bool OfferRulesSatisfied(Offer offer, decimal itemUnitPrice, int quantity, decimal cartTotal)
-    {
-        if (offer.Rules == null || offer.Rules.Count == 0) return true;
-
-        var itemSubtotal = itemUnitPrice * quantity;
-        foreach (var rule in offer.Rules.Where(r => !r.IsDeleted))
-        {
-            var type = rule.RuleType?.Trim().ToLowerInvariant();
-            if (string.IsNullOrEmpty(type)) return false;
-
-            switch (type)
-            {
-                case "min_item_price":
-                    if (itemUnitPrice < rule.Value) return false;
-                    break;
-                case "max_item_price":
-                    if (itemUnitPrice > rule.Value) return false;
-                    break;
-                case "min_item_subtotal":
-                    if (itemSubtotal < rule.Value) return false;
-                    break;
-                case "max_item_subtotal":
-                    if (itemSubtotal > rule.Value) return false;
-                    break;
-                case "min_cart_total":
-                    if (cartTotal < rule.Value) return false;
-                    break;
-                default:
-                    return false;
-            }
-        }
-
-        return true;
     }
 
     private async Task<string> GenerateUniqueSlugAsync(string name, Guid? excludeId = null)

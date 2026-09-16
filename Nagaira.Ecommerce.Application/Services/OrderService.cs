@@ -1,3 +1,4 @@
+using System.Data;
 using Nagaira.Ecommerce.Application.DTOs;
 using Nagaira.Ecommerce.Application.Interfaces;
 using Nagaira.Ecommerce.Application.Pricing;
@@ -26,8 +27,7 @@ public class OrderService : IOrderService
         var strategy = _unitOfWork.GetExecutionStrategy();
         return await strategy.ExecuteAsync(async () =>
         {
-            var dbContext = _unitOfWork.GetDbContext();
-            await using var transaction = await dbContext.Database.BeginTransactionAsync();
+            await using var transaction = await _unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable);
             try
             {
                 if (dto.Items == null || dto.Items.Count == 0)
@@ -77,7 +77,6 @@ public class OrderService : IOrderService
                 };
 
                 var taxRate = 0.16m;
-                decimal totalDiscount = 0;
                 var itemInfos = new List<(Product Product, int Quantity, decimal BaseUnitPrice, List<Offer> ApplicableOffers)>();
                 decimal cartBaseTotal = 0;
 
@@ -96,10 +95,7 @@ public class OrderService : IOrderService
 
                     var prices = await _unitOfWork.ProductPrices.GetByProductIdAsync(item.ProductId);
                     var applicableOffers = (await _unitOfWork.Offers.GetOffersForProductAsync(product.Id, DateTime.UtcNow)).ToList();
-                    var basePrice = ProductPriceResolver.ResolveUnitPrice(
-                        prices,
-                        item.Quantity,
-                        useQuantityBreaks: applicableOffers.Count == 0);
+                    var basePrice = ProductPriceResolver.ResolveUnitPrice(prices, item.Quantity);
                     if (!basePrice.HasValue)
                         throw new Exception($"No price found for product {product.Name}");
 
@@ -107,17 +103,20 @@ public class OrderService : IOrderService
                     cartBaseTotal += basePrice.Value * item.Quantity;
                 }
 
+                var appliedOffers = new Dictionary<Guid, (Offer Offer, decimal TotalDiscount)>();
                 foreach (var info in itemInfos)
                 {
                     var product = info.Product;
                     var quantity = info.Quantity;
                     var unitPrice = info.BaseUnitPrice;
 
-                    var applicableOffers = info.ApplicableOffers;
-
-                    foreach (var offer in applicableOffers.OrderByDescending(o => o.Priority))
+                    var eligibleOffers = new List<Offer>();
+                    foreach (var offer in info.ApplicableOffers)
                     {
-                        if (offer.TotalMaxUses.HasValue && offer.CurrentUses >= offer.TotalMaxUses.Value)
+                        var alreadyAppliedInOrder = appliedOffers.ContainsKey(offer.Id);
+                        if (!alreadyAppliedInOrder
+                            && offer.TotalMaxUses.HasValue
+                            && offer.CurrentUses >= offer.TotalMaxUses.Value)
                             continue;
 
                         if (offer.MaxUsesPerCustomer.HasValue)
@@ -129,44 +128,28 @@ public class OrderService : IOrderService
                             if (userUsage >= offer.MaxUsesPerCustomer.Value)
                                 continue;
                         }
+                        eligibleOffers.Add(offer);
+                    }
 
-                        if (offer.MinQuantity.HasValue && quantity < offer.MinQuantity.Value)
-                            continue;
-
-                        if (!OfferRulesSatisfied(offer, unitPrice, quantity, cartBaseTotal))
-                            continue;
-
-                        decimal discount = 0;
-                        if (offer.OfferType == OfferType.Percentage && offer.DiscountPercentage.HasValue)
+                    var offerResult = OfferPriceCalculator.SelectOffer(
+                        eligibleOffers,
+                        unitPrice,
+                        quantity,
+                        cartBaseTotal);
+                    if (offerResult != null)
+                    {
+                        unitPrice = offerResult.FinalUnitPrice;
+                        if (appliedOffers.TryGetValue(offerResult.Offer.Id, out var existingApplication))
                         {
-                            discount = unitPrice * (offer.DiscountPercentage.Value / 100);
+                            appliedOffers[offerResult.Offer.Id] = (
+                                existingApplication.Offer,
+                                existingApplication.TotalDiscount + offerResult.TotalDiscount);
                         }
-                        else if (offer.OfferType == OfferType.FixedAmount && offer.DiscountAmount.HasValue)
+                        else
                         {
-                            discount = offer.DiscountAmount.Value;
-                        }
-
-                        if (discount > 0)
-                        {
-                            unitPrice -= discount;
-                            totalDiscount += discount * quantity;
-
-                            var offerApplication = new OfferApplication
-                            {
-                                Id = Guid.NewGuid(),
-                                OfferId = offer.Id,
-                                OrderId = order.Id,
-                                OrderItemId = null,
-                                ProductId = product.Id,
-                                UserId = userId,
-                                DiscountAmount = discount * quantity,
-                                AppliedAt = DateTime.UtcNow,
-                                CreatedAt = DateTime.UtcNow
-                            };
-                            await _unitOfWork.Repository<OfferApplication>().AddAsync(offerApplication);
-
-                            offer.CurrentUses++;
-                            await _unitOfWork.Offers.UpdateAsync(offer);
+                            appliedOffers[offerResult.Offer.Id] = (offerResult.Offer, offerResult.TotalDiscount);
+                            offerResult.Offer.CurrentUses++;
+                            await _unitOfWork.Offers.UpdateAsync(offerResult.Offer);
                         }
                     }
 
@@ -225,6 +208,22 @@ public class OrderService : IOrderService
                         CreatedAt = DateTime.UtcNow
                     };
                     await _unitOfWork.InventoryMovements.AddAsync(inventoryMovement);
+                }
+
+                foreach (var appliedOffer in appliedOffers.Values)
+                {
+                    await _unitOfWork.Repository<OfferApplication>().AddAsync(new OfferApplication
+                    {
+                        Id = Guid.NewGuid(),
+                        OfferId = appliedOffer.Offer.Id,
+                        OrderId = order.Id,
+                        OrderItemId = null,
+                        ProductId = null,
+                        UserId = userId,
+                        DiscountAmount = appliedOffer.TotalDiscount,
+                        AppliedAt = DateTime.UtcNow,
+                        CreatedAt = DateTime.UtcNow
+                    });
                 }
 
                 var shippingCost = orderTotal >= FreeShippingThreshold ? 0m : StandardShippingCost;
@@ -380,41 +379,6 @@ public class OrderService : IOrderService
                 false
             ) : null)
         );
-    }
-
-    private static bool OfferRulesSatisfied(Offer offer, decimal itemUnitPrice, int quantity, decimal cartTotal)
-    {
-        if (offer.Rules == null || offer.Rules.Count == 0) return true;
-
-        var itemSubtotal = itemUnitPrice * quantity;
-        foreach (var rule in offer.Rules.Where(r => !r.IsDeleted))
-        {
-            var type = rule.RuleType?.Trim().ToLowerInvariant();
-            if (string.IsNullOrEmpty(type)) return false;
-
-            switch (type)
-            {
-                case "min_item_price":
-                    if (itemUnitPrice < rule.Value) return false;
-                    break;
-                case "max_item_price":
-                    if (itemUnitPrice > rule.Value) return false;
-                    break;
-                case "min_item_subtotal":
-                    if (itemSubtotal < rule.Value) return false;
-                    break;
-                case "max_item_subtotal":
-                    if (itemSubtotal > rule.Value) return false;
-                    break;
-                case "min_cart_total":
-                    if (cartTotal < rule.Value) return false;
-                    break;
-                default:
-                    return false;
-            }
-        }
-
-        return true;
     }
 
     private static string GenerateOrderNumber()

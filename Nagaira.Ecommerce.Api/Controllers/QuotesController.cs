@@ -93,11 +93,7 @@ public class QuotesController : ControllerBase
                         }
 
                         var prices = await _unitOfWork.ProductPrices.GetByProductIdAsync(item.ProductId);
-                        var hasActiveOffer = (await _unitOfWork.Offers.GetOffersForProductAsync(product.Id, DateTime.UtcNow)).Any();
-                        var unitPrice = ProductPriceResolver.ResolveUnitPrice(
-                            prices,
-                            item.Quantity,
-                            useQuantityBreaks: !hasActiveOffer);
+                        var unitPrice = ProductPriceResolver.ResolveUnitPrice(prices, item.Quantity);
                         if (!unitPrice.HasValue)
                         {
                             throw new InvalidOperationException($"No price found for product {product.Name}");

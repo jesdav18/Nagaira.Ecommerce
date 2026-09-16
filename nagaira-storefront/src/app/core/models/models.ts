@@ -25,6 +25,18 @@ export interface Product {
   wholesalePrice?: number;
   priceByQuantity?: number;
   minimumQuantity?: number;
+  applicableOffers?: ProductOffer[];
+}
+
+export interface ProductOffer {
+  id: string;
+  offerType: 'Percentage' | 'FixedAmount' | string;
+  discountPercentage?: number | null;
+  discountAmount?: number | null;
+  minPurchaseAmount?: number | null;
+  minQuantity?: number | null;
+  priority: number;
+  rules: { ruleType: string; value: number }[];
 }
 
 export interface Brand { id: string; name: string; isActive: boolean; createdAt: string; updatedAt?: string; }

@@ -23,8 +23,36 @@ function toPositiveNumber(value: unknown): number | null {
   return value;
 }
 
-export function getProductOfferPrice(product: Product): number | null {
-  const basePrice = getProductPrice(product);
+export function getProductOfferPrice(product: Product, quantity = 1, cartBaseTotal?: number): number | null {
+  const basePrice = getProductPriceByQuantity(product, quantity);
+  const effectiveCartTotal = cartBaseTotal ?? basePrice * quantity;
+  const configuredOffers = [...(product.applicableOffers ?? [])]
+    .sort((a, b) => b.priority - a.priority || a.id.localeCompare(b.id));
+
+  for (const offer of configuredOffers) {
+    if (offer.minQuantity && quantity < offer.minQuantity) continue;
+    if (offer.minPurchaseAmount && effectiveCartTotal < offer.minPurchaseAmount) continue;
+    const itemSubtotal = basePrice * quantity;
+    const rulesSatisfied = (offer.rules ?? []).every(rule => {
+      switch ((rule.ruleType || '').trim().toLowerCase()) {
+        case 'min_item_price': return basePrice >= rule.value;
+        case 'max_item_price': return basePrice <= rule.value;
+        case 'min_item_subtotal': return itemSubtotal >= rule.value;
+        case 'max_item_subtotal': return itemSubtotal <= rule.value;
+        case 'min_cart_total': return effectiveCartTotal >= rule.value;
+        default: return false;
+      }
+    });
+    if (!rulesSatisfied) continue;
+
+    const requestedDiscount = offer.offerType === 'Percentage' && offer.discountPercentage
+      ? basePrice * (offer.discountPercentage / 100)
+      : offer.offerType === 'FixedAmount' && offer.discountAmount
+        ? offer.discountAmount
+        : 0;
+    if (requestedDiscount > 0) return Math.max(basePrice - requestedDiscount, 0);
+  }
+
   const directOfferPrice = toPositiveNumber(product.offerPrice ?? product.discountPrice);
   if (directOfferPrice !== null && (basePrice <= 0 || directOfferPrice < basePrice)) {
     return directOfferPrice;
@@ -75,10 +103,6 @@ export function getProductDisplayPriceByQuantity(
   priceLevelId?: string,
   honorOffer = true
 ): number {
-  if (honorOffer && hasProductOffer(product)) {
-    return getProductPrice(product, priceLevelId);
-  }
-
   return getProductPriceByQuantity(product, quantity, priceLevelId);
 }
 

@@ -18,7 +18,19 @@ public record ProductDto(
     bool IsFeatured,
     decimal? OfferPrice,
     List<ProductImageDto> Images,
-    List<ProductPriceDto> Prices
+    List<ProductPriceDto> Prices,
+    List<ProductOfferDto>? ApplicableOffers = null
+);
+
+public record ProductOfferDto(
+    Guid Id,
+    string OfferType,
+    decimal? DiscountPercentage,
+    decimal? DiscountAmount,
+    decimal? MinPurchaseAmount,
+    int? MinQuantity,
+    int Priority,
+    List<OfferRuleDto> Rules
 );
 
 public record ProductImageDto(

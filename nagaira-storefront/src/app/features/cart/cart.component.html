@@ -21,7 +21,7 @@
                 </a>
                 <span class="item-category">{{ item.product.categoryName }}</span>
                 <div class="item-price">
-                  @if (getItemOfferPrice(item.product) !== null && getItemOfferPrice(item.product)! < getItemPrice(item.product, item.quantity)) {
+                  @if (getItemOfferPrice(item.product, item.quantity) !== null && getItemOfferPrice(item.product, item.quantity)! < getItemPrice(item.product, item.quantity)) {
                     <span class="item-price-original">{{ getItemPrice(item.product, item.quantity) | appCurrency:'1.2-2' }}</span>
                   }
                   <span class="item-price-current">{{ getItemDisplayPrice(item.product, item.quantity) | appCurrency:'1.2-2' }}</span>
@@ -44,7 +44,7 @@
                 </div>
 
               <div class="item-subtotal">
-                  @if (getItemOfferPrice(item.product) !== null && getItemOfferPrice(item.product)! < getItemPrice(item.product, item.quantity)) {
+                  @if (getItemOfferPrice(item.product, item.quantity) !== null && getItemOfferPrice(item.product, item.quantity)! < getItemPrice(item.product, item.quantity)) {
                     <span class="item-price-original">
                       {{ (getItemPrice(item.product, item.quantity) * item.quantity) | appCurrency:'1.2-2' }}
                     </span>
