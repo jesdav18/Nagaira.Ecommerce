@@ -37,6 +37,12 @@ public class OfferService : IOfferService
         if (!Enum.TryParse<OfferType>(dto.OfferType, true, out var offerType))
             throw new Exception("Invalid offer type");
 
+        if (!Enum.TryParse<OfferStatus>(dto.Status, true, out var status))
+            throw new Exception("Invalid offer status");
+
+        if (dto.IsActive != (status == OfferStatus.Active))
+            throw new Exception("Active offers must have status Active; inactive offers must not");
+
         ValidateOfferConfiguration(offerType, dto.DiscountPercentage, dto.DiscountAmount);
 
         if (dto.StartDate >= dto.EndDate)
@@ -48,7 +54,7 @@ public class OfferService : IOfferService
             Name = dto.Name,
             Description = dto.Description,
             OfferType = offerType,
-            Status = OfferStatus.Draft,
+            Status = status,
             DiscountPercentage = dto.DiscountPercentage,
             DiscountAmount = dto.DiscountAmount,
             MinPurchaseAmount = dto.MinPurchaseAmount,
@@ -59,7 +65,7 @@ public class OfferService : IOfferService
             StartDate = dto.StartDate,
             EndDate = dto.EndDate,
             Priority = dto.Priority,
-            IsActive = true,
+            IsActive = dto.IsActive,
             CreatedBy = userId,
             CreatedAt = DateTime.UtcNow
         };
