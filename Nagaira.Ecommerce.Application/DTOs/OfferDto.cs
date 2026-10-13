@@ -73,7 +73,11 @@ public record CreateOfferDto(
     List<Guid>? CategoryIds,
     List<Guid>? ExcludedProductIds,
     List<Guid>? ExcludedCategoryIds,
-    List<OfferRuleDto>? Rules
+    List<OfferRuleDto>? Rules,
+
+    string Status = "Draft",
+
+    bool IsActive = false
 );
 
 public record UpdateOfferDto(
