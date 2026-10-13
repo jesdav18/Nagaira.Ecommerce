@@ -84,6 +84,7 @@ public record UpdateOfferDto(
     Guid Id,
     string Name,
     string? Description,
+    string OfferType,
     string Status,
     decimal? DiscountPercentage,
     decimal? DiscountAmount,

@@ -41,22 +41,22 @@ public static class OfferPriceCalculator
         if (!RulesSatisfied(offer, baseUnitPrice, quantity, cartBaseTotal))
             return null;
 
-        var requestedDiscount = offer.OfferType switch
+        var finalUnitPrice = offer.OfferType switch
         {
             OfferType.Percentage when offer.DiscountPercentage is > 0 and <= 100
-                => baseUnitPrice * (offer.DiscountPercentage.Value / 100m),
-            OfferType.FixedAmount when offer.DiscountAmount is > 0
+                => baseUnitPrice * (1m - offer.DiscountPercentage.Value / 100m),
+            OfferType.FixedAmount when offer.DiscountAmount is > 0 && offer.DiscountAmount < baseUnitPrice
                 => offer.DiscountAmount.Value,
-            _ => 0m
+            _ => baseUnitPrice
         };
 
-        var unitDiscount = Math.Min(requestedDiscount, baseUnitPrice);
+        var unitDiscount = baseUnitPrice - finalUnitPrice;
         if (unitDiscount <= 0)
             return null;
 
         return new OfferPriceResult(
             offer,
-            baseUnitPrice - unitDiscount,
+            finalUnitPrice,
             unitDiscount,
             unitDiscount * quantity);
     }
