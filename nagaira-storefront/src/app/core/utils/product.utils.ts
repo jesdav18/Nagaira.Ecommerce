@@ -45,12 +45,12 @@ export function getProductOfferPrice(product: Product, quantity = 1, cartBaseTot
     });
     if (!rulesSatisfied) continue;
 
-    const requestedDiscount = offer.offerType === 'Percentage' && offer.discountPercentage
-      ? basePrice * (offer.discountPercentage / 100)
+    const finalPrice = offer.offerType === 'Percentage' && offer.discountPercentage
+      ? basePrice * (1 - offer.discountPercentage / 100)
       : offer.offerType === 'FixedAmount' && offer.discountAmount
         ? offer.discountAmount
-        : 0;
-    if (requestedDiscount > 0) return Math.max(basePrice - requestedDiscount, 0);
+        : basePrice;
+    if (finalPrice > 0 && finalPrice < basePrice) return finalPrice;
   }
 
   const directOfferPrice = toPositiveNumber(product.offerPrice ?? product.discountPrice);

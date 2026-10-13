@@ -22,13 +22,13 @@ describe('product offer pricing', () => {
     expect(getProductOfferPrice(product, 1, 100)).toBe(80);
   });
 
-  it('clamps a fixed discount at zero', () => {
+  it('uses a fixed amount as the final unit price', () => {
     const product = createProduct();
     product.applicableOffers = [{
-      id: 'fixed', offerType: 'FixedAmount', discountAmount: 150,
+      id: 'fixed', offerType: 'FixedAmount', discountAmount: 79,
       priority: 1, rules: []
     }];
-    expect(getProductOfferPrice(product, 1, 100)).toBe(0);
+    expect(getProductOfferPrice(product, 1, 100)).toBe(79);
   });
 
   function createProduct(): Product {

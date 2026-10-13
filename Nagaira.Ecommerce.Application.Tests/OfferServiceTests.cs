@@ -1,4 +1,5 @@
 using Moq;
+using System.Linq.Expressions;
 using Nagaira.Ecommerce.Application.DTOs;
 using Nagaira.Ecommerce.Application.Pricing;
 using Nagaira.Ecommerce.Application.Services;
@@ -29,7 +30,7 @@ public class OfferServiceTests
             Description: null,
             OfferType: "FixedAmount",
             DiscountPercentage: null,
-            DiscountAmount: 23.50m,
+            DiscountAmount: 279m,
             MinPurchaseAmount: null,
             MinQuantity: null,
             MaxUsesPerCustomer: null,
@@ -77,5 +78,53 @@ public class OfferServiceTests
         Assert.Equal("Draft", result.Status);
         Assert.False(result.IsActive);
         Assert.Null(OfferPriceCalculator.SelectOffer([savedOffer!], 100m, 1, 100m));
+    }
+
+    [Fact]
+    public async Task Update_FromPercentageToFixedAmount_PersistsTypeAndClearsPercentage()
+    {
+        var offer = new Offer
+        {
+            Id = Guid.NewGuid(),
+            Name = "Oferta",
+            OfferType = OfferType.Percentage,
+            Status = OfferStatus.Active,
+            DiscountPercentage = 22.38m,
+            IsActive = true
+        };
+        var offerRepository = new Mock<IOfferRepository>();
+        offerRepository.Setup(repository => repository.GetByIdAsync(offer.Id)).ReturnsAsync(offer);
+        offerRepository.Setup(repository => repository.UpdateAsync(offer)).Returns(Task.CompletedTask);
+
+        var unitOfWork = new Mock<IUnitOfWork>();
+        unitOfWork.SetupGet(x => x.Offers).Returns(offerRepository.Object);
+        SetupEmptyRepository<OfferProduct>(unitOfWork);
+        SetupEmptyRepository<OfferCategory>(unitOfWork);
+        SetupEmptyRepository<OfferExcludedProduct>(unitOfWork);
+        SetupEmptyRepository<OfferExcludedCategory>(unitOfWork);
+        SetupEmptyRepository<OfferRule>(unitOfWork);
+        unitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+
+        var now = DateTime.UtcNow;
+        var dto = new UpdateOfferDto(
+            offer.Id, offer.Name, null, "FixedAmount", "Active", 22.38m, 158m,
+            null, null, null, null, now, now.AddDays(1), 0, true,
+            null, null, null, null, []);
+
+        await new OfferService(unitOfWork.Object).UpdateOfferAsync(dto);
+
+        Assert.Equal(OfferType.FixedAmount, offer.OfferType);
+        Assert.Equal(158m, offer.DiscountAmount);
+        Assert.Null(offer.DiscountPercentage);
+        Assert.Equal(158m, OfferPriceCalculator.SelectOffer([offer], 203.56m, 1, 203.56m)!.FinalUnitPrice);
+    }
+
+    private static void SetupEmptyRepository<T>(Mock<IUnitOfWork> unitOfWork) where T : class
+    {
+        var repository = new Mock<IRepository<T>>();
+        repository
+            .Setup(x => x.FindAsync(It.IsAny<Expression<Func<T, bool>>>()))
+            .ReturnsAsync([]);
+        unitOfWork.Setup(x => x.Repository<T>()).Returns(repository.Object);
     }
 }

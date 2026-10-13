@@ -55,8 +55,8 @@ public class OfferService : IOfferService
             Description = dto.Description,
             OfferType = offerType,
             Status = status,
-            DiscountPercentage = dto.DiscountPercentage,
-            DiscountAmount = dto.DiscountAmount,
+            DiscountPercentage = offerType == OfferType.Percentage ? dto.DiscountPercentage : null,
+            DiscountAmount = offerType == OfferType.FixedAmount ? dto.DiscountAmount : null,
             MinPurchaseAmount = dto.MinPurchaseAmount,
             MinQuantity = dto.MinQuantity,
             MaxUsesPerCustomer = dto.MaxUsesPerCustomer,
@@ -163,12 +163,16 @@ public class OfferService : IOfferService
         if (dto.StartDate >= dto.EndDate)
             throw new Exception("Start date must be before end date");
 
-        ValidateOfferConfiguration(offer.OfferType, dto.DiscountPercentage, dto.DiscountAmount);
+        if (!Enum.TryParse<OfferType>(dto.OfferType, true, out var offerType))
+            throw new Exception("Invalid offer type");
+
+        ValidateOfferConfiguration(offerType, dto.DiscountPercentage, dto.DiscountAmount);
 
         offer.Name = dto.Name;
         offer.Description = dto.Description;
-        offer.DiscountPercentage = dto.DiscountPercentage;
-        offer.DiscountAmount = dto.DiscountAmount;
+        offer.OfferType = offerType;
+        offer.DiscountPercentage = offerType == OfferType.Percentage ? dto.DiscountPercentage : null;
+        offer.DiscountAmount = offerType == OfferType.FixedAmount ? dto.DiscountAmount : null;
         offer.MinPurchaseAmount = dto.MinPurchaseAmount;
         offer.MinQuantity = dto.MinQuantity;
         offer.MaxUsesPerCustomer = dto.MaxUsesPerCustomer;
