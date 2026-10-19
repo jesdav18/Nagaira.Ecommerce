@@ -532,33 +532,38 @@
 @media (max-width: 640px) { .brand-picker { grid-template-columns: 1fr; } .new-brand-button { width: 100%; } }
 
 /* Compact, responsive product editor */
-.admin-product-form { width: min(1180px, 100%); padding: 1.25rem; }
+.admin-product-form { width: 100%; max-width: none; padding: 0; }
 .page-header {
-  margin-bottom: 1rem;
-  padding: 1rem 1.15rem;
-  gap: 1rem;
-  border: 1px solid #dfe7f1;
-  border-radius: 14px;
-  background: #fff;
-  box-shadow: 0 6px 20px rgba(23, 48, 79, .06);
+  min-height: 40px;
+  margin-bottom: .55rem;
+  padding: 0 .15rem;
+  gap: .65rem;
+  justify-content: flex-start;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 .page-title { min-width: 0; }
-.page-eyebrow {
-  display: block;
-  margin-bottom: .15rem;
-  color: #0f8f91;
-  font-size: .68rem;
-  font-weight: 800;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-.page-header h1 { color: #11233d; font-size: 1.45rem; line-height: 1.2; }
-.page-title p { margin: .25rem 0 0; color: #6b7b91; font-size: .78rem; }
+.page-eyebrow, .page-title p { display: none; }
+.page-header h1 { color: #11233d; font-size: 1.2rem; line-height: 1.2; }
 .page-header > .btn { flex: 0 0 auto; }
+.page-header > .back-button {
+  width: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d6e0eb;
+  background: #f5f8fb;
+  font-size: 1rem;
+}
+.back-button-label { display: none; }
 
 .product-form {
   display: grid;
-  gap: .85rem;
+  gap: .6rem;
   padding: 0;
   border-radius: 0;
   background: transparent;
@@ -567,26 +572,26 @@
 .product-form.editing { padding-bottom: 0; }
 .form-section {
   margin: 0;
-  padding: 1rem 1.15rem;
+  padding: .8rem 1rem;
   border: 1px solid #dfe7f1;
   border-radius: 14px;
   background: #fff;
   box-shadow: 0 5px 18px rgba(23, 48, 79, .045);
 }
 .form-section:last-of-type { border: 1px solid #dfe7f1; }
-.form-section h2 { margin: 0 0 .25rem; color: #132640; font-size: 1rem; line-height: 1.35; }
+.form-section h2 { margin: 0 0 .18rem; color: #132640; font-size: .9rem; line-height: 1.3; }
 .form-section h2::after {
   content: '';
   display: block;
   width: 32px;
   height: 3px;
-  margin-top: .45rem;
+  margin-top: .3rem;
   border-radius: 999px;
   background: linear-gradient(90deg, #0c799f, #18a997);
 }
-.section-description { margin: .4rem 0 .85rem; font-size: .73rem; line-height: 1.45; }
-.form-row { gap: .75rem; }
-.form-group { min-width: 0; margin-bottom: .8rem; }
+.section-description { margin: .3rem 0 .6rem; font-size: .68rem; line-height: 1.4; }
+.form-row { gap: .65rem; }
+.form-group { min-width: 0; margin-bottom: .6rem; }
 .form-group label { margin-bottom: .32rem; color: #40516a; font-size: .72rem; font-weight: 750; }
 .form-group input[type="text"],
 .form-group input[type="number"],
@@ -594,15 +599,15 @@
 .form-group textarea,
 .form-group select,
 .brand-modal input {
-  min-height: 40px;
-  padding: .55rem .65rem;
+  min-height: 36px;
+  padding: .45rem .6rem;
   border-color: #cfd9e6;
   border-radius: 8px;
   background: #fbfcfe;
   color: #18263a;
   font-size: .78rem;
 }
-.form-group textarea { min-height: 88px; resize: vertical; }
+.form-group textarea { min-height: 70px; resize: vertical; }
 .form-group input:focus,
 .form-group textarea:focus,
 .form-group select:focus {
@@ -612,7 +617,7 @@
 }
 .form-group small { margin-top: .28rem; font-size: .67rem; line-height: 1.4; }
 .form-group > label:has(input[type="checkbox"]) {
-  min-height: 40px;
+  min-height: 36px;
   margin: 0;
   padding: .55rem .7rem;
   display: flex;
@@ -624,8 +629,8 @@
 }
 .form-group input[type="checkbox"] { width: 17px; height: 17px; accent-color: #0f8f91; }
 .price-form, .supplier-form, .image-form {
-  margin: .75rem 0;
-  padding: .85rem;
+  margin: .55rem 0;
+  padding: .7rem;
   border: 1px solid #e0e8f1;
   border-radius: 11px;
   background: #f7f9fc;
@@ -676,10 +681,29 @@
 
 @media (max-width: 640px) {
   .admin-product-form { padding: .65rem; }
-  .page-header { margin-bottom: .65rem; padding: .8rem; align-items: flex-start; }
+  .page-header {
+    min-height: 48px;
+    margin-bottom: .65rem;
+    padding: .55rem .7rem;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+  }
+  .page-eyebrow { display: none; }
   .page-header h1 { font-size: 1.12rem; }
   .page-title p { display: none; }
-  .page-header > .btn { min-height: 34px; padding: .4rem .55rem; font-size: .66rem; }
+  .page-header > .back-button {
+    width: 34px;
+    min-width: 34px;
+    min-height: 34px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 1px solid #d6e0eb;
+    background: #f5f8fb;
+    font-size: 1rem;
+  }
+  .back-button-label { display: none; }
   .product-form { gap: .6rem; }
   .form-section { padding: .8rem; border-radius: 11px; }
   .form-section h2 { font-size: .9rem; }
