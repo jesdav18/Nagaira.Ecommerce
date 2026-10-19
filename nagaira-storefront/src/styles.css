@@ -83,6 +83,16 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: var(--transition);
+  overflow-x: hidden;
+}
+
+img { max-width: 100%; }
+
+button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+
+:focus-visible {
+  outline: 3px solid rgba(0, 109, 177, 0.35);
+  outline-offset: 2px;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -186,4 +196,20 @@ input, textarea, select {
   box-shadow: var(--shadow-lg);
   transform: translateY(-4px);
   border-color: var(--primary-light);
+}
+
+@media (max-width: 768px) {
+  :root {
+    --page-gutter: 0.875rem;
+    --border-radius: 10px;
+    --border-radius-lg: 13px;
+  }
+
+  body { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+
+  .btn { min-height: 44px; }
+}
+
+@media (max-width: 340px) {
+  :root { --page-gutter: 0.625rem; }
 }

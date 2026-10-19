@@ -105,7 +105,13 @@
 }
 
 @media (max-width: 560px) {
+    .site-footer { padding: 2rem 0 1rem; }
+    .footer-brand { text-align: center; align-items: center; }
     .footer-links {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.25rem .8rem;
     }
+    .footer-group h4 { font-size: .78rem; }
+    .footer-group a, .footer-note { font-size: .8rem; line-height: 1.4; }
+    .footer-meta { font-size: .75rem; gap: .35rem; }
 }
