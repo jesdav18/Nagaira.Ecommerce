@@ -570,6 +570,7 @@
   box-shadow: none;
 }
 .product-form.editing { padding-bottom: 0; }
+.form-scroll-content { display: contents; }
 .form-section {
   margin: 0;
   padding: .8rem 1rem;
@@ -680,8 +681,17 @@
 }
 
 @media (max-width: 640px) {
-  .admin-product-form { padding: .65rem; }
+  .admin-product-form {
+    position: relative;
+    height: calc(100dvh - 60px - 1.5rem);
+    min-height: 0;
+    padding: .65rem;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
   .page-header {
+    flex: 0 0 auto;
     min-height: 48px;
     margin-bottom: .65rem;
     padding: .55rem .7rem;
@@ -704,7 +714,24 @@
     font-size: 1rem;
   }
   .back-button-label { display: none; }
-  .product-form { gap: .6rem; }
+  .product-form {
+    min-height: 0;
+    flex: 1 1 auto;
+    gap: .6rem;
+    overflow: hidden;
+  }
+  .form-scroll-content {
+    min-height: 0;
+    flex: 1 1 auto;
+    display: grid;
+    align-content: start;
+    gap: .6rem;
+    padding-bottom: .15rem;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
   .form-section { padding: .8rem; border-radius: 11px; }
   .form-section h2 { font-size: .9rem; }
   .form-row, .price-form .form-row, .supplier-form .form-row { grid-template-columns: 1fr; gap: 0; }
@@ -714,11 +741,16 @@
   .prices-list .data-table, .suppliers-list .data-table { min-width: 680px; }
   .images-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .form-actions, .form-actions.sticky-actions {
-    bottom: .35rem;
+    position: static;
+    flex: 0 0 auto;
+    z-index: 20;
+    margin: 0;
     display: grid;
     grid-template-columns: .8fr 1.2fr;
     gap: .45rem;
     padding: .5rem;
+    border-color: #ccd8e5;
+    box-shadow: 0 -8px 24px rgba(17, 35, 61, .18);
   }
   .form-actions .btn { width: 100%; }
 }
