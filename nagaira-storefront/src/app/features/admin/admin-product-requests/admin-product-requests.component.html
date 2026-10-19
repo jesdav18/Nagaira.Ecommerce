@@ -1,6 +1,9 @@
 <div class="admin-product-requests">
   <div class="page-header">
-    <h1>Encargos</h1>
+    <div class="page-heading">
+      <h1>Encargos</h1>
+      <span class="results-count">{{ requests().length }} registros</span>
+    </div>
   </div>
 
   @if (loading()) {
@@ -20,10 +23,10 @@
       </div>
       @for (request of requests(); track request.id) {
         <div class="table-row">
-          <span class="request-date">{{ request.createdAt | date: 'short' }}</span>
-          <span class="request-name">{{ request.name }}</span>
-          <span class="request-phone">{{ request.phone }}</span>
-          <span class="request-status">
+          <span class="request-date" data-label="Fecha">{{ request.createdAt | date: 'short' }}</span>
+          <span class="request-name" data-label="Nombre">{{ request.name }}</span>
+          <span class="request-phone" data-label="Teléfono">{{ request.phone }}</span>
+          <span class="request-status" data-label="Estado">
             <select
               class="status-select"
               [value]="request.status"
@@ -34,7 +37,7 @@
               }
             </select>
           </span>
-          <span class="request-actions">
+          <span class="request-actions" data-label="Acciones">
             <button class="btn btn-sm btn-secondary" type="button" (click)="toggleDetails(request.id)">
               {{ expandedId() === request.id ? 'Ocultar' : 'Ver detalle' }}
             </button>
