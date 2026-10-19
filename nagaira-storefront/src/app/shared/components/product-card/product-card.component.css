@@ -131,12 +131,6 @@
     margin-top: auto;
 }
 
-.price-label {
-    color: var(--text-secondary);
-    font-size: 0.78rem;
-    font-weight: 700;
-}
-
 .price-original {
     font-size: 0.875rem;
     color: var(--text-tertiary);
@@ -147,32 +141,6 @@
     font-size: 1.35rem;
     font-weight: 700;
     color: var(--primary-deep);
-}
-
-.product-wholesale-price {
-    font-size: 1rem;
-    color: #dc2626;
-    font-weight: 600;
-}
-
-.product-3plus-price {
-    display: grid;
-    gap: 0.25rem;
-    padding: 0.65rem;
-    border-radius: var(--border-radius-sm);
-    background: rgba(47, 174, 115, 0.1);
-    border: 1px solid rgba(47, 174, 115, 0.22);
-    color: var(--accent-deep);
-}
-
-.product-3plus-price span {
-    font-weight: 800;
-    font-size: 0.92rem;
-}
-
-.product-3plus-price strong {
-    font-size: 0.78rem;
-    color: var(--text-secondary);
 }
 
 .btn-add-cart {
@@ -217,10 +185,7 @@
 
 .product-card-wide .product-category,
 .product-card-wide .product-name,
-.product-card-wide .price-label,
-.product-card-wide .price-current,
-.product-card-wide .product-3plus-price span,
-.product-card-wide .product-3plus-price strong {
+.product-card-wide .price-current {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -239,10 +204,6 @@
 
 .product-card-wide .price-current {
     font-size: 1.25rem;
-}
-
-.product-card-wide .product-3plus-price {
-    padding: 0.55rem 0.65rem;
 }
 
 .product-card-wide .btn-add-cart {
@@ -304,7 +265,4 @@
     }
 
     .product-category { font-size: .66rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .product-3plus-price { padding: .5rem; }
-    .product-3plus-price span { font-size: .76rem; }
-    .product-3plus-price strong { font-size: .68rem; }
 }

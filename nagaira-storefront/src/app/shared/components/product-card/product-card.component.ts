@@ -9,9 +9,7 @@ import {
   getProductPrice,
   getProductStock,
   getPrimaryImage,
-  getWholesalePrice,
   isVirtualStock,
-  shouldShowBulkPrice,
   shouldShowOffer
 } from '../../../core/utils/product.utils';
 
@@ -43,25 +41,6 @@ export class ProductCardComponent {
 
   get finalPrice(): number {
     return this.showOffer && this.offerPrice !== null ? this.offerPrice : this.basePrice;
-  }
-
-  get wholesalePrice(): number | null {
-    return getWholesalePrice(this.product);
-  }
-
-  get showWholesalePrice(): boolean {
-    return shouldShowBulkPrice(this.product)
-      && this.wholesalePrice !== null
-      && this.wholesalePrice !== this.finalPrice;
-  }
-
-  get special3PlusPrice(): number | null {
-    return this.showWholesalePrice ? this.wholesalePrice : null;
-  }
-
-  get special3PlusSavings(): number {
-    if (this.special3PlusPrice === null) return 0;
-    return Math.max(this.finalPrice - this.special3PlusPrice, 0);
   }
 
   get hasDiscount(): boolean {
