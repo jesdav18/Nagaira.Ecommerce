@@ -1,8 +1,12 @@
 <div class="admin-product-form">
   <div class="page-header">
-    <h1>{{ productId() ? "Editar Producto" : "Nuevo Producto" }}</h1>
+    <div class="page-title">
+      <span class="page-eyebrow">Catálogo de productos</span>
+      <h1>{{ productId() ? "Editar producto" : "Nuevo producto" }}</h1>
+      <p>{{ productId() ? "Actualiza la información comercial y operativa del producto." : "Completa los datos necesarios para publicar un nuevo producto." }}</p>
+    </div>
     <button class="btn btn-secondary" routerLink="/admin/products">
-      ← Volver
+      <span aria-hidden="true">←</span> Volver a productos
     </button>
   </div>
 
