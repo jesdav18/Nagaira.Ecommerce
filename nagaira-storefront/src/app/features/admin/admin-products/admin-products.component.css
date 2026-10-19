@@ -681,19 +681,26 @@
   }
 
   .products-mobile-list {
+    width: 100%;
     min-height: 0;
+    min-width: 0;
     flex: 1 1 auto;
     display: grid;
     align-content: start;
     gap: .55rem;
     overflow-y: auto;
+    overflow-x: hidden;
     overscroll-behavior: contain;
     scrollbar-gutter: stable;
     padding-right: .15rem;
   }
 
   .product-mobile-card {
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
+    box-sizing: border-box;
+    overflow: hidden;
     padding: .7rem;
     display: grid;
     gap: .55rem;
@@ -775,12 +782,20 @@
   }
 
   .product-mobile-card .price-levels {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: .15rem;
+    min-width: 0;
+    flex-wrap: wrap;
+    overflow-x: hidden;
+  }
+
+  .product-mobile-card .price-pill {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    white-space: normal;
   }
 
   .product-mobile-actions {
+    width: 100%;
+    min-width: 0;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: .35rem;
@@ -794,6 +809,8 @@
     gap: .25rem;
     font-size: .62rem;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .product-mobile-actions .btn i {

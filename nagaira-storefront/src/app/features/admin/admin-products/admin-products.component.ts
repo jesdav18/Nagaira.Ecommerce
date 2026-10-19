@@ -11,7 +11,6 @@ import { AppSettingsService } from '../../../core/services/app-settings.service'
 import { sortProductsByName } from '../../../core/utils/product.utils';
 
 type CatalogLayout = 'a4' | 'cards';
-type CatalogPriceMode = 'both' | 'threePlusOnly';
 
 @Component({
   selector: 'app-admin-products',
@@ -47,8 +46,7 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
   selectedCatalogLayout = signal<CatalogLayout>('a4');
 
   catalogOptions = {
-    sortAlphabetically: true,
-    priceMode: 'both' as CatalogPriceMode
+    sortAlphabetically: true
   };
 
   activePriceLevelIds = computed(() => {
@@ -354,11 +352,19 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
 
   generateCatalogFromOptions(): void {
     const layout = this.selectedCatalogLayout();
+    const mobilePrintWindow = this.isMobileViewport() ? window.open('', '_blank') : null;
+    if (this.isMobileViewport() && !mobilePrintWindow) {
+      this.notificationService.warning('Permite las ventanas emergentes para generar el PDF');
+      return;
+    }
+    if (mobilePrintWindow) {
+      mobilePrintWindow.document.write('<p style="font-family:Arial,sans-serif;padding:24px">Preparando cat&aacute;logo...</p>');
+    }
     this.closeCatalogOptions();
-    this.downloadCatalog(layout);
+    this.downloadCatalog(layout, mobilePrintWindow);
   }
 
-  downloadCatalog(layout: CatalogLayout): void {
+  downloadCatalog(layout: CatalogLayout, printWindow: Window | null = null): void {
     this.adminService.getAllProducts().subscribe({
       next: (products: any) => {
         const activeProducts = Array.isArray(products)
@@ -368,23 +374,29 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
           ? sortProductsByName(activeProducts)
           : activeProducts;
         if (items.length === 0) {
+          printWindow?.close();
           this.notificationService.warning('No hay productos para exportar');
           return;
         }
-        const html = this.buildCatalogHtml(items, layout, this.catalogOptions.priceMode);
-        this.printHtmlInIframe(html);
+        const html = this.buildCatalogHtml(items, layout);
+        if (printWindow) {
+          this.printHtmlInWindow(html, printWindow);
+        } else {
+          this.printHtmlInIframe(html);
+        }
       },
       error: (error) => {
+        printWindow?.close();
         console.error('Error loading products for catalog:', error);
         this.notificationService.error('No se pudo generar el cat\u00e1logo');
       }
     });
   }
 
-  private buildCatalogHtml(products: Product[], layout: CatalogLayout, priceMode: CatalogPriceMode): string {
+  private buildCatalogHtml(products: Product[], layout: CatalogLayout): string {
     const title = layout === 'a4' ? '' : '';
     const logoUrl = this.toAbsoluteUrl('/assets/images/NagairaLogoNombre.png');
-    const cards = products.map(product => this.renderProductCard(product, layout, priceMode)).join('');
+    const cards = products.map(product => this.renderProductCard(product, layout)).join('');
 
     return `<!doctype html>
 <html lang="es">
@@ -418,9 +430,6 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
     .card-price-retail { background: #f9fafb; }
     .card-price-retail .card-price-label { color: #6b7280; }
     .card-price-retail .card-price-value { color: #111111; }
-    .card-price-wholesale { background: #fff1f2; }
-    .card-price-wholesale .card-price-label { color: #9f1239; }
-    .card-price-wholesale .card-price-value { color: #dc2626; }
     .layout-cards .card { grid-template-columns: 96px 1fr; gap: 10px; padding: 10px; }
     .layout-cards .card-img { width: 96px; height: 96px; }
     .layout-cards .card-desc { margin-bottom: 6px; }
@@ -443,13 +452,19 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
       ${cards}
     </div>
   </div>
-  <script>
-    window.onload = () => {
-      setTimeout(() => window.print(), 300);
-    };
-  </script>
 </body>
 </html>`;
+  }
+
+  private printHtmlInWindow(html: string, printWindow: Window): void {
+    const doc = printWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+    this.waitForDocumentImages(doc).then(() => {
+      printWindow.focus();
+      printWindow.print();
+    });
   }
 
   private printHtmlInIframe(html: string): void {
@@ -490,52 +505,44 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
 
     win.onafterprint = cleanup;
 
-    const images = Array.from(doc.images);
-    const waitForImages = (): Promise<void> => {
-      if (images.length === 0) return Promise.resolve();
-      return new Promise(resolve => {
-        let remaining = images.length;
-        const done = () => {
-          remaining -= 1;
-          if (remaining <= 0) resolve();
-        };
-        images.forEach(img => {
-          if (img.complete) {
-            done();
-          } else {
-            img.addEventListener('load', done, { once: true });
-            img.addEventListener('error', done, { once: true });
-          }
-        });
-      });
-    };
-
-    const timeout = new Promise<void>(resolve => window.setTimeout(resolve, 1500));
-
-    Promise.race([waitForImages(), timeout]).then(() => {
+    this.waitForDocumentImages(doc).then(() => {
       win.focus();
       win.print();
     });
   }
 
-  private renderProductCard(product: Product, layout: CatalogLayout, priceMode: CatalogPriceMode): string {
+  private waitForDocumentImages(doc: Document): Promise<void> {
+    const images = Array.from(doc.images);
+    const loaded = images.length === 0 ? Promise.resolve() : new Promise<void>(resolve => {
+      let remaining = images.length;
+      const done = () => {
+        remaining -= 1;
+        if (remaining <= 0) resolve();
+      };
+      images.forEach(img => {
+        if (img.complete) done();
+        else {
+          img.addEventListener('load', done, { once: true });
+          img.addEventListener('error', done, { once: true });
+        }
+      });
+    });
+    const timeout = new Promise<void>(resolve => window.setTimeout(resolve, 2000));
+    return Promise.race([loaded, timeout]);
+  }
+
+  private isMobileViewport(): boolean {
+    return window.matchMedia('(max-width: 640px)').matches;
+  }
+
+  private renderProductCard(product: Product, layout: CatalogLayout): string {
     const imageUrl = this.getPrimaryImage(product);
     const retailPrice = this.getMinoristaPrice(product);
-    const wholesalePrice = this.getMayoristaPrice(product);
     const retailText = retailPrice !== null ? this.formatCurrency(retailPrice) : 'Sin precio';
-    const wholesaleText = wholesalePrice !== null ? this.formatCurrency(wholesalePrice) : 'Sin precio';
-    const retailRow = priceMode === 'both'
-      ? `<div class="card-price-row card-price-retail">
+    const retailRow = `<div class="card-price-row card-price-retail">
            <span class="card-price-label">Precio</span>
            <span class="card-price-value">${this.escapeHtml(retailText)}</span>
-         </div>`
-      : '';
-    const wholesaleRow = priceMode === 'threePlusOnly' || wholesalePrice !== null
-      ? `<div class="card-price-row card-price-wholesale">
-           <span class="card-price-label">Precio 3+</span>
-           <span class="card-price-value">${this.escapeHtml(wholesaleText)}</span>
-         </div>`
-      : '';
+         </div>`;
     const desc = this.truncate(product.description || '', layout === 'a4' ? 220 : 140);
     return `
       <div class="card">
@@ -549,7 +556,6 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
           <div class="card-desc">${this.escapeHtml(desc)}</div>
           <div class="card-prices">
             ${retailRow}
-            ${wholesaleRow}
           </div>
         </div>
       </div>
@@ -578,14 +584,6 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
     const active = product.prices.filter(p => p.isActive);
     if (active.length === 0) return null;
     return active.sort((a, b) => a.minQuantity - b.minQuantity)[0].price;
-  }
-
-  private getMayoristaPrice(product: Product): number | null {
-    if (!product.prices || product.prices.length === 0) return null;
-    const mayorista = product.prices.find(p =>
-      p.isActive && (p.priceLevelName || '').toLowerCase().includes('mayorista')
-    );
-    return mayorista ? mayorista.price : null;
   }
 
   private formatCurrency(value: number): string {
