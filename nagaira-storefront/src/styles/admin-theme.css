@@ -1,0 +1,582 @@
+/* Shared visual language for the backoffice. Everything is scoped to admin. */
+.admin-layout {
+  --admin-primary: #0878b8;
+  --admin-primary-hover: #056498;
+  --admin-accent: #159a73;
+  --admin-danger: #dc3545;
+  --admin-warning: #d97706;
+  --admin-success: #16845f;
+  --admin-ink: #172033;
+  --admin-muted: #66758a;
+  --admin-border: #dfe7f1;
+  --admin-surface: #ffffff;
+  --admin-surface-soft: #f7f9fc;
+  --admin-radius: 12px;
+  --admin-shadow: 0 8px 24px rgba(23, 48, 79, .07);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.admin-layout button,
+.admin-layout input,
+.admin-layout select,
+.admin-layout textarea {
+  font: inherit;
+}
+
+.admin-content > router-outlet + * {
+  display: block;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.admin-layout h1,
+.admin-layout h2,
+.admin-layout h3,
+.admin-layout h4 {
+  color: var(--admin-ink);
+  letter-spacing: -.015em;
+}
+
+.admin-layout h1 { font-size: clamp(1.55rem, 2vw, 2rem); }
+.admin-layout h2 { font-size: clamp(1.15rem, 1.5vw, 1.4rem); }
+.admin-layout p { color: var(--admin-muted); }
+
+.admin-layout .page-header,
+.admin-layout .dashboard-header,
+.admin-layout .orders-header,
+.admin-layout .section-header {
+  margin: 0 0 1.1rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.admin-layout .page-header h1,
+.admin-layout .dashboard-header h1,
+.admin-layout .orders-header h1 {
+  margin: 0;
+}
+
+.admin-layout .page-header p,
+.admin-layout .dashboard-header p,
+.admin-layout .orders-header p {
+  margin: .25rem 0 0;
+  font-size: .88rem;
+}
+
+.admin-layout .header-actions,
+.admin-layout .actions,
+.admin-layout .form-actions,
+.admin-layout .modal-actions,
+.admin-layout .offer-actions,
+.admin-layout .request-actions,
+.admin-layout .selection-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.admin-layout .btn,
+.admin-layout .primary-button,
+.admin-layout .pagination button,
+.admin-layout .actions button,
+.admin-layout .selection button,
+.admin-layout .detail-btn,
+.admin-layout .new-brand-button {
+  min-height: 40px;
+  padding: .58rem .9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 9px;
+  color: #26364c;
+  background: #fff;
+  box-shadow: none;
+  font-size: .82rem;
+  font-weight: 700;
+  line-height: 1.15;
+  text-decoration: none;
+  transform: none;
+}
+
+.admin-layout .btn:hover:not(:disabled),
+.admin-layout .pagination button:hover:not(:disabled),
+.admin-layout .actions button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: #b9c8d9;
+  background: #f7f9fc;
+  box-shadow: 0 5px 12px rgba(23, 48, 79, .08);
+}
+
+.admin-layout .btn-primary,
+.admin-layout .primary-button {
+  color: #fff;
+  border-color: var(--admin-primary);
+  background: var(--admin-primary);
+}
+
+.admin-layout .btn-primary:hover:not(:disabled),
+.admin-layout .primary-button:hover:not(:disabled) {
+  color: #fff;
+  border-color: var(--admin-primary-hover);
+  background: var(--admin-primary-hover);
+}
+
+.admin-layout .btn-secondary { color: #2c4058; background: #fff; }
+.admin-layout .btn-success { color: #fff; border-color: var(--admin-success); background: var(--admin-success); }
+.admin-layout .btn-warning { color: #fff; border-color: var(--admin-warning); background: var(--admin-warning); }
+.admin-layout .btn-danger { color: #fff; border-color: var(--admin-danger); background: var(--admin-danger); }
+.admin-layout .btn-sm { min-height: 34px; padding: .42rem .65rem; font-size: .75rem; }
+
+.admin-layout button:disabled,
+.admin-layout .btn:disabled {
+  opacity: .48;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.admin-layout .btn-icon,
+.admin-layout .btn-icon-small,
+.admin-layout .modal-close,
+.admin-layout .detail-btn {
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
+  padding: 0;
+  border: 1px solid var(--admin-border);
+  border-radius: 9px;
+  color: #53657b;
+  background: #fff;
+}
+
+.admin-layout .btn-icon-small { width: 32px; height: 32px; min-height: 32px; }
+
+.admin-layout label {
+  color: #34465d;
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.admin-layout input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.admin-layout select,
+.admin-layout textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: .62rem .72rem;
+  border: 1px solid #cad5e2;
+  border-radius: 9px;
+  color: var(--admin-ink);
+  background: #fff;
+  box-shadow: none;
+}
+
+.admin-layout textarea { min-height: 92px; resize: vertical; }
+
+.admin-layout input:focus,
+.admin-layout select:focus,
+.admin-layout textarea:focus {
+  outline: none;
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 3px rgba(8, 120, 184, .12);
+}
+
+.admin-layout input[type="checkbox"],
+.admin-layout input[type="radio"] {
+  accent-color: var(--admin-primary);
+}
+
+.admin-layout .form-group {
+  display: grid;
+  gap: .35rem;
+}
+
+.admin-layout .form-group small,
+.admin-layout .field-help,
+.admin-layout .form-hint,
+.admin-layout .section-description {
+  color: var(--admin-muted);
+  font-size: .75rem;
+}
+
+.admin-layout .form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.admin-layout .form-container,
+.admin-layout .form-section,
+.admin-layout .catalog-panel,
+.admin-layout .filters,
+.admin-layout .filters-section,
+.admin-layout .filters-row,
+.admin-layout .settings-category,
+.admin-layout .movement-form-section,
+.admin-layout .image-form,
+.admin-layout .price-form,
+.admin-layout .advanced-block {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow);
+}
+
+.admin-layout .form-section,
+.admin-layout .settings-category,
+.admin-layout .movement-form-section,
+.admin-layout .image-form,
+.admin-layout .price-form {
+  padding: 1.15rem;
+}
+
+.admin-layout .filters,
+.admin-layout .filters-section,
+.admin-layout .filters-row {
+  padding: .9rem;
+}
+
+.admin-layout .filters {
+  gap: .75rem;
+}
+
+.admin-layout .filter-group,
+.admin-layout .search-group,
+.admin-layout .search-box {
+  min-width: 0;
+}
+
+.admin-layout .stats-grid,
+.admin-layout .metrics-grid,
+.admin-layout .summary-grid,
+.admin-layout .revenue-grid,
+.admin-layout .orders-grid,
+.admin-layout .reports-grid,
+.admin-layout .balance-cards {
+  gap: .85rem;
+}
+
+.admin-layout .stat-card,
+.admin-layout .metric-card,
+.admin-layout .summary-card,
+.admin-layout .revenue-card,
+.admin-layout .order-status-card,
+.admin-layout .report-card,
+.admin-layout .balance-card,
+.admin-layout .offer-card,
+.admin-layout .alert-card,
+.admin-layout .modal-card {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  background: #fff;
+  box-shadow: var(--admin-shadow);
+}
+
+.admin-layout .stat-card,
+.admin-layout .metric-card,
+.admin-layout .summary-card,
+.admin-layout .revenue-card,
+.admin-layout .order-status-card,
+.admin-layout .report-card,
+.admin-layout .balance-card {
+  padding: 1rem;
+}
+
+.admin-layout .stat-card:hover,
+.admin-layout .metric-card:hover,
+.admin-layout .summary-card:hover,
+.admin-layout .report-card:hover {
+  transform: translateY(-2px);
+  border-color: #c5d4e3;
+  box-shadow: 0 12px 28px rgba(23, 48, 79, .1);
+}
+
+.admin-layout .stat-icon,
+.admin-layout .metric-icon,
+.admin-layout .report-icon {
+  color: var(--admin-primary);
+  background: rgba(8, 120, 184, .09);
+  border-radius: 10px;
+}
+
+.admin-layout .badge,
+.admin-layout .status-badge,
+.admin-layout .request-status,
+.admin-layout .stock-badge,
+.admin-layout .value-badge,
+.admin-layout .chip {
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  padding: .25rem .55rem;
+  border-radius: 999px;
+  font-size: .7rem;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.admin-layout .badge.active,
+.admin-layout .badge-success,
+.admin-layout .available,
+.admin-layout .success,
+.admin-layout .delivered {
+  color: #0f684c;
+  background: #ddf7ed;
+}
+
+.admin-layout .badge.inactive,
+.admin-layout .badge-danger,
+.admin-layout .danger,
+.admin-layout .cancelled {
+  color: #a12836;
+  background: #fde8eb;
+}
+
+.admin-layout .warning,
+.admin-layout .pending {
+  color: #96530b;
+  background: #fff2d8;
+}
+
+.admin-layout .processing,
+.admin-layout .shipped,
+.admin-layout .badge-neutral {
+  color: #1f5c91;
+  background: #e4f1fc;
+}
+
+.admin-layout .products-table,
+.admin-layout .categories-table,
+.admin-layout .banners-table,
+.admin-layout .payment-methods-table,
+.admin-layout .audit-table,
+.admin-layout .table-container,
+.admin-layout .table-wrap,
+.admin-layout .orders-table-wrap,
+.admin-layout .kardex-table-wrapper,
+.admin-layout .movements-table,
+.admin-layout .top-products-table,
+.admin-layout .suppliers-list,
+.admin-layout .prices-list {
+  overflow: auto;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  background: #fff;
+  box-shadow: var(--admin-shadow);
+  scrollbar-width: thin;
+}
+
+.admin-layout table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #fff;
+  font-size: .8rem;
+}
+
+.admin-layout table th {
+  padding: .72rem .8rem;
+  color: #56677c;
+  background: #f4f7fb;
+  border-bottom: 1px solid var(--admin-border);
+  font-size: .69rem;
+  font-weight: 800;
+  letter-spacing: .035em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.admin-layout table td {
+  padding: .75rem .8rem;
+  color: #27384e;
+  border-bottom: 1px solid #e8eef5;
+  vertical-align: middle;
+}
+
+.admin-layout table tbody tr:last-child td { border-bottom: 0; }
+.admin-layout table tbody tr:hover { background: #f8fafc; }
+
+.admin-layout .results-count,
+.admin-layout .page-info,
+.admin-layout .grid-toolbar,
+.admin-layout .status-strip {
+  color: var(--admin-muted);
+  font-size: .78rem;
+}
+
+.admin-layout .pagination {
+  margin-top: .9rem;
+  padding: .7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: .7rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.admin-layout .loading,
+.admin-layout .empty-state,
+.admin-layout .orders-state,
+.admin-layout .info-box,
+.admin-layout .disabled-banner {
+  padding: 1.5rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  background: #fff;
+  color: var(--admin-muted);
+  text-align: center;
+}
+
+.admin-layout .modal-overlay,
+.admin-layout .modal-backdrop,
+.admin-layout .brand-modal-backdrop {
+  padding: 1rem;
+  background: rgba(6, 20, 37, .58);
+  backdrop-filter: blur(3px);
+}
+
+.admin-layout .modal-content,
+.admin-layout .order-modal,
+.admin-layout .brand-modal {
+  width: min(100%, 760px);
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  border: 1px solid rgba(255,255,255,.7);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(5, 20, 38, .28);
+}
+
+.admin-layout .modal-header {
+  padding: 1rem 1.15rem;
+  border-bottom: 1px solid var(--admin-border);
+  background: #fff;
+}
+
+@media (max-width: 1024px) {
+  body:has(.admin-layout) { padding-bottom: 0; }
+
+  .admin-layout .page-header,
+  .admin-layout .dashboard-header,
+  .admin-layout .orders-header {
+    align-items: flex-start;
+  }
+
+  .admin-layout .header-actions { justify-content: flex-start; }
+}
+
+@media (max-width: 640px) {
+  .admin-layout { font-size: 14px; }
+
+  .admin-layout h1 { font-size: 1.35rem; }
+
+  .admin-layout .page-header,
+  .admin-layout .dashboard-header,
+  .admin-layout .orders-header,
+  .admin-layout .section-header {
+    margin-bottom: .8rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: .7rem;
+  }
+
+  .admin-layout .header-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-layout .header-actions .btn { width: 100%; }
+  .admin-layout .header-actions .btn:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+  .admin-layout .btn,
+  .admin-layout .primary-button,
+  .admin-layout .pagination button,
+  .admin-layout .actions button,
+  .admin-layout .selection button,
+  .admin-layout .new-brand-button {
+    min-height: 42px;
+  }
+
+  .admin-layout .form-row,
+  .admin-layout .filters,
+  .admin-layout .filters-section,
+  .admin-layout .filters-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-layout .form-section,
+  .admin-layout .settings-category,
+  .admin-layout .movement-form-section,
+  .admin-layout .image-form,
+  .admin-layout .price-form,
+  .admin-layout .filters,
+  .admin-layout .filters-section,
+  .admin-layout .filters-row {
+    padding: .8rem;
+    border-radius: 10px;
+  }
+
+  .admin-layout .stats-grid,
+  .admin-layout .metrics-grid,
+  .admin-layout .summary-grid,
+  .admin-layout .revenue-grid,
+  .admin-layout .orders-grid,
+  .admin-layout .reports-grid,
+  .admin-layout .balance-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .6rem;
+  }
+
+  .admin-layout .stat-card,
+  .admin-layout .metric-card,
+  .admin-layout .summary-card,
+  .admin-layout .revenue-card,
+  .admin-layout .order-status-card,
+  .admin-layout .report-card,
+  .admin-layout .balance-card {
+    min-width: 0;
+    padding: .75rem;
+  }
+
+  .admin-layout .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-width: 170px;
+  }
+
+  .admin-layout .actions .btn,
+  .admin-layout .actions button { width: 100%; }
+
+  .admin-layout table { min-width: 720px; }
+  .admin-layout .modal-overlay,
+  .admin-layout .modal-backdrop,
+  .admin-layout .brand-modal-backdrop { padding: .5rem; }
+  .admin-layout .modal-content,
+  .admin-layout .order-modal,
+  .admin-layout .brand-modal { max-height: calc(100dvh - 1rem); border-radius: 11px; }
+}
+
+@media (max-width: 380px) {
+  .admin-layout .stats-grid,
+  .admin-layout .metrics-grid,
+  .admin-layout .summary-grid,
+  .admin-layout .revenue-grid,
+  .admin-layout .orders-grid,
+  .admin-layout .reports-grid,
+  .admin-layout .balance-cards { grid-template-columns: 1fr; }
+}

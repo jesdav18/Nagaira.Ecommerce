@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, HostListener, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -12,5 +12,19 @@ import { AuthService } from '../../../core/services/auth.service';
 })
 export class AdminLayoutComponent {
   authService = inject(AuthService);
+  sidebarOpen = signal(false);
+
+  toggleSidebar(): void {
+    this.sidebarOpen.update(open => !open);
+  }
+
+  closeSidebar(): void {
+    this.sidebarOpen.set(false);
+  }
+
+  @HostListener('document:keydown.escape')
+  closeSidebarOnEscape(): void {
+    this.closeSidebar();
+  }
 }
 
