@@ -24,6 +24,7 @@
     aspect-ratio: 1 / 0.82;
     overflow: hidden;
     background: var(--bg-secondary);
+    display: block;
 }
 
 .product-image {
@@ -121,6 +122,8 @@
     overflow: hidden;
     min-height: 2.8rem;
 }
+
+.product-name a { color: inherit; text-decoration: none; }
 
 .product-pricing {
     display: grid;
@@ -257,23 +260,26 @@
 }
 
 @media (max-width: 640px) {
+    .product-image-wrapper { aspect-ratio: 1 / 1; }
+
     .product-info {
-        padding: 0.75rem;
-        gap: 0.5rem;
+        padding: 0.7rem;
+        gap: 0.42rem;
     }
 
     .product-name {
-        font-size: 0.95rem;
-        min-height: 2.6rem;
+        font-size: 0.86rem;
+        min-height: 2.42rem;
     }
 
     .price-current {
-        font-size: 1.1rem;
+        font-size: 1.08rem;
     }
 
     .btn-add-cart {
-        padding: 0.6rem;
-        font-size: 0.8rem;
+        min-height: 44px;
+        padding: 0.55rem 0.4rem;
+        font-size: 0.76rem;
     }
 
     .discount-badge {
@@ -296,4 +302,9 @@
         font-size: 0.7rem;
         padding: 0.3rem 0.5rem;
     }
+
+    .product-category { font-size: .66rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .product-3plus-price { padding: .5rem; }
+    .product-3plus-price span { font-size: .76rem; }
+    .product-3plus-price strong { font-size: .68rem; }
 }
