@@ -139,3 +139,5 @@
   }
 }
 
+.admin-payment-method-form{max-width:none;padding:0}.page-header{min-height:38px;margin:0 0 .5rem}.page-header h1{font-size:1.05rem}.payment-method-form{padding:.75rem}.form-group{margin-bottom:.6rem}.form-actions{position:sticky;z-index:4;bottom:.35rem;margin-top:.5rem;padding:.5rem;border:1px solid #dfe7f1;border-radius:10px;background:#fff;box-shadow:0 -6px 18px rgba(23,48,79,.12)}@media(max-width:640px){.page-header{flex-direction:row}.page-header .btn{width:34px;overflow:hidden;padding:.4rem}.payment-method-form{padding:.6rem}.form-actions{display:grid;grid-template-columns:1fr 1.2fr}.form-actions .btn{width:100%}}
+

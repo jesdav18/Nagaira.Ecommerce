@@ -62,3 +62,5 @@
   cursor: not-allowed;
 }
 
+.admin-reports{height:100%;min-height:0;padding:.7rem;display:flex;flex-direction:column}.page-header{min-height:38px;margin:0 0 .5rem}.page-header h1{font-size:1.05rem}.reports-grid{min-height:0;flex:1 1 auto;align-content:start;gap:.65rem;overflow-y:auto}.report-card{padding:1rem}.report-icon{font-size:1.5rem}.report-card h3{font-size:.9rem}.report-card p{font-size:.7rem}@media(max-width:640px){.admin-reports{padding:.6rem}.reports-grid{grid-template-columns:1fr}}
+

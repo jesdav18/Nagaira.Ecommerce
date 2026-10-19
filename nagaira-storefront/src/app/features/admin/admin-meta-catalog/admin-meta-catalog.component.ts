@@ -5,7 +5,7 @@ import { AdminService } from '../../../core/services/admin.service';
 import { Brand, MetaCatalogAdminProduct, MetaCatalogSummary } from '../../../core/models/models';
 import { NotificationService } from '../../../core/services/notification.service';
 
-@Component({ selector: 'app-admin-meta-catalog', standalone: true, imports: [CommonModule, FormsModule], templateUrl: './admin-meta-catalog.component.html', styleUrls: ['./admin-meta-catalog.component.css'] })
+@Component({ selector: 'app-admin-meta-catalog', standalone: true, imports: [CommonModule, FormsModule], templateUrl: './admin-meta-catalog.component.html', styleUrls: ['./admin-meta-catalog.component.css', './admin-meta-catalog.compact.css'] })
 export class AdminMetaCatalogComponent implements OnInit {
   private api = inject(AdminService); private notifications = inject(NotificationService);
   summary = signal<MetaCatalogSummary | null>(null); products = signal<MetaCatalogAdminProduct[]>([]); brands = signal<Brand[]>([]);
