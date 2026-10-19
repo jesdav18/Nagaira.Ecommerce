@@ -9,9 +9,7 @@ import {
   getProductOfferPrice,
   getProductPrice,
   getProductStock,
-  getWholesalePrice,
   isVirtualStock,
-  shouldShowBulkPrice,
   shouldShowOffer
 } from '../../core/utils/product.utils';
 import { SeoService } from '../../core/services/seo.service';
@@ -149,19 +147,6 @@ export class ProductDetailComponent implements OnInit {
   get discountPercentage(): number {
     if (!this.showOffer || this.offerPrice === null || this.basePrice <= 0) return 0;
     return Math.round(((this.basePrice - this.offerPrice) / this.basePrice) * 100);
-  }
-
-  get wholesalePrice(): number | null {
-    const p = this.product();
-    return p ? getWholesalePrice(p) : null;
-  }
-
-  get showWholesalePrice(): boolean {
-    const p = this.product();
-    return !!p
-      && shouldShowBulkPrice(p)
-      && this.wholesalePrice !== null
-      && this.wholesalePrice !== this.finalPrice;
   }
 
   get stock(): number | null {
