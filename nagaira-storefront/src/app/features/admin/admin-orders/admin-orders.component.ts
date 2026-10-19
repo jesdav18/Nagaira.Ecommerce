@@ -99,6 +99,10 @@ export class AdminOrdersComponent implements OnInit {
     return (status || '').toLowerCase();
   }
 
+  getStatusLabel(status: string): string {
+    return this.statusOptions.find(option => option.value === status)?.label || status;
+  }
+
   getPaymentProofUrl(order: Order): string {
     return order.paymentProofImageUrl || '';
   }
