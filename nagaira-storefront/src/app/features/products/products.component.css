@@ -317,23 +317,43 @@
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
-        gap: 0.65rem;
-        margin-bottom: .75rem;
-        padding: .85rem;
+        gap: .5rem;
+        margin-bottom: .5rem;
+        padding: .55rem .65rem;
     }
 
-    .page-title { font-size: 1.45rem; }
+    .header-text {
+        min-width: 0;
+    }
+
+    .page-title {
+        margin: 0;
+        font-size: 1.05rem;
+        line-height: 1.2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .product-count {
+        display: block;
+        margin-top: .15rem;
+        font-size: .75rem;
+        line-height: 1.2;
+    }
+
     .mobile-filter-toggle {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: .45rem;
-        min-height: 44px;
-        padding: .65rem .75rem;
+        gap: .35rem;
+        min-height: 40px;
+        padding: .5rem .6rem;
         border: 1px solid var(--border-color);
         border-radius: var(--border-radius-sm);
         background: var(--bg-primary);
         color: var(--primary-deep);
+        font-size: .8rem;
         font-weight: 700;
         cursor: pointer;
     }

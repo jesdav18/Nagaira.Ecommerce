@@ -447,7 +447,11 @@
     }
 
     .social-btn {
-        display: none;
+        display: inline-flex;
+        width: 30px;
+        height: 30px;
+        font-size: 1rem;
+        box-shadow: 0 4px 10px rgba(2, 40, 90, 0.12);
     }
 
     .logo-image { height: 34px; }
