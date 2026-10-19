@@ -31,6 +31,7 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
   products = signal<Product[]>([]);
   priceLevels = signal<PriceLevel[]>([]);
   loading = signal(true);
+  filtersOpen = signal(false);
   pageNumber = signal(1);
   pageSize = signal(20);
   totalCount = signal(0);
@@ -55,6 +56,14 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
   });
 
   activePriceLevelCount = computed(() => this.activePriceLevelIds().size);
+
+  activeFilterCount = computed(() => [
+    this.searchTerm().trim() || null,
+    this.isActiveFilter(),
+    this.isFeaturedFilter(),
+    this.categoryFilter(),
+    this.priceLevelFilter()
+  ].filter(value => value !== null && value !== '').length);
 
   filteredProducts = computed(() => {
     const filter = this.priceLevelFilter();
@@ -161,6 +170,22 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
   onTogglePriceLevels(value: boolean): void {
     this.showPriceLevels.set(value);
     this.persistFilters();
+  }
+
+  toggleFilters(): void {
+    this.filtersOpen.update(open => !open);
+  }
+
+  clearFilters(): void {
+    this.searchTerm.set('');
+    this.isActiveFilter.set(null);
+    this.isFeaturedFilter.set(null);
+    this.categoryFilter.set(null);
+    this.priceLevelFilter.set(null);
+    this.showPriceLevels.set(false);
+    this.pageNumber.set(1);
+    this.persistFilters();
+    this.loadProducts();
   }
 
   loadCategories(): void {
