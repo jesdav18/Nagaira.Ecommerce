@@ -132,21 +132,6 @@
 
 @media (max-width: 640px) {
     .hero-carousel {
-        height: clamp(142px, 46vw, 190px);
-        padding: 0;
-    }
-
-    .hero-title {
-        font-size: 1.6rem;
-        margin-bottom: 0.75rem;
-    }
-
-    .hero-subtitle {
-        font-size: 0.9rem;
-        margin-bottom: 1rem;
-    }
-
-    .hero-dots {
-        bottom: 0.75rem;
+        display: none;
     }
 }
