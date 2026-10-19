@@ -5,9 +5,20 @@
         <h1 class="page-title">{{ currentTitle() }}</h1>
         <span class="product-count">{{ products().length }} productos encontrados</span>
       </div>
+
+      <button
+        type="button"
+        class="mobile-filter-toggle"
+        (click)="toggleFilters()"
+        [attr.aria-expanded]="filtersOpen()"
+        aria-controls="product-filters">
+        <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+        <span>Filtros y orden</span>
+        <i class="fa-solid fa-chevron-down toggle-chevron" [class.open]="filtersOpen()" aria-hidden="true"></i>
+      </button>
       
       <!-- Opcional: Selector de ordenamiento -->
-      <div class="sort-selector">
+      <div class="sort-selector" [class.mobile-open]="filtersOpen()">
         <select>
           <option>Más recientes</option>
           <option>Menor precio</option>
@@ -18,7 +29,7 @@
 
     <div class="products-layout">
       <!-- Filtros Sidebar -->
-      <aside class="filters-sidebar">
+      <aside id="product-filters" class="filters-sidebar" [class.mobile-open]="filtersOpen()">
         <div class="filter-section">
           <h3 class="filter-title">Categorías</h3>
           <div class="category-select">

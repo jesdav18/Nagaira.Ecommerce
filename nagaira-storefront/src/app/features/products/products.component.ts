@@ -24,6 +24,7 @@ export class ProductsComponent {
   products = signal<Product[]>([]);
   categories = signal<Category[]>([]);
   loading = signal(true);
+  filtersOpen = signal(false);
   currentTitle = signal('Catálogo');
   expandedCategories = signal<Set<string>>(new Set());
   currentCategoryId = signal<string | null>(null);
@@ -161,11 +162,16 @@ export class ProductsComponent {
   onCategorySelect(event: Event): void {
     const target = event.target as HTMLSelectElement;
     const value = target.value;
+    this.filtersOpen.set(false);
     if (!value) {
       this.router.navigate(['/products'], { queryParams: {} });
       return;
     }
     this.router.navigate(['/products'], { queryParams: { category: value, search: null } });
+  }
+
+  toggleFilters(): void {
+    this.filtersOpen.update(open => !open);
   }
 
   getCategoryOptions(): Array<{ id: string; name: string }> {
