@@ -655,7 +655,6 @@ body:has(app-admin-products),
 :is(
   app-admin-suppliers,
   app-admin-offers,
-  app-admin-orders,
   app-admin-categories,
   app-admin-banners,
   app-admin-payment-methods,
@@ -769,7 +768,6 @@ app-admin-offers .offers-grid {
   :is(
     app-admin-suppliers,
     app-admin-offers,
-    app-admin-orders,
     app-admin-categories,
     app-admin-banners,
     app-admin-payment-methods,
