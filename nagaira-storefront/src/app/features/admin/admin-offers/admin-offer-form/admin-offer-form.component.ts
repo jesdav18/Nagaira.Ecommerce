@@ -239,7 +239,7 @@ export class AdminOfferFormComponent implements OnInit {
 
     if (this.formData.offerType === 'FixedAmount'
         && (!this.formData.discountAmount || this.formData.discountAmount <= 0)) {
-      this.notificationService.warning('Ingresa un precio final por unidad mayor que 0');
+      this.notificationService.warning('Ingresa un descuento fijo por unidad mayor que 0');
       return;
     }
 

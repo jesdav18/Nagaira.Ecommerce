@@ -22,10 +22,10 @@ describe('product offer pricing', () => {
     expect(getProductOfferPrice(product, 1, 100)).toBe(80);
   });
 
-  it('uses a fixed amount as the final unit price', () => {
+  it('subtracts a fixed discount from the unit price', () => {
     const product = createProduct();
     product.applicableOffers = [{
-      id: 'fixed', offerType: 'FixedAmount', discountAmount: 79,
+      id: 'fixed', offerType: 'FixedAmount', discountAmount: 21,
       priority: 1, rules: []
     }];
     expect(getProductOfferPrice(product, 1, 100)).toBe(79);

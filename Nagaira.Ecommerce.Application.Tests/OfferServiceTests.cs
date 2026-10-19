@@ -30,7 +30,7 @@ public class OfferServiceTests
             Description: null,
             OfferType: "FixedAmount",
             DiscountPercentage: null,
-            DiscountAmount: 279m,
+            DiscountAmount: 23.50m,
             MinPurchaseAmount: null,
             MinQuantity: null,
             MaxUsesPerCustomer: null,
@@ -116,7 +116,7 @@ public class OfferServiceTests
         Assert.Equal(OfferType.FixedAmount, offer.OfferType);
         Assert.Equal(158m, offer.DiscountAmount);
         Assert.Null(offer.DiscountPercentage);
-        Assert.Equal(158m, OfferPriceCalculator.SelectOffer([offer], 203.56m, 1, 203.56m)!.FinalUnitPrice);
+        Assert.Equal(549m, OfferPriceCalculator.SelectOffer([offer], 707m, 1, 707m)!.FinalUnitPrice);
     }
 
     private static void SetupEmptyRepository<T>(Mock<IUnitOfWork> unitOfWork) where T : class
