@@ -28,26 +28,17 @@
         <div class="form-group">
           <label>Marca *</label>
           <div class="brand-picker">
-            <input
-              type="text"
-              [ngModel]="brandSearch"
-              (ngModelChange)="onBrandSearch($event)"
-              name="brandSearch"
-              list="brand-options"
-              maxlength="255"
-              placeholder="Buscar una marca existente"
-              autocomplete="off"
-            />
+            <button type="button" class="brand-select-trigger" (click)="openBrandPicker()">
+              <span [class.placeholder]="!formData.brandId">{{ formData.brand || 'Seleccionar marca' }}</span>
+              <span aria-hidden="true">⌄</span>
+            </button>
             <button type="button" class="btn btn-secondary new-brand-button" (click)="openCreateBrand()">
               + Nueva marca
             </button>
           </div>
-          <datalist id="brand-options">
-            @for (brand of brands(); track brand.id) { <option [value]="brand.name"></option> }
-          </datalist>
           @if (!formData.brandId) {
           <small class="warning">
-            Selecciona una marca existente o crea una nueva.
+            Selecciona una marca para continuar.
           </small>
           } @else {
           <small class="selected-brand">Marca seleccionada: {{ formData.brand }}</small>
@@ -736,6 +727,42 @@
   </form>
   }
 </div>
+
+@if (showBrandPicker()) {
+<div class="brand-selector-backdrop" (click)="closeBrandPicker()">
+  <section class="brand-selector" role="dialog" aria-modal="true" aria-labelledby="brand-selector-title" (click)="$event.stopPropagation()">
+    <header class="brand-selector-header">
+      <div>
+        <h3 id="brand-selector-title">Seleccionar marca</h3>
+        <small>{{ filteredBrands().length }} marcas disponibles</small>
+      </div>
+      <button type="button" class="brand-selector-close" (click)="closeBrandPicker()" aria-label="Cerrar">×</button>
+    </header>
+
+    <div class="brand-selector-search">
+      <span aria-hidden="true">⌕</span>
+      <input type="search" [(ngModel)]="brandPickerSearch" name="brandPickerSearch" placeholder="Buscar por nombre..." autocomplete="off" autofocus />
+    </div>
+
+    <div class="brand-selector-list">
+      @for (brand of filteredBrands(); track brand.id) {
+      <button type="button" class="brand-option" [class.selected]="brand.id === formData.brandId" (click)="selectBrand(brand)">
+        <span class="brand-option-initial">{{ brand.name.charAt(0).toUpperCase() }}</span>
+        <span>{{ brand.name }}</span>
+        @if (brand.id === formData.brandId) { <span class="brand-option-check" aria-hidden="true">✓</span> }
+      </button>
+      } @empty {
+      <div class="brand-selector-empty">No encontramos marcas con ese nombre.</div>
+      }
+    </div>
+
+    <footer class="brand-selector-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeBrandPicker()">Cancelar</button>
+      <button type="button" class="btn btn-primary" (click)="createBrandFromPicker()">+ Crear marca</button>
+    </footer>
+  </section>
+</div>
+}
 
 @if (showBrandModal()) {
 <div class="brand-modal-backdrop" (click)="showBrandModal.set(false)">

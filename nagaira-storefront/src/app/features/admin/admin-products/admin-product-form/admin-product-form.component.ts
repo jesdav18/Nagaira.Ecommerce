@@ -46,6 +46,8 @@ export class AdminProductFormComponent implements OnInit {
   showingHistory = signal<string | null>(null);
   brands = signal<Brand[]>([]);
   brandSearch = '';
+  brandPickerSearch = '';
+  showBrandPicker = signal(false);
   showBrandModal = signal(false);
   creatingBrand = signal(false);
   newBrandName = '';
@@ -195,6 +197,23 @@ export class AdminProductFormComponent implements OnInit {
     this.adminService.getBrands(search, true).subscribe(data => this.brands.set(data));
   }
 
+  openBrandPicker(): void {
+    this.brandPickerSearch = '';
+    this.loadBrands();
+    this.showBrandPicker.set(true);
+  }
+
+  closeBrandPicker(): void {
+    this.showBrandPicker.set(false);
+  }
+
+  filteredBrands(): Brand[] {
+    const search = this.brandPickerSearch.trim().toLocaleLowerCase();
+    return this.brands()
+      .filter(brand => !search || brand.name.toLocaleLowerCase().includes(search))
+      .sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
+  }
+
   onBrandSearch(value: string): void {
     this.brandSearch = value;
     const exact = this.brands().find(b => b.name.toLocaleLowerCase() === value.trim().toLocaleLowerCase());
@@ -207,6 +226,13 @@ export class AdminProductFormComponent implements OnInit {
     this.formData.brandId = brand.id;
     this.formData.brand = brand.name;
     this.brandSearch = brand.name;
+    this.showBrandPicker.set(false);
+  }
+
+  createBrandFromPicker(): void {
+    this.showBrandPicker.set(false);
+    this.newBrandName = this.brandPickerSearch.trim();
+    this.showBrandModal.set(true);
   }
 
   openCreateBrand(): void { this.newBrandName = this.formData.brandId ? '' : this.brandSearch.trim(); this.showBrandModal.set(true); }
