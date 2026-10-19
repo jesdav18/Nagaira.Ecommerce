@@ -357,3 +357,57 @@
   .orders-table td:last-child { position: absolute; right: .7rem; top: .7rem; width: auto; }
   .orders-table tr { position: relative; padding-right: 3rem; }
 }
+
+/* Match the products workspace */
+.admin-orders {
+  height: calc(100dvh - 68px - 1.5rem);
+  max-height: none;
+  padding: .75rem;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid #dfe7f1;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(23, 48, 79, .07);
+}
+.orders-header {
+  min-height: 42px;
+  margin: 0 0 .65rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.page-heading { min-width: 0; display: flex; align-items: baseline; gap: .75rem; }
+.orders-header h1 { font-size: 1.25rem; line-height: 1.15; white-space: nowrap; }
+.results-count { color: #708096; font-size: .74rem; white-space: nowrap; }
+.header-actions { display: flex; align-items: center; gap: .4rem; }
+.filter-label { color: #56677c; font-size: .68rem; font-weight: 800; }
+.header-actions select { width: 170px; min-height: 36px; padding: .45rem .58rem; border: 1px solid #cad5e2; border-radius: 9px; font-size: .76rem; }
+.orders-table-wrap { min-height: 0; flex: 1 1 auto; border-radius: 10px; box-shadow: none; }
+.orders-table { min-width: 980px; border-collapse: separate; border-spacing: 0; font-size: .76rem; }
+.orders-table th { padding: .58rem .7rem; font-size: .66rem; }
+.orders-table td { padding: .58rem .7rem; line-height: 1.35; vertical-align: middle; }
+.orders-table td:nth-child(1) { width: 190px; }
+.orders-table td:nth-child(2) { width: 170px; }
+.orders-table td:nth-child(3) { min-width: 150px; }
+.orders-table td:nth-child(4) { width: 150px; }
+.orders-table td:nth-child(5) { min-width: 210px; }
+.orders-table td:nth-child(6) { width: 105px; }
+.orders-table td:nth-child(7) { width: 190px; }
+.orders-table td:nth-child(8) { width: 72px; }
+.status-badge { margin: 0 0 .3rem; padding: .22rem .5rem; font-size: .68rem; }
+.orders-table select { min-height: 32px; padding: .35rem .5rem; font-size: .7rem; }
+.detail-btn { width: auto; height: auto; min-height: 32px; padding: .38rem .55rem; color: #26364c; }
+.orders-state { min-height: 0; flex: 1 1 auto; display: grid; place-items: center; }
+
+@media (max-width: 640px) {
+  .admin-orders { height: calc(100dvh - 60px - 1.5rem); padding: .65rem; border-radius: 10px; }
+  .orders-header { margin-bottom: .5rem; }
+  .page-heading { justify-content: space-between; gap: .5rem; }
+  .orders-header h1 { font-size: 1.05rem; }
+  .results-count { font-size: .65rem; }
+  .filter-label { display: none; }
+  .header-actions select { width: 128px; min-height: 34px; font-size: .7rem; }
+  .orders-table td:last-child { width: auto; }
+}

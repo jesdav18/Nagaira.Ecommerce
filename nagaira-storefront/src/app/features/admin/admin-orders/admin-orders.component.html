@@ -1,12 +1,12 @@
 <div class="admin-orders">
   <div class="orders-header">
-    <div>
-      <h1>Ordenes</h1>
-      <p>Consulta las ordenes nuevas o pendientes y actualiza su estado.</p>
+    <div class="page-heading">
+      <h1>Órdenes</h1>
+      <span class="results-count">{{ orders().length }} registros</span>
     </div>
 
-    <div class="filter-group">
-      <label for="orderStatusFilter">Filtro</label>
+    <div class="header-actions">
+      <label for="orderStatusFilter" class="filter-label">Estado</label>
       <select
         id="orderStatusFilter"
         [ngModel]="selectedStatus()"
@@ -53,7 +53,7 @@
               </td>
               <td class="order-total-cell">{{ order.total | appCurrency:'1.2-2' }}</td>
               <td>
-                <span class="status-badge" [class]="getStatusClass(order.status)">{{ order.status }}</span>
+                <span class="status-badge" [class]="getStatusClass(order.status)">{{ getStatusLabel(order.status) }}</span>
                 <select
                   [id]="'status-' + order.id"
                   [disabled]="updatingOrderId() === order.id"
@@ -65,11 +65,8 @@
                 </select>
               </td>
               <td>
-                <button type="button" class="detail-btn" (click)="openOrderDetail(order)" aria-label="Ver detalle">
-                  <svg viewBox="0 0 24 24" aria-hidden="true" class="detail-icon">
-                    <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Z"></path>
-                    <circle cx="12" cy="12" r="3.2"></circle>
-                  </svg>
+                <button type="button" class="btn btn-sm btn-secondary detail-btn" (click)="openOrderDetail(order)" aria-label="Ver detalle">
+                  Ver
                 </button>
               </td>
             </tr>
@@ -104,7 +101,7 @@
             @if (order.paymentMethodName) {
               <p><strong>Pago:</strong> {{ order.paymentMethodName }}</p>
             }
-            <p><strong>Estado:</strong> <span class="status-badge" [class]="getStatusClass(order.status)">{{ order.status }}</span></p>
+            <p><strong>Estado:</strong> <span class="status-badge" [class]="getStatusClass(order.status)">{{ getStatusLabel(order.status) }}</span></p>
           </section>
 
           <section class="modal-card">
