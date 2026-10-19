@@ -251,3 +251,5 @@
   color: #666;
 }
 
+.admin-kardex-detail{max-width:none;padding:.7rem}.page-header{min-height:38px;margin:0 0 .5rem}.page-header h1{font-size:1.05rem}.product-info-section,.balance-section,.movements-section,.movement-form-section{margin-bottom:.6rem;padding:.75rem}.product-info-section h2,.balance-section h3,.movements-section h3{font-size:.9rem}.balance-cards{gap:.5rem}.balance-card{padding:.65rem}.movements-table{max-height:38dvh;overflow:auto}@media(max-width:640px){.admin-kardex-detail{padding:.6rem}.page-header{flex-direction:row}.page-header .btn{width:34px;overflow:hidden;padding:.4rem}}
+

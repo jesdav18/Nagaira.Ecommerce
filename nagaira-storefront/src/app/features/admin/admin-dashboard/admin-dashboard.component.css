@@ -249,3 +249,5 @@
   font-size: 0.9rem;
 }
 
+.admin-dashboard{height:100%;min-height:0;padding:.7rem;overflow-y:auto}.dashboard-header{min-height:38px;margin:0 0 .5rem}.dashboard-header h1{font-size:1.05rem}.dashboard-header p{display:none}.stats-grid{gap:.6rem}.stat-card{padding:.75rem}.stat-icon{font-size:1.25rem}.stat-content h3{font-size:1.05rem}.stat-content p,.stat-sub{font-size:.65rem}.section{margin-top:.7rem}@media(max-width:640px){.admin-dashboard{padding:.6rem}.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+

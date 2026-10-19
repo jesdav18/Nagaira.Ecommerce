@@ -190,3 +190,5 @@
         grid-template-columns: 1fr;
     }
 }
+
+.admin-product-requests{height:100%;min-height:0;padding:.7rem;display:flex;flex-direction:column;border:1px solid #dfe7f1;border-radius:12px;background:#fff}.page-header{min-height:38px;margin:0 0 .5rem}.page-header h1{font-size:1.05rem}.requests-table{min-height:0;flex:1 1 auto;overflow:auto;border:1px solid #dfe7f1;border-radius:10px}.table-header,.table-row{padding:.55rem .65rem;font-size:.7rem}.table-header{position:sticky;z-index:2;top:0;background:#f4f7fb}@media(max-width:640px){.admin-product-requests{padding:.6rem}.table-row{margin:.5rem;padding:.65rem;border:1px solid #dfe7f1;border-radius:10px}.details-row{margin:0 .5rem .5rem;padding:.65rem}}

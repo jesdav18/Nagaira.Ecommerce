@@ -180,3 +180,36 @@
   cursor: not-allowed;
 }
 
+/* Compact workspace */
+.admin-categories { height: 100%; min-height: 0; padding: .7rem; display: flex; flex-direction: column; border: 1px solid #dfe7f1; border-radius: 12px; box-shadow: 0 6px 20px rgba(23,48,79,.06); }
+.page-header { flex: 0 0 auto; min-height: 38px; margin: 0 0 .5rem; }
+.page-header h1 { font-size: 1.05rem; }
+.filters { flex: 0 0 auto; margin: 0 0 .55rem; padding: .5rem; gap: .5rem; border: 1px solid #dfe7f1; border-radius: 10px; }
+.search-box input, .filter-group select { min-height: 36px; padding: .42rem .55rem; font-size: .72rem; }
+.categories-table { min-height: 0; flex: 1 1 auto; overflow: auto; border: 1px solid #dfe7f1; border-radius: 10px; }
+.categories-table table { min-width: 980px; }
+.categories-table thead { position: sticky; z-index: 2; top: 0; }
+.categories-table th, .categories-table td { padding: .55rem .65rem; font-size: .71rem; }
+.categories-table th { font-size: .62rem; }
+.category-image { width: 44px; height: 44px; }
+.actions { gap: .3rem; }
+.actions .btn { min-height: 32px; padding: .35rem .5rem; font-size: .64rem; }
+
+@media (max-width: 640px) {
+  .admin-categories { padding: .6rem; }
+  .page-header { flex-direction: row; }
+  .filters { display: grid; grid-template-columns: 1fr auto; }
+  .search-box { min-width: 0; }
+  .filter-group label { display: none; }
+  .categories-table table { min-width: 0; }
+  .categories-table thead { display: none; }
+  .categories-table table, .categories-table tbody, .categories-table tr, .categories-table td { display: block; width: 100%; }
+  .categories-table tbody { padding: .1rem; }
+  .categories-table tr { margin-bottom: .55rem; padding: .65rem; border: 1px solid #dfe7f1; border-radius: 10px; }
+  .categories-table td { padding: .14rem 0; border: 0; }
+  .categories-table td:first-child { float: left; width: 52px; margin-right: .55rem; }
+  .categories-table td:last-child { clear: both; padding-top: .5rem; }
+  .actions { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .actions .btn { width: 100%; }
+}
+

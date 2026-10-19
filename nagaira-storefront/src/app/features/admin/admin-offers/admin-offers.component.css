@@ -203,3 +203,25 @@
   color: #666;
 }
 
+/* Compact workspace */
+.admin-offers { height: 100%; min-height: 0; padding: .7rem; display: flex; flex-direction: column; border: 1px solid #dfe7f1; box-shadow: 0 6px 20px rgba(23,48,79,.06); }
+.page-header { flex: 0 0 auto; min-height: 38px; margin: 0 0 .5rem; }
+.page-header h1 { font-size: 1.05rem; }
+.offers-grid { min-height: 0; flex: 1 1 auto; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); align-content: start; gap: .65rem; overflow-y: auto; padding: .1rem; }
+.offer-card { padding: .8rem; border-radius: 10px; background: #fff; }
+.offer-card h3 { margin-bottom: .3rem; font-size: .9rem; }
+.offer-card > p { margin-bottom: .5rem; font-size: .7rem; }
+.offer-details { margin-bottom: .5rem; }
+.offer-rules { margin-bottom: .55rem; padding: .6rem; }
+.offer-rules h4 { font-size: .75rem; }
+.rule-editor { margin-bottom: .5rem; gap: .35rem; }
+.rule-editor select, .rule-editor input { min-height: 34px; padding: .35rem .45rem; font-size: .68rem; }
+.offer-actions .btn { min-height: 32px; padding: .35rem .55rem; font-size: .65rem; }
+
+@media (max-width: 640px) {
+  .admin-offers { padding: .6rem; }
+  .page-header { flex-direction: row; }
+  .offers-grid { grid-template-columns: 1fr; }
+  .offer-card { padding: .7rem; }
+}
+
