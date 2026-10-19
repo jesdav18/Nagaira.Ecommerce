@@ -6,9 +6,7 @@
       <div class="discount-badge">-{{ discountPercentage }}%</div>
     }
 
-    @if (isVirtual) {
-      <div class="stock-badge success">Disponible</div>
-    } @else if (stock !== null && stock <= 5 && stock > 0) {
+    @if (!isVirtual && stock !== null && stock <= 5 && stock > 0) {
       <div class="stock-badge warning">Últimas {{ stock }} unidades</div>
     } @else if (stock === 0) {
       <div class="stock-badge error">Agotado</div>

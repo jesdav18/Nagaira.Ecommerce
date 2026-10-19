@@ -29,23 +29,26 @@ public class OfferPriceCalculatorTests
     }
 
     [Fact]
-    public void FixedAmount_SetsTheFinalUnitPrice()
+    public void FixedDiscount_SubtractsTheAmountFromTheUnitPrice()
     {
-        var offer = CreateOffer(priority: 1, fixedAmount: 79m);
+        var offer = CreateOffer(priority: 1, fixedAmount: 158m);
 
-        var result = OfferPriceCalculator.Calculate(offer, 100m, 2, 200m);
+        var result = OfferPriceCalculator.Calculate(offer, 707m, 1, 707m);
 
         Assert.NotNull(result);
-        Assert.Equal(79m, result.FinalUnitPrice);
-        Assert.Equal(42m, result.TotalDiscount);
+        Assert.Equal(549m, result.FinalUnitPrice);
+        Assert.Equal(158m, result.TotalDiscount);
     }
 
     [Fact]
-    public void FixedAmount_AboveBasePrice_IsNotApplied()
+    public void FixedDiscount_NeverProducesNegativePrice()
     {
         var offer = CreateOffer(priority: 1, fixedAmount: 150m);
 
-        Assert.Null(OfferPriceCalculator.Calculate(offer, 100m, 1, 100m));
+        var result = OfferPriceCalculator.Calculate(offer, 100m, 1, 100m);
+
+        Assert.NotNull(result);
+        Assert.Equal(0m, result.FinalUnitPrice);
     }
 
     [Fact]
