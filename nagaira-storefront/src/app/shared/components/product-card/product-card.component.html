@@ -1,6 +1,17 @@
 <article class="product-card" [class.product-card-wide]="layout === 'wide'">
-  <a [routerLink]="['/p', product.slug]" class="product-image-wrapper" [attr.aria-label]="'Ver ' + product.name">
-    <img [src]="primaryImage" [alt]="product.name" class="product-image">
+  <a
+    [routerLink]="['/p', product.slug]"
+    class="product-image-wrapper"
+    [class.has-gallery]="galleryImages.length > 1"
+    [attr.aria-label]="'Ver ' + product.name"
+    (touchstart)="onImageTouchStart($event)"
+    (touchend)="onImageTouchEnd($event)"
+    (click)="onImageClick($event)">
+    <img
+      [src]="currentImage.imageUrl"
+      [alt]="currentImage.altText || product.name"
+      class="product-image"
+      draggable="false">
 
     @if (hasDiscount) {
       <div class="discount-badge">-{{ discountPercentage }}%</div>
@@ -10,6 +21,14 @@
       <div class="stock-badge warning">Últimas {{ stock }} unidades</div>
     } @else if (stock === 0) {
       <div class="stock-badge error">Agotado</div>
+    }
+
+    @if (galleryImages.length > 1) {
+      <div class="image-dots" aria-hidden="true">
+        @for (image of galleryImages; track image.imageUrl; let i = $index) {
+          <span [class.active]="i === selectedImageIndex()"></span>
+        }
+      </div>
     }
   </a>
 
