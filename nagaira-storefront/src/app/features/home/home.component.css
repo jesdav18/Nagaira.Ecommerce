@@ -270,6 +270,10 @@
 }
 
 @media (max-width: 640px) {
+    .benefits-strip {
+        display: none;
+    }
+
     .benefits-grid {
         display: flex;
         overflow-x: auto;
