@@ -587,3 +587,244 @@ body:has(app-admin-products),
   .admin-layout .reports-grid,
   .admin-layout .balance-cards { grid-template-columns: 1fr; }
 }
+
+/* Dense admin workspace shared by legacy screens */
+.admin-layout .page-header,
+.admin-layout .dashboard-header,
+.admin-layout .orders-header {
+  min-height: 38px;
+  margin-bottom: .55rem;
+  gap: .6rem;
+}
+
+.admin-layout .page-header h1,
+.admin-layout .dashboard-header h1,
+.admin-layout .orders-header h1 {
+  font-size: 1.15rem;
+}
+
+.admin-layout .page-header > p,
+.admin-layout .page-header .subtitle,
+.admin-layout .dashboard-header > p,
+.admin-layout .orders-header > div > p {
+  display: none;
+}
+
+.admin-layout .filters,
+.admin-layout .filters-section,
+.admin-layout .filters-row {
+  margin-bottom: .6rem;
+  padding: .55rem;
+  gap: .5rem;
+  box-shadow: none;
+}
+
+.admin-layout input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.admin-layout select {
+  min-height: 36px;
+  padding: .45rem .58rem;
+  font-size: .75rem;
+}
+
+.admin-layout textarea { min-height: 72px; }
+
+.admin-layout .btn,
+.admin-layout .primary-button,
+.admin-layout .pagination button,
+.admin-layout .actions button,
+.admin-layout .selection button,
+.admin-layout .detail-btn,
+.admin-layout .new-brand-button {
+  min-height: 36px;
+  padding: .45rem .68rem;
+  font-size: .74rem;
+}
+
+.admin-layout .form-section,
+.admin-layout .settings-category,
+.admin-layout .movement-form-section,
+.admin-layout .image-form,
+.admin-layout .price-form {
+  padding: .8rem;
+}
+
+.admin-layout .form-group { gap: .25rem; }
+.admin-layout .form-row { gap: .65rem; }
+.admin-layout .section-description { margin-bottom: .55rem; }
+
+:is(
+  app-admin-suppliers,
+  app-admin-offers,
+  app-admin-orders,
+  app-admin-categories,
+  app-admin-banners,
+  app-admin-payment-methods,
+  app-admin-kardex,
+  app-admin-audit,
+  app-admin-product-requests,
+  app-admin-settings,
+  app-admin-inventory,
+  app-admin-meta-catalog,
+  app-admin-dashboard,
+  app-admin-reports,
+  app-admin-inventory-detail,
+  app-admin-kardex-detail
+) > :first-child {
+  width: 100%;
+  height: calc(100dvh - 68px - 1.5rem);
+  min-height: 0;
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+:is(
+  app-admin-suppliers,
+  app-admin-orders,
+  app-admin-categories,
+  app-admin-banners,
+  app-admin-payment-methods,
+  app-admin-kardex,
+  app-admin-audit
+) :is(
+  .table-container,
+  .orders-table-wrap,
+  .categories-table,
+  .banners-table,
+  .payment-methods-table,
+  .kardex-table-wrapper,
+  .audit-table
+) {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+app-admin-product-requests .requests-table,
+app-admin-offers .offers-grid,
+app-admin-settings .settings-container,
+app-admin-inventory .dashboard-content,
+app-admin-meta-catalog .table-wrap {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+app-admin-dashboard .admin-dashboard,
+app-admin-reports .admin-reports,
+app-admin-inventory-detail .admin-inventory-detail,
+app-admin-kardex-detail .admin-kardex-detail {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+app-admin-offers .offers-grid {
+  align-content: start;
+  padding: .1rem .15rem .4rem;
+}
+
+.admin-layout table thead {
+  position: sticky;
+  z-index: 3;
+  top: 0;
+}
+
+.admin-layout table th { padding: .55rem .65rem; font-size: .64rem; }
+.admin-layout table td { padding: .55rem .65rem; font-size: .74rem; }
+
+:is(
+  app-admin-supplier-form,
+  app-admin-category-form,
+  app-admin-banner-form,
+  app-admin-payment-method-form,
+  app-admin-offer-form
+) > :first-child {
+  width: 100%;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+:is(
+  app-admin-supplier-form,
+  app-admin-category-form,
+  app-admin-banner-form,
+  app-admin-payment-method-form,
+  app-admin-offer-form
+) :is(.form-container, .category-form, .banner-form, .payment-method-form, .offer-form) {
+  padding: .8rem !important;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  background: #fff;
+  box-shadow: var(--admin-shadow);
+}
+
+@media (max-width: 640px) {
+  :is(
+    app-admin-suppliers,
+    app-admin-offers,
+    app-admin-orders,
+    app-admin-categories,
+    app-admin-banners,
+    app-admin-payment-methods,
+    app-admin-kardex,
+    app-admin-audit,
+    app-admin-product-requests,
+    app-admin-settings,
+    app-admin-inventory,
+    app-admin-meta-catalog,
+    app-admin-dashboard,
+    app-admin-reports,
+    app-admin-inventory-detail,
+    app-admin-kardex-detail
+  ) > :first-child {
+    height: calc(100dvh - 60px - 1.5rem);
+  }
+
+  .admin-layout .page-header,
+  .admin-layout .dashboard-header,
+  .admin-layout .orders-header {
+    min-height: 36px;
+    margin-bottom: .45rem;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .admin-layout .page-header h1,
+  .admin-layout .dashboard-header h1,
+  .admin-layout .orders-header h1 { font-size: 1rem; }
+
+  .admin-layout .page-header .btn,
+  .admin-layout .page-header > button,
+  .admin-layout .page-header > a {
+    width: auto;
+    min-height: 34px;
+    padding: .4rem .55rem;
+    margin-left: auto;
+    font-size: .67rem;
+  }
+
+  .admin-layout .filters,
+  .admin-layout .filters-section,
+  .admin-layout .filters-row {
+    padding: .45rem;
+  }
+
+  .admin-layout table { min-width: 680px; }
+
+  :is(
+    app-admin-supplier-form,
+    app-admin-category-form,
+    app-admin-banner-form,
+    app-admin-payment-method-form,
+    app-admin-offer-form
+  ) > :first-child {
+    padding: 0 !important;
+  }
+}
