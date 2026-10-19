@@ -5,8 +5,9 @@
       <h1>{{ productId() ? "Editar producto" : "Nuevo producto" }}</h1>
       <p>{{ productId() ? "Actualiza la información comercial y operativa del producto." : "Completa los datos necesarios para publicar un nuevo producto." }}</p>
     </div>
-    <button class="btn btn-secondary" routerLink="/admin/products">
-      <span aria-hidden="true">←</span> Volver a productos
+    <button class="btn btn-secondary back-button" routerLink="/admin/products" aria-label="Volver a productos" title="Volver a productos">
+      <span class="back-button-icon" aria-hidden="true">←</span>
+      <span class="back-button-label">Volver a productos</span>
     </button>
   </div>
 
