@@ -394,7 +394,9 @@ export class AdminProductsComponent implements OnInit, OnDestroy {
   }
 
   private buildCatalogHtml(products: Product[], layout: CatalogLayout): string {
-    const title = layout === 'a4' ? '' : '';
+    const title = layout === 'a4'
+      ? 'Catalogo de productos Nagaira - A4'
+      : 'Fichas de productos Nagaira';
     const logoUrl = this.toAbsoluteUrl('/assets/images/NagairaLogoNombre.png');
     const cards = products.map(product => this.renderProductCard(product, layout)).join('');
 
