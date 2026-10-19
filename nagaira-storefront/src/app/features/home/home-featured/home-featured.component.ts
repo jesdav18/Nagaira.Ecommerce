@@ -13,6 +13,7 @@ import { Product } from '../../../core/models/models';
   styleUrls: ['./home-featured.component.css']
 })
 export class HomeFeaturedComponent implements OnInit {
+  private readonly productLimit = 6;
   private productService = inject(ProductService);
 
   featuredProducts = signal<Product[]>([]);
@@ -26,18 +27,21 @@ export class HomeFeaturedComponent implements OnInit {
     this.loading.set(true);
     this.productService.getFeatured().subscribe({
       next: (products) => {
-        if (products && products.length > 0) {
-          this.featuredProducts.set(products.slice(0, 5));
+        const featured = products ?? [];
+        if (featured.length >= this.productLimit) {
+          this.featuredProducts.set(featured.slice(0, this.productLimit));
           this.loading.set(false);
           return;
         }
+
         this.productService.getAll().subscribe({
           next: (allProducts) => {
-            this.featuredProducts.set(allProducts.slice(0, 5));
+            this.featuredProducts.set(this.completeProductList(featured, allProducts));
             this.loading.set(false);
           },
           error: (error) => {
             console.error('Error loading products:', error);
+            this.featuredProducts.set(featured.slice(0, this.productLimit));
             this.loading.set(false);
           }
         });
@@ -46,7 +50,7 @@ export class HomeFeaturedComponent implements OnInit {
         console.error('Error loading featured products:', error);
         this.productService.getAll().subscribe({
           next: (allProducts) => {
-            this.featuredProducts.set(allProducts.slice(0, 5));
+            this.featuredProducts.set(allProducts.slice(0, this.productLimit));
             this.loading.set(false);
           },
           error: (fallbackError) => {
@@ -56,5 +60,13 @@ export class HomeFeaturedComponent implements OnInit {
         });
       }
     });
+  }
+
+  private completeProductList(featured: Product[], allProducts: Product[]): Product[] {
+    const productsById = new Map<string, Product>();
+
+    [...featured, ...allProducts].forEach(product => productsById.set(product.id, product));
+
+    return Array.from(productsById.values()).slice(0, this.productLimit);
   }
 }
