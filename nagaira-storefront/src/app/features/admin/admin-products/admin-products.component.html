@@ -1,27 +1,39 @@
 <div class="admin-products">
   <div class="page-header">
-    <h1>Gestión de Productos</h1>
+    <div class="page-heading">
+      <h1>Productos</h1>
+      <span class="results-count">{{ filteredProducts().length }} visibles · {{ totalCount() }} registros</span>
+    </div>
     <div class="header-actions">
-      <button class="btn btn-secondary" (click)="openCatalogOptions('a4')">Descargar catálogo A4</button>
-      <button class="btn btn-secondary" (click)="openCatalogOptions('cards')">Descargar fichas</button>
-      <button class="btn btn-primary" routerLink="/admin/products/new">+ Nuevo Producto</button>
+      <button type="button" class="btn btn-secondary filter-toggle" (click)="toggleFilters()" [attr.aria-expanded]="filtersOpen()" aria-controls="product-admin-filters">
+        <i class="fa-solid fa-sliders" aria-hidden="true"></i><span>Filtros</span>
+        @if (activeFilterCount() > 0) { <b>{{ activeFilterCount() }}</b> }
+      </button>
+      <button class="btn btn-secondary" (click)="openCatalogOptions('a4')"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i><span>Catálogo A4</span></button>
+      <button class="btn btn-secondary" (click)="openCatalogOptions('cards')"><i class="fa-regular fa-file-lines" aria-hidden="true"></i><span>Fichas</span></button>
+      <button class="btn btn-primary" routerLink="/admin/products/new"><i class="fa-solid fa-plus" aria-hidden="true"></i><span>Nuevo</span></button>
     </div>
   </div>
 
-  <div class="filters">
+  @if (filtersOpen()) {
+  <div id="product-admin-filters" class="filters">
     <div class="search-box">
+      <label for="admin-product-search">Buscar</label>
+      <div class="search-control">
       <input 
+        id="admin-product-search"
         type="text" 
-        placeholder="Buscar productos..." 
+        placeholder="Nombre o SKU"
         [ngModel]="searchTerm()"
         (ngModelChange)="onSearchInput($event)"
         (keyup.enter)="onSearch()"
       >
-      <button (click)="onSearch()" class="btn btn-secondary">Buscar</button>
+      <button (click)="onSearch()" class="btn btn-secondary" aria-label="Buscar"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></button>
+      </div>
     </div>
     
     <div class="filter-group">
-      <label>Estado:</label>
+      <label>Estado</label>
       <select [ngModel]="isActiveFilter()" (ngModelChange)="isActiveFilter.set($event); onFilterChange()">
         <option [ngValue]="null">Todos</option>
         <option [ngValue]="true">Activos</option>
@@ -30,7 +42,7 @@
     </div>
 
     <div class="filter-group">
-      <label>Destacados:</label>
+      <label>Destacados</label>
       <select [ngModel]="isFeaturedFilter()" (ngModelChange)="isFeaturedFilter.set($event); onFilterChange()">
         <option [ngValue]="null">Todos</option>
         <option [ngValue]="true">Solo destacados</option>
@@ -39,7 +51,7 @@
     </div>
 
     <div class="filter-group">
-      <label>Categoria:</label>
+      <label>Categoría</label>
       <select [ngModel]="categoryFilter()" (ngModelChange)="categoryFilter.set($event); onFilterChange()">
         <option [ngValue]="null">Todas</option>
         @for (category of categories(); track category.id) {
@@ -49,7 +61,7 @@
     </div>
 
     <div class="filter-group">
-      <label>Nivel de precio:</label>
+      <label>Nivel de precio</label>
       <select [ngModel]="priceLevelFilter()" (ngModelChange)="priceLevelFilter.set($event)">
         <option [ngValue]="null">Todos</option>
         <option value="none">Sin niveles</option>
@@ -66,10 +78,9 @@
         Mostrar niveles de precio
       </label>
     </div>
+    <button type="button" class="btn btn-secondary clear-filters" (click)="clearFilters()" [disabled]="activeFilterCount() === 0 && !showPriceLevels()">Limpiar</button>
   </div>
-  <div class="results-count">
-    Mostrando {{ filteredProducts().length }} de {{ products().length }} registros
-  </div>
+  }
 
   @if (loading()) {
     <div class="loading">Cargando productos...</div>

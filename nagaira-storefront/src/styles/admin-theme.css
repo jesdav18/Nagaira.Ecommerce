@@ -32,6 +32,13 @@
   margin: 0 auto;
 }
 
+body:has(app-admin-products),
+.admin-layout:has(app-admin-products),
+.admin-shell:has(app-admin-products) {
+  height: 100dvh;
+  overflow: hidden;
+}
+
 .admin-layout h1,
 .admin-layout h2,
 .admin-layout h3,
