@@ -162,6 +162,52 @@
       </table>
     </div>
 
+    <div class="products-mobile-list">
+      @for (product of filteredProducts(); track product.id) {
+        <article class="product-mobile-card">
+          <header class="product-mobile-header">
+            <div>
+              <span class="product-mobile-sku">{{ product.sku || 'Sin SKU' }}</span>
+              <h2>{{ product.name }}</h2>
+            </div>
+            <span [class]="product.isActive ? 'badge active' : 'badge inactive'">
+              {{ product.isActive ? 'Activo' : 'Inactivo' }}
+            </span>
+          </header>
+
+          <p class="product-mobile-description">{{ product.description || 'Sin descripción' }}</p>
+
+          <div class="product-mobile-meta">
+            <span><small>Categoría</small><strong>{{ product.categoryName || 'Sin categoría' }}</strong></span>
+          </div>
+
+          @if (showPriceLevels()) {
+            <div class="price-levels">
+              @for (level of priceLevels(); track level.id) {
+                @if (getPriceForLevel(product, level.id); as price) {
+                  <span class="price-pill" [class.inactive]="!price.isActive">
+                    {{ level.name }}: {{ price.isActive ? (price.price | appCurrency) : 'Inactivo' }}
+                  </span>
+                } @else {
+                  <span class="price-pill missing">{{ level.name }}: Sin precio</span>
+                }
+              }
+            </div>
+          }
+
+          <footer class="product-mobile-actions">
+            <button class="btn btn-sm btn-success" (click)="openMovementModal(product)"><i class="fa-solid fa-plus" aria-hidden="true"></i> Stock</button>
+            <button class="btn btn-sm btn-secondary" [routerLink]="['/admin/products', product.id]"><i class="fa-solid fa-pen" aria-hidden="true"></i> Editar</button>
+            <button class="btn btn-sm" [class.btn-success]="!product.isActive" [class.btn-warning]="product.isActive" (click)="toggleProductStatus(product)">
+              <i class="fa-solid" [class.fa-toggle-off]="product.isActive" [class.fa-toggle-on]="!product.isActive" aria-hidden="true"></i>
+              {{ product.isActive ? 'Desactivar' : 'Activar' }}
+            </button>
+            <button class="btn btn-sm btn-danger" (click)="deleteProduct(product.id)"><i class="fa-solid fa-trash" aria-hidden="true"></i> Eliminar</button>
+          </footer>
+        </article>
+      }
+    </div>
+
     @if (totalPages() > 1) {
       <div class="pagination">
         <button 
