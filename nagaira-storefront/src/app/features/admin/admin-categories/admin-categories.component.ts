@@ -20,6 +20,7 @@ export class AdminCategoriesComponent implements OnInit {
   loading = signal(true);
   searchTerm = signal('');
   isActiveFilter = signal<boolean | null>(null);
+  filtersOpen = signal(false);
 
   ngOnInit(): void {
     this.loadCategories();

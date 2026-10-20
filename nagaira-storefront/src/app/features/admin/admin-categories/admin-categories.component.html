@@ -1,10 +1,19 @@
 <div class="admin-categories">
   <div class="page-header">
-    <h1>Gestión de Categorías</h1>
-    <button class="btn btn-primary" routerLink="/admin/categories/new">+ Nueva Categoría</button>
+    <div class="page-heading">
+      <h1>Categorías</h1>
+      <span class="results-count">{{ filteredCategories().length }} registros</span>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn btn-secondary" (click)="filtersOpen.set(!filtersOpen())" [attr.aria-expanded]="filtersOpen()" aria-controls="category-filters">
+        <i class="fa-solid fa-sliders" aria-hidden="true"></i><span>Filtros</span>
+      </button>
+      <button class="btn btn-primary" routerLink="/admin/categories/new"><span aria-hidden="true">+</span> Nueva categoría</button>
+    </div>
   </div>
 
-  <div class="filters">
+  @if (filtersOpen()) {
+  <div id="category-filters" class="filters">
     <div class="search-box">
       <input 
         type="text" 
@@ -13,7 +22,7 @@
         (ngModelChange)="searchTerm.set($event)"
         (keyup.enter)="onSearch()"
       >
-      <button (click)="onSearch()" class="btn btn-secondary">Buscar</button>
+      <button (click)="onSearch()" class="btn btn-secondary" aria-label="Buscar categorías" title="Buscar"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></button>
     </div>
     
     <div class="filter-group">
@@ -25,6 +34,7 @@
       </select>
     </div>
   </div>
+  }
 
   @if (loading()) {
     <div class="loading">Cargando categorías...</div>
@@ -49,45 +59,47 @@
         <tbody>
           @for (category of filteredCategories(); track category.id) {
             <tr>
-              <td>
+              <td data-label="Imagen">
                 @if (category.imageUrl) {
                   <img [src]="category.imageUrl" [alt]="category.name" class="category-image">
                 } @else {
                   <span class="no-image">-</span>
                 }
               </td>
-              <td>
+              <td data-label="Nombre">
                 <strong>{{ category.name }}</strong>
               </td>
-              <td>{{ category.description || '-' }}</td>
-              <td>{{ category.slug }}</td>
-              <td>{{ getParentCategoryName(category.parentCategoryId) }}</td>
-              <td>
+              <td data-label="Descripción">{{ category.description || '-' }}</td>
+              <td data-label="Slug">{{ category.slug }}</td>
+              <td data-label="Categoría padre">{{ getParentCategoryName(category.parentCategoryId) }}</td>
+              <td data-label="Estado">
                 <span [class]="category.isActive ? 'badge active' : 'badge inactive'">
                   {{ category.isActive ? 'Activa' : 'Inactiva' }}
                 </span>
               </td>
-              <td>
+              <td data-label="Acciones">
                 <div class="actions">
-                  <button class="btn btn-sm btn-secondary" [routerLink]="['/admin/categories', category.id]">
-                    Editar
+                  <button class="btn btn-sm btn-secondary icon-action" [routerLink]="['/admin/categories', category.id]" aria-label="Editar categoría" title="Editar categoría">
+                    <i class="fa-solid fa-pen" aria-hidden="true"></i>
                   </button>
-                  <button class="btn btn-sm btn-primary" (click)="setCategoryFeaturedProducts(category, true)">
-                    Destacar productos
+                  <button class="btn btn-sm btn-primary icon-action" (click)="setCategoryFeaturedProducts(category, true)" aria-label="Destacar productos" title="Destacar productos">
+                    <i class="fa-solid fa-star" aria-hidden="true"></i>
                   </button>
-                  <button class="btn btn-sm btn-secondary" (click)="setCategoryFeaturedProducts(category, false)">
-                    Quitar destacados
+                  <button class="btn btn-sm btn-secondary icon-action" (click)="setCategoryFeaturedProducts(category, false)" aria-label="Quitar productos destacados" title="Quitar productos destacados">
+                    <i class="fa-regular fa-star" aria-hidden="true"></i>
                   </button>
                   <button 
-                    class="btn btn-sm" 
+                    class="btn btn-sm icon-action"
                     [class.btn-success]="!category.isActive"
                     [class.btn-warning]="category.isActive"
                     (click)="toggleCategoryStatus(category)"
+                    [attr.aria-label]="category.isActive ? 'Desactivar categoría' : 'Activar categoría'"
+                    [attr.title]="category.isActive ? 'Desactivar categoría' : 'Activar categoría'"
                   >
-                    {{ category.isActive ? 'Desactivar' : 'Activar' }}
+                    <i class="fa-solid" [class.fa-toggle-off]="category.isActive" [class.fa-toggle-on]="!category.isActive" aria-hidden="true"></i>
                   </button>
-                  <button class="btn btn-sm btn-danger" (click)="deleteCategory(category.id)">
-                    Eliminar
+                  <button class="btn btn-sm btn-danger icon-action" (click)="deleteCategory(category.id)" aria-label="Eliminar categoría" title="Eliminar categoría">
+                    <i class="fa-solid fa-trash" aria-hidden="true"></i>
                   </button>
                 </div>
               </td>
