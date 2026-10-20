@@ -654,7 +654,6 @@ body:has(app-admin-products),
 
 :is(
   app-admin-suppliers,
-  app-admin-offers,
   app-admin-categories,
   app-admin-banners,
   app-admin-payment-methods,
@@ -766,7 +765,6 @@ app-admin-offers .offers-grid {
 @media (max-width: 640px) {
   :is(
     app-admin-suppliers,
-    app-admin-offers,
     app-admin-categories,
     app-admin-banners,
     app-admin-payment-methods,

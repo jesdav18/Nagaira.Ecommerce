@@ -1,7 +1,10 @@
 <div class="admin-offers">
   <div class="page-header">
-    <h1>Gestión de Ofertas</h1>
-    <button class="btn btn-primary" routerLink="/admin/offers/new">+ Nueva Oferta</button>
+    <div class="page-heading">
+      <h1>Ofertas</h1>
+      <span class="results-count">{{ offers().length }} registros</span>
+    </div>
+    <button class="btn btn-primary" routerLink="/admin/offers/new"><span aria-hidden="true">+</span> Nueva oferta</button>
   </div>
 
   @if (loading()) {
@@ -12,18 +15,28 @@
     </div>
   } @else {
     <div class="offers-grid">
+      <div class="offers-grid-header" aria-hidden="true">
+        <span>Oferta</span>
+        <span>Tipo</span>
+        <span>Estado</span>
+        <span>Reglas</span>
+        <span>Acciones</span>
+      </div>
       @for (offer of offers(); track offer.id) {
         <div class="offer-card">
-          <h3>{{ offer.name }}</h3>
-          <p>{{ offer.description }}</p>
-          <div class="offer-details">
+          <div class="offer-identity">
+            <h3>{{ offer.name }}</h3>
+            <p>{{ offer.description || 'Sin descripción' }}</p>
+          </div>
+          <div class="offer-type-cell" data-label="Tipo">
+            <span class="offer-type">{{ offer.offerType }}</span>
+          </div>
+          <div class="offer-status-cell" data-label="Estado">
             <span class="badge" [class.active]="offer.isActive">
               {{ offer.isActive ? 'Activa' : 'Inactiva' }}
             </span>
-            <span class="offer-type">{{ offer.offerType }}</span>
           </div>
           <div class="offer-rules">
-            <h4>Reglas</h4>
             @if (offer.rules?.length > 0) {
               <ul class="rules-list">
                 @for (rule of offer.rules; track rule.ruleType + '-' + rule.value; let i = $index) {
