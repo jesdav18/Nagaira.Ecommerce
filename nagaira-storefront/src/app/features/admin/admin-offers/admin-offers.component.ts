@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -19,6 +19,11 @@ export class AdminOffersComponent implements OnInit {
   offers = signal<any[]>([]);
   loading = signal(true);
   ruleDrafts = signal<Record<string, { ruleType: string; value: number }>>({});
+  selectedRulesOfferId = signal<string | null>(null);
+  selectedRulesOffer = computed(() => {
+    const id = this.selectedRulesOfferId();
+    return id ? this.offers().find(offer => offer.id === id) ?? null : null;
+  });
 
   ruleTypeOptions = [
     { value: 'min_item_price', label: 'Precio unitario min.' },
@@ -72,6 +77,14 @@ export class AdminOffersComponent implements OnInit {
     const current = drafts[offerId] ?? { ruleType: 'min_item_price', value: 0 };
     drafts[offerId] = { ...current, ...patch };
     this.ruleDrafts.set(drafts);
+  }
+
+  openRulesModal(offer: any): void {
+    this.selectedRulesOfferId.set(offer.id);
+  }
+
+  closeRulesModal(): void {
+    this.selectedRulesOfferId.set(null);
   }
 
   getRuleLabel(ruleType: string): string {
@@ -133,6 +146,7 @@ export class AdminOffersComponent implements OnInit {
     this.adminService.updateOffer(offer.id, payload).subscribe({
       next: () => {
         this.notificationService.success('Reglas actualizadas');
+        this.closeRulesModal();
         this.loadOffers();
       },
       error: (error: any) => {

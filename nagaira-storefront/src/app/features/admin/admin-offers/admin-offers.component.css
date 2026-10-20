@@ -237,9 +237,9 @@
 
 .offers-grid-header,
 .offer-card {
-  min-width: 1120px;
+  min-width: 900px;
   display: grid;
-  grid-template-columns: minmax(220px, 1.15fr) 120px 95px minmax(480px, 2.2fr) 150px;
+  grid-template-columns: minmax(260px, 1fr) 130px 100px 180px 150px;
   gap: .7rem;
   align-items: center;
   padding: .58rem .7rem;
@@ -263,7 +263,8 @@
 .offer-identity > p { margin: 0; color: #718096; font-size: .66rem; line-height: 1.35; }
 .offer-type-cell, .offer-status-cell { display: flex; align-items: center; }
 .offer-type, .badge { padding: .2rem .5rem; font-size: .64rem; white-space: nowrap; }
-.offer-rules { margin: 0; padding: .5rem; border-radius: 8px; }
+.offer-rules { margin: 0; padding: 0; display: flex; align-items: center; gap: .45rem; border: 0; background: transparent; }
+.rules-summary { color: #66758a; font-size: .68rem; white-space: nowrap; }
 .rules-list { margin-bottom: .4rem; gap: .2rem; }
 .rules-list li, .rules-empty { font-size: .65rem; }
 .rules-empty { margin: 0 0 .35rem; }
@@ -271,6 +272,41 @@
 .rule-editor select, .rule-editor input { min-width: 0; min-height: 32px; padding: .35rem .45rem; font-size: .66rem; }
 .rule-editor .btn, .offer-rules > .btn, .offer-actions .btn { min-height: 32px; padding: .35rem .5rem; font-size: .64rem; white-space: nowrap; }
 .offer-actions { display: grid; grid-template-columns: 1fr; gap: .35rem; }
+
+.rules-modal-backdrop {
+  position: fixed;
+  z-index: 1500;
+  inset: 0;
+  padding: 1rem;
+  display: grid;
+  place-items: center;
+  background: rgba(7, 28, 53, .5);
+  backdrop-filter: blur(3px);
+}
+
+.rules-modal {
+  width: min(620px, 100%);
+  max-height: min(720px, calc(100dvh - 2rem));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #dfe7f1;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(7, 28, 53, .3);
+}
+
+.rules-modal-header { padding: .9rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid #dfe7f1; }
+.rules-modal-header h2 { margin: .12rem 0 0; font-size: 1.05rem; }
+.modal-eyebrow { color: #087f83; font-size: .62rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+.modal-close { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid #dfe7f1; border-radius: 8px; color: #56677c; background: #fff; font-size: 1.25rem; cursor: pointer; }
+.rules-modal-body { min-height: 0; padding: 1rem; overflow-y: auto; }
+.modal-rules-list { margin: 0 0 .8rem; gap: .4rem; }
+.modal-rules-list li { padding: .55rem .65rem; display: grid; grid-template-columns: 1fr auto auto; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: .72rem; }
+.modal-empty { margin: 0 0 .8rem; padding: .8rem; border: 1px dashed #cad5e2; border-radius: 8px; text-align: center; }
+.modal-rule-editor { grid-template-columns: minmax(180px, 1fr) 110px auto; margin: 0; }
+.rules-modal-actions { padding: .75rem 1rem; display: flex; justify-content: flex-end; gap: .5rem; border-top: 1px solid #dfe7f1; background: #f8fafc; }
+.rules-modal-actions .btn { min-height: 36px; padding: .45rem .7rem; font-size: .7rem; }
 
 @media (max-width: 1024px) {
   .admin-offers { height: calc(100dvh - 68px - 2rem); min-height: 460px; }
@@ -289,9 +325,15 @@
   .offer-type-cell, .offer-status-cell { display: block; }
   .offer-type-cell::before, .offer-status-cell::before { content: attr(data-label); display: block; margin-bottom: .1rem; color: #718096; font-size: .58rem; font-weight: 800; text-transform: uppercase; }
   .offer-rules, .offer-actions { grid-column: 1 / -1; }
-  .rule-editor { grid-template-columns: 1fr 84px; }
-  .rule-editor .btn { grid-column: 1 / -1; width: 100%; }
+  .offer-rules { justify-content: space-between; padding-top: .35rem; border-top: 1px solid #e5ebf2; }
   .offer-actions { grid-template-columns: 1fr 1fr; }
   .offer-actions .btn { width: 100%; }
+  .rules-modal-backdrop { padding: .5rem; place-items: end center; }
+  .rules-modal { max-height: calc(100dvh - 1rem); border-radius: 14px 14px 10px 10px; }
+  .rules-modal-header, .rules-modal-body, .rules-modal-actions { padding: .75rem; }
+  .modal-rule-editor { grid-template-columns: 1fr 84px; }
+  .modal-rule-editor .btn { grid-column: 1 / -1; width: 100%; }
+  .rules-modal-actions { display: grid; grid-template-columns: 1fr 1.2fr; }
+  .rules-modal-actions .btn { width: 100%; }
 }
 
