@@ -41,14 +41,18 @@
             <button type="button" class="btn btn-sm btn-secondary" (click)="openRulesModal(offer)">Administrar</button>
           </div>
           <div class="offer-actions">
-            <button class="btn btn-sm btn-secondary" [routerLink]="['/admin/offers', offer.id]">Editar</button>
+            <button class="btn btn-sm btn-secondary icon-action" [routerLink]="['/admin/offers', offer.id]" aria-label="Editar oferta" title="Editar oferta">
+              <i class="fa-solid fa-pen" aria-hidden="true"></i>
+            </button>
             <button 
-              class="btn btn-sm"
+              class="btn btn-sm icon-action"
               [class.btn-success]="!offer.isActive"
               [class.btn-warning]="offer.isActive"
               (click)="toggleOfferStatus(offer)"
+              [attr.aria-label]="offer.isActive ? 'Desactivar oferta' : 'Activar oferta'"
+              [attr.title]="offer.isActive ? 'Desactivar oferta' : 'Activar oferta'"
             >
-              {{ offer.isActive ? 'Desactivar' : 'Activar' }}
+              <i class="fa-solid" [class.fa-toggle-off]="offer.isActive" [class.fa-toggle-on]="!offer.isActive" aria-hidden="true"></i>
             </button>
           </div>
         </div>
