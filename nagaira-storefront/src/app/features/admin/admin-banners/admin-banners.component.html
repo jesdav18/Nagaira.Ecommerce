@@ -1,7 +1,10 @@
 <div class="admin-banners">
   <div class="page-header">
-    <h1>Banners</h1>
-    <button class="btn btn-primary" routerLink="/admin/banners/new">+ Nuevo banner</button>
+    <div class="page-heading">
+      <h1>Banners</h1>
+      <span class="results-count">{{ banners().length }} registros</span>
+    </div>
+    <button class="btn btn-primary" routerLink="/admin/banners/new"><span aria-hidden="true">+</span> Nuevo banner</button>
   </div>
 
   @if (loading()) {
@@ -25,10 +28,10 @@
         <tbody>
           @for (banner of banners(); track banner.id) {
             <tr>
-              <td>
+              <td data-label="Imagen">
                 <img [src]="banner.imageUrl" [alt]="displayText(banner.title) || 'Banner'" class="banner-image">
               </td>
-              <td>
+              <td data-label="Título">
                 @if (displayText(banner.title)) {
                   <strong>{{ displayText(banner.title) }}</strong>
                 }
@@ -36,27 +39,29 @@
                   <span class="banner-subtitle">{{ banner.subtitle }}</span>
                 }
               </td>
-              <td>{{ banner.displayOrder }}</td>
-              <td>
+              <td data-label="Orden">{{ banner.displayOrder }}</td>
+              <td data-label="Estado">
                 <span [class]="banner.isActive ? 'badge active' : 'badge inactive'">
                   {{ banner.isActive ? 'Activo' : 'Inactivo' }}
                 </span>
               </td>
-              <td>
+              <td data-label="Acciones">
                 <div class="actions">
-                  <button class="btn btn-sm btn-secondary" [routerLink]="['/admin/banners', banner.id]">
-                    Editar
+                  <button class="btn btn-sm btn-secondary icon-action" [routerLink]="['/admin/banners', banner.id]" aria-label="Editar banner" title="Editar banner">
+                    <i class="fa-solid fa-pen" aria-hidden="true"></i>
                   </button>
                   <button
-                    class="btn btn-sm"
+                    class="btn btn-sm icon-action"
                     [class.btn-success]="!banner.isActive"
                     [class.btn-warning]="banner.isActive"
                     (click)="toggleBannerStatus(banner)"
+                    [attr.aria-label]="banner.isActive ? 'Desactivar banner' : 'Activar banner'"
+                    [attr.title]="banner.isActive ? 'Desactivar banner' : 'Activar banner'"
                   >
-                    {{ banner.isActive ? 'Desactivar' : 'Activar' }}
+                    <i class="fa-solid" [class.fa-toggle-off]="banner.isActive" [class.fa-toggle-on]="!banner.isActive" aria-hidden="true"></i>
                   </button>
-                  <button class="btn btn-sm btn-danger" (click)="deleteBanner(banner.id)">
-                    Eliminar
+                  <button class="btn btn-sm btn-danger icon-action" (click)="deleteBanner(banner.id)" aria-label="Eliminar banner" title="Eliminar banner">
+                    <i class="fa-solid fa-trash" aria-hidden="true"></i>
                   </button>
                 </div>
               </td>
