@@ -239,7 +239,7 @@
 .offer-card {
   min-width: 900px;
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) 130px 100px 180px 150px;
+  grid-template-columns: minmax(260px, 1fr) 130px 100px 180px 88px;
   gap: .7rem;
   align-items: center;
   padding: .58rem .7rem;
@@ -271,7 +271,9 @@
 .rule-editor { display: grid; grid-template-columns: minmax(150px, 1.4fr) 90px auto; margin: 0 0 .35rem; gap: .35rem; }
 .rule-editor select, .rule-editor input { min-width: 0; min-height: 32px; padding: .35rem .45rem; font-size: .66rem; }
 .rule-editor .btn, .offer-rules > .btn, .offer-actions .btn { min-height: 32px; padding: .35rem .5rem; font-size: .64rem; white-space: nowrap; }
-.offer-actions { display: grid; grid-template-columns: 1fr; gap: .35rem; }
+.offer-actions { display: flex; align-items: center; justify-content: center; gap: .35rem; }
+.offer-actions .icon-action { width: 34px; min-width: 34px; height: 32px; padding: 0; display: inline-grid; place-items: center; }
+.offer-actions .icon-action i { font-size: .72rem; }
 
 .rules-modal-backdrop {
   position: fixed;
@@ -326,8 +328,7 @@
   .offer-type-cell::before, .offer-status-cell::before { content: attr(data-label); display: block; margin-bottom: .1rem; color: #718096; font-size: .58rem; font-weight: 800; text-transform: uppercase; }
   .offer-rules, .offer-actions { grid-column: 1 / -1; }
   .offer-rules { justify-content: space-between; padding-top: .35rem; border-top: 1px solid #e5ebf2; }
-  .offer-actions { grid-template-columns: 1fr 1fr; }
-  .offer-actions .btn { width: 100%; }
+  .offer-actions { justify-content: flex-end; }
   .rules-modal-backdrop { padding: .5rem; place-items: end center; }
   .rules-modal { max-height: calc(100dvh - 1rem); border-radius: 14px 14px 10px 10px; }
   .rules-modal-header, .rules-modal-body, .rules-modal-actions { padding: .75rem; }
