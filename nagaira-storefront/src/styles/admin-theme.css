@@ -655,7 +655,6 @@ body:has(app-admin-products),
 :is(
   app-admin-suppliers,
   app-admin-kardex,
-  app-admin-audit,
   app-admin-settings,
   app-admin-inventory,
   app-admin-meta-catalog,
@@ -763,7 +762,6 @@ app-admin-offers .offers-grid {
   :is(
     app-admin-suppliers,
     app-admin-kardex,
-    app-admin-audit,
     app-admin-settings,
     app-admin-inventory,
     app-admin-meta-catalog,
