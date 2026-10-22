@@ -1,60 +1,66 @@
 <div class="admin-category-form">
   <div class="page-header">
     <h1>{{ categoryId() ? 'Editar Categoría' : 'Nueva Categoría' }}</h1>
-    <button class="btn btn-secondary" routerLink="/admin/categories">← Volver</button>
+    <button class="btn btn-secondary back-button" routerLink="/admin/categories" aria-label="Volver a categorías" title="Volver a categorías">
+      <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+    </button>
   </div>
 
   @if (loading()) {
     <div class="loading">Cargando...</div>
   } @else {
     <form (ngSubmit)="save()" class="category-form">
-      <div class="form-group">
-        <label>Nombre *</label>
-        <input type="text" [(ngModel)]="formData.name" name="name" required>
-      </div>
-
-      <div class="form-group">
-        <label>Descripción</label>
-        <textarea [(ngModel)]="formData.description" name="description" rows="4"></textarea>
-      </div>
-
-      <div class="form-group">
-        <label>Imagen de la Categoría</label>
-        <div class="image-upload-section">
-          @if (formData.imageUrl) {
-            <div class="image-preview">
-              <img [src]="formData.imageUrl" alt="Preview">
-              <button type="button" class="btn-remove-image" (click)="removeImage()">✕</button>
-            </div>
-          } @else {
-            <div class="image-upload-placeholder">
-              <p>No hay imagen seleccionada</p>
-            </div>
-          }
-          <div class="upload-controls">
-            <input type="file" accept="image/*" (change)="uploadImage($event)" [disabled]="uploadingImage()">
-            @if (uploadingImage()) {
-              <span class="upload-status">Subiendo imagen...</span>
-            }
+      <div class="form-content">
+        <section class="form-panel form-main" aria-labelledby="category-data-title">
+          <h2 id="category-data-title">Información de la categoría</h2>
+          <div class="form-group">
+            <label for="category-name">Nombre *</label>
+            <input id="category-name" type="text" [(ngModel)]="formData.name" name="name" required>
           </div>
-        </div>
-      </div>
 
-      <div class="form-group">
-        <label>Categoría Padre</label>
-        <select [(ngModel)]="formData.parentCategoryId" name="parentCategoryId">
-          <option [value]="null">Ninguna (Categoría Principal)</option>
-          @for (cat of categories(); track cat.id) {
-            <option [value]="cat.id">{{ cat.name }}</option>
-          }
-        </select>
-      </div>
+          <div class="form-group">
+            <label for="category-description">Descripción</label>
+            <textarea id="category-description" [(ngModel)]="formData.description" name="description" rows="5"></textarea>
+          </div>
 
-      <div class="form-group">
-        <label>
-          <input type="checkbox" [(ngModel)]="formData.isActive" name="isActive">
-          Categoría activa
-        </label>
+          <div class="form-group">
+            <label for="parent-category">Categoría padre</label>
+            <select id="parent-category" [(ngModel)]="formData.parentCategoryId" name="parentCategoryId">
+              <option [value]="null">Ninguna (Categoría principal)</option>
+              @for (cat of categories(); track cat.id) {
+                <option [value]="cat.id">{{ cat.name }}</option>
+              }
+            </select>
+          </div>
+
+          <label class="active-toggle">
+            <input type="checkbox" [(ngModel)]="formData.isActive" name="isActive">
+            <span>Categoría activa</span>
+          </label>
+        </section>
+
+        <section class="form-panel form-media" aria-labelledby="category-image-title">
+          <h2 id="category-image-title">Imagen</h2>
+          <div class="image-upload-section">
+            @if (formData.imageUrl) {
+              <div class="image-preview">
+                <img [src]="formData.imageUrl" alt="Vista previa de la categoría">
+                <button type="button" class="btn-remove-image" (click)="removeImage()" aria-label="Quitar imagen" title="Quitar imagen"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+              </div>
+            } @else {
+              <div class="image-upload-placeholder">
+                <i class="fa-regular fa-image" aria-hidden="true"></i>
+                <p>No hay imagen seleccionada</p>
+              </div>
+            }
+            <div class="upload-controls">
+              <input type="file" accept="image/*" (change)="uploadImage($event)" [disabled]="uploadingImage()">
+              @if (uploadingImage()) {
+                <span class="upload-status">Subiendo imagen...</span>
+              }
+            </div>
+          </div>
+        </section>
       </div>
 
       <div class="form-actions">
