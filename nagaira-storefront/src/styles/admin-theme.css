@@ -733,7 +733,6 @@ app-admin-offers .offers-grid {
 
 :is(
   app-admin-supplier-form,
-  app-admin-category-form,
   app-admin-banner-form,
   app-admin-payment-method-form,
   app-admin-offer-form
@@ -746,7 +745,6 @@ app-admin-offers .offers-grid {
 
 :is(
   app-admin-supplier-form,
-  app-admin-category-form,
   app-admin-banner-form,
   app-admin-payment-method-form,
   app-admin-offer-form
@@ -806,7 +804,6 @@ app-admin-offers .offers-grid {
 
   :is(
     app-admin-supplier-form,
-    app-admin-category-form,
     app-admin-banner-form,
     app-admin-payment-method-form,
     app-admin-offer-form
