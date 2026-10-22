@@ -1,63 +1,65 @@
 <div class="admin-banner-form">
   <div class="page-header">
     <h1>{{ bannerId() ? 'Editar Banner' : 'Nuevo Banner' }}</h1>
-    <button class="btn btn-secondary" routerLink="/admin/banners">Volver</button>
+    <button class="btn btn-secondary back-button" routerLink="/admin/banners" aria-label="Volver a banners" title="Volver a banners"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i></button>
   </div>
 
   @if (loading()) {
     <div class="loading">Cargando...</div>
   } @else {
     <form (ngSubmit)="save()" class="banner-form">
-      <div class="form-group">
-        <label>Titulo (opcional)</label>
-        <input type="text" [(ngModel)]="formData.title" name="title">
-      </div>
-
-      <div class="form-group">
-        <label>Subtitulo (opcional)</label>
-        <textarea [(ngModel)]="formData.subtitle" name="subtitle" rows="3"></textarea>
-      </div>
-
-      <div class="form-group">
-        <label>Imagen *</label>
-        <p class="field-help">
-          Tamaño recomendado: 1920 x 700 px. También funciona 1600 x 600 px. Usa imagen horizontal y evita texto importante en los bordes porque puede recortarse en móvil.
-        </p>
-        <div class="image-upload-section">
-          @if (formData.imageUrl) {
-            <div class="image-preview">
-              <img [src]="formData.imageUrl" alt="Preview">
-              <button type="button" class="btn-remove-image" (click)="removeImage()">X</button>
-            </div>
-          } @else {
-            <div class="image-upload-placeholder">
-              <p>No hay imagen seleccionada</p>
-            </div>
-          }
-          <div class="upload-controls">
-            <input type="file" accept="image/*" (change)="uploadImage($event)" [disabled]="uploadingImage()">
-            @if (uploadingImage()) {
-              <span class="upload-status">Subiendo imagen...</span>
-            }
+      <div class="form-content">
+        <section class="form-panel form-main" aria-labelledby="banner-data-title">
+          <h2 id="banner-data-title">Información del banner</h2>
+          <div class="form-group">
+            <label for="banner-title">Título <span>(opcional)</span></label>
+            <input id="banner-title" type="text" [(ngModel)]="formData.title" name="title">
           </div>
-        </div>
-      </div>
 
-      <div class="form-group">
-        <label>Link (opcional)</label>
-        <input type="url" [(ngModel)]="formData.linkUrl" name="linkUrl">
-      </div>
+          <div class="form-group">
+            <label for="banner-subtitle">Subtítulo <span>(opcional)</span></label>
+            <textarea id="banner-subtitle" [(ngModel)]="formData.subtitle" name="subtitle" rows="4"></textarea>
+          </div>
 
-      <div class="form-group">
-        <label>Orden</label>
-        <input type="number" [(ngModel)]="formData.displayOrder" name="displayOrder" min="0">
-      </div>
+          <div class="form-group">
+            <label for="banner-link">Enlace <span>(opcional)</span></label>
+            <input id="banner-link" type="url" [(ngModel)]="formData.linkUrl" name="linkUrl" placeholder="https://...">
+          </div>
 
-      <div class="form-group">
-        <label>
-          <input type="checkbox" [(ngModel)]="formData.isActive" name="isActive">
-          Banner activo
-        </label>
+          <div class="form-group order-field">
+            <label for="banner-order">Orden</label>
+            <input id="banner-order" type="number" [(ngModel)]="formData.displayOrder" name="displayOrder" min="0">
+          </div>
+
+          <label class="active-toggle">
+            <input type="checkbox" [(ngModel)]="formData.isActive" name="isActive">
+            <span>Banner activo</span>
+          </label>
+        </section>
+
+        <section class="form-panel form-media" aria-labelledby="banner-image-title">
+          <h2 id="banner-image-title">Imagen *</h2>
+          <p class="field-help">Recomendado: 1920 × 700 px. Usa una imagen horizontal y evita texto importante en los bordes.</p>
+          <div class="image-upload-section">
+            @if (formData.imageUrl) {
+              <div class="image-preview">
+                <img [src]="formData.imageUrl" alt="Vista previa del banner">
+                <button type="button" class="btn-remove-image" (click)="removeImage()" aria-label="Quitar imagen" title="Quitar imagen"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+              </div>
+            } @else {
+              <div class="image-upload-placeholder">
+                <i class="fa-regular fa-image" aria-hidden="true"></i>
+                <p>No hay imagen seleccionada</p>
+              </div>
+            }
+            <div class="upload-controls">
+              <input type="file" accept="image/*" (change)="uploadImage($event)" [disabled]="uploadingImage()">
+              @if (uploadingImage()) {
+                <span class="upload-status">Subiendo imagen...</span>
+              }
+            </div>
+          </div>
+        </section>
       </div>
 
       <div class="form-actions">
