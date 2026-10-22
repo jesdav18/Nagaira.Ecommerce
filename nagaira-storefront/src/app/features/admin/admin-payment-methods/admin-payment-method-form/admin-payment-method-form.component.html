@@ -1,93 +1,92 @@
 <div class="admin-payment-method-form">
   <div class="page-header">
     <h1>{{ paymentMethodId() ? 'Editar Medio de Pago' : 'Nuevo Medio de Pago' }}</h1>
-    <button class="btn btn-secondary" routerLink="/admin/payment-methods">← Volver</button>
+    <button class="btn btn-secondary back-button" routerLink="/admin/payment-methods" aria-label="Volver a medios de pago" title="Volver a medios de pago"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i></button>
   </div>
 
   @if (loading()) {
     <div class="loading">Cargando...</div>
   } @else {
     <form class="payment-method-form" #paymentMethodForm="ngForm">
-      <div class="form-row">
-        <div class="form-group">
-          <label>Nombre *</label>
-          <input type="text" [(ngModel)]="formData.name" name="name" required>
-        </div>
+      <div class="form-content">
+        <section class="form-panel form-main" aria-labelledby="payment-data-title">
+          <h2 id="payment-data-title">Información del medio de pago</h2>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="payment-name">Nombre *</label>
+              <input id="payment-name" type="text" [(ngModel)]="formData.name" name="name" required>
+            </div>
 
-        <div class="form-group">
-          <label>Tipo *</label>
-          <select [(ngModel)]="formData.type" name="type" (ngModelChange)="onTypeChange()" required>
-            @for (type of paymentMethodTypes(); track type.value) {
-              <option [value]="type.value">{{ type.label }}</option>
-            }
-          </select>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>Descripción</label>
-        <textarea [(ngModel)]="formData.description" name="description" rows="3"></textarea>
-      </div>
-
-      @if (requiresAccountNumber()) {
-        <div class="form-group">
-          <label>Número de Cuenta *</label>
-          <input type="text" [(ngModel)]="formData.accountNumber" name="accountNumber" required>
-        </div>
-      }
-
-      @if (requiresAccountNumber()) {
-        <div class="form-row">
-          <div class="form-group">
-            <label>Nombre del Banco</label>
-            <input type="text" [(ngModel)]="formData.bankName" name="bankName">
+            <div class="form-group">
+              <label for="payment-type">Tipo *</label>
+              <select id="payment-type" [(ngModel)]="formData.type" name="type" (ngModelChange)="onTypeChange()" required>
+                @for (type of paymentMethodTypes(); track type.value) {
+                  <option [value]="type.value">{{ type.label }}</option>
+                }
+              </select>
+            </div>
           </div>
 
           <div class="form-group">
-            <label>Titular de la Cuenta</label>
-            <input type="text" [(ngModel)]="formData.accountHolderName" name="accountHolderName">
+            <label for="payment-description">Descripción</label>
+            <textarea id="payment-description" [(ngModel)]="formData.description" name="description" rows="3"></textarea>
           </div>
-        </div>
-      } @else if (requiresWalletInfo()) {
-        <div class="form-row">
+
+          @if (requiresAccountNumber()) {
+            <div class="form-group">
+              <label for="account-number">Número de cuenta *</label>
+              <input id="account-number" type="text" [(ngModel)]="formData.accountNumber" name="accountNumber" required>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="bank-name">Nombre del banco</label>
+                <input id="bank-name" type="text" [(ngModel)]="formData.bankName" name="bankName">
+              </div>
+
+              <div class="form-group">
+                <label for="account-holder">Titular de la cuenta</label>
+                <input id="account-holder" type="text" [(ngModel)]="formData.accountHolderName" name="accountHolderName">
+              </div>
+            </div>
+          } @else if (requiresWalletInfo()) {
+            <div class="form-row">
+              <div class="form-group">
+                <label for="wallet-provider">Proveedor de billetera</label>
+                <input id="wallet-provider" type="text" [(ngModel)]="formData.walletProvider" name="walletProvider" placeholder="Ej: PayPal">
+              </div>
+
+              <div class="form-group">
+                <label for="wallet-number">Número de billetera *</label>
+                <input id="wallet-number" type="text" [(ngModel)]="formData.walletNumber" name="walletNumber" required>
+              </div>
+            </div>
+          } @else if (requiresNoAccountInfo()) {
+            <p class="info-text"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Este tipo no requiere información adicional de cuenta.</p>
+          }
+        </section>
+
+        <section class="form-panel form-settings" aria-labelledby="payment-settings-title">
+          <h2 id="payment-settings-title">Configuración e instrucciones</h2>
           <div class="form-group">
-            <label>Proveedor de Billetera</label>
-            <input type="text" [(ngModel)]="formData.walletProvider" name="walletProvider" placeholder="Ej: PayPal, Venmo, etc.">
+            <label for="qr-url">URL del código QR</label>
+            <input id="qr-url" type="url" [(ngModel)]="formData.qrCodeUrl" name="qrCodeUrl" placeholder="https://...">
           </div>
 
           <div class="form-group">
-            <label>Número de Billetera *</label>
-            <input type="text" [(ngModel)]="formData.walletNumber" name="walletNumber" required>
+            <label for="payment-instructions">Instrucciones</label>
+            <textarea id="payment-instructions" [(ngModel)]="formData.instructions" name="instructions" rows="5" placeholder="Cómo debe realizar el pago el cliente..."></textarea>
           </div>
-        </div>
-      } @else if (requiresNoAccountInfo()) {
-        <div class="form-group">
-          <p class="info-text">Este tipo de medio de pago no requiere información adicional de cuenta.</p>
-        </div>
-      }
 
-      <div class="form-group">
-        <label>URL del Código QR</label>
-        <input type="url" [(ngModel)]="formData.qrCodeUrl" name="qrCodeUrl" placeholder="https://...">
-      </div>
+          <div class="form-group order-field">
+            <label for="display-order">Orden de visualización</label>
+            <input id="display-order" type="number" [(ngModel)]="formData.displayOrder" name="displayOrder" min="0">
+          </div>
 
-      <div class="form-group">
-        <label>Instrucciones</label>
-        <textarea [(ngModel)]="formData.instructions" name="instructions" rows="4" placeholder="Instrucciones para el cliente sobre cómo realizar el pago..."></textarea>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label>Orden de Visualización</label>
-          <input type="number" [(ngModel)]="formData.displayOrder" name="displayOrder" min="0">
-        </div>
-
-        <div class="form-group">
-          <label>
+          <label class="active-toggle">
             <input type="checkbox" [(ngModel)]="formData.isActive" name="isActive">
-            Medio de pago activo
+            <span>Medio de pago activo</span>
           </label>
-        </div>
+        </section>
       </div>
 
       <div class="form-actions">
