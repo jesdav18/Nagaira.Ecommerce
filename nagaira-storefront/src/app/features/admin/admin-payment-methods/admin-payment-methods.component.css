@@ -187,5 +187,52 @@
   background: #c82333;
 }
 
-.admin-payment-methods{height:100%;min-height:0;padding:.7rem;display:flex;flex-direction:column;border:1px solid #dfe7f1;border-radius:12px;background:#fff}.page-header{min-height:38px;margin:0 0 .5rem}.page-header h1{font-size:1.05rem}.filters{flex:0 0 auto;margin:0 0 .55rem;padding:.5rem;gap:.5rem}.payment-methods-table{min-height:0;flex:1 1 auto;overflow:auto;border:1px solid #dfe7f1;border-radius:10px}.payment-methods-table table{min-width:900px}.payment-methods-table thead{position:sticky;z-index:2;top:0}.payment-methods-table th,.payment-methods-table td{padding:.55rem .65rem;font-size:.7rem}.actions .btn{min-height:32px;padding:.35rem .5rem;font-size:.64rem}@media(max-width:640px){.admin-payment-methods{padding:.6rem}.page-header{flex-direction:row}.filters{display:grid;grid-template-columns:1fr auto}.filter-group label{display:none}.payment-methods-table table{min-width:0}.payment-methods-table thead{display:none}.payment-methods-table table,.payment-methods-table tbody,.payment-methods-table tr,.payment-methods-table td{display:block;width:100%}.payment-methods-table tbody{padding:.1rem}.payment-methods-table tr{margin-bottom:.55rem;padding:.65rem;border:1px solid #dfe7f1;border-radius:10px}.payment-methods-table td{padding:.15rem 0;border:0}.payment-methods-table td:last-child{padding-top:.45rem}.actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.actions .btn{width:100%}}
+/* Match the products workspace */
+.admin-payment-methods { height: calc(100dvh - 68px - 4rem); min-height: 520px; max-height: none; padding: 1rem; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--admin-border, #dfe7f1); border-radius: 14px; background: #fff; box-shadow: 0 8px 24px rgba(23,48,79,.07); }
+.admin-payment-methods .page-header { flex: 0 0 auto; min-height: 42px; margin: 0 0 .65rem; padding: 0; border: 0; }
+.page-heading { min-width: 0; display: flex; align-items: baseline; gap: .75rem; }
+.admin-payment-methods .page-header h1 { margin: 0; font-size: 1.25rem; line-height: 1.15; white-space: nowrap; }
+.results-count { color: #708096; font-size: .74rem; white-space: nowrap; }
+.header-actions { display: flex; align-items: center; gap: .4rem; }
+.admin-payment-methods .header-actions .btn { min-height: 38px; padding: .48rem .68rem; display: inline-flex; align-items: center; gap: .35rem; font-size: .72rem; white-space: nowrap; }
+.filters { flex: 0 0 auto; margin: 0 0 .55rem; padding: .5rem; display: flex; flex-direction: row; align-items: end; gap: .5rem; border: 1px solid #dfe7f1; border-radius: 10px; }
+.search-box input, .filter-group select { min-height: 36px; padding: .42rem .55rem; font-size: .72rem; }
+.filter-group { gap: .25rem; }
+.filter-group label { font-size: .68rem; }
+.search-box .btn { width: 38px; min-width: 38px; height: 36px; padding: 0; display: grid; place-items: center; }
+.payment-methods-table { min-height: 0; flex: 1 1 auto; overflow: auto; border: 1px solid #dfe7f1; border-radius: 10px; }
+.payment-methods-table table { min-width: 900px; }
+.payment-methods-table thead { position: sticky; z-index: 2; top: 0; }
+.payment-methods-table th, .payment-methods-table td { padding: .58rem .7rem; font-size: .72rem; }
+.payment-methods-table th { font-size: .66rem; text-transform: uppercase; }
+.actions { gap: .3rem; flex-wrap: nowrap; }
+.actions .icon-action { width: 34px; min-width: 34px; height: 32px; padding: 0; display: inline-grid; place-items: center; }
+.actions .icon-action i { font-size: .72rem; }
+
+@media (max-width: 1024px) {
+  .admin-payment-methods { height: calc(100dvh - 68px - 2rem); min-height: 460px; }
+}
+
+@media (max-width: 640px) {
+  .admin-payment-methods { height: calc(100dvh - 60px - 1.5rem); min-height: 420px; padding: .65rem; border-radius: 10px; }
+  .admin-payment-methods .page-header { min-height: auto; margin-bottom: .5rem; flex-direction: column; align-items: stretch; gap: .45rem; }
+  .page-heading { justify-content: space-between; }
+  .admin-payment-methods .page-header h1 { font-size: 1.05rem; }
+  .results-count { font-size: .65rem; }
+  .header-actions { display: grid; grid-template-columns: 1fr 1.25fr; }
+  .admin-payment-methods .header-actions .btn { min-height: 34px; justify-content: center; padding: .38rem .4rem; font-size: .67rem; }
+  .filters { display: grid; grid-template-columns: 1fr auto; }
+  .search-box { min-width: 0; }
+  .filter-group label { display: none; }
+  .payment-methods-table { padding: .1rem; border: 0; background: transparent; }
+  .payment-methods-table table { min-width: 0; }
+  .payment-methods-table thead { display: none; }
+  .payment-methods-table table, .payment-methods-table tbody, .payment-methods-table tr, .payment-methods-table td { display: block; width: 100%; }
+  .payment-methods-table tbody { padding: .1rem; }
+  .payment-methods-table tr { margin-bottom: .55rem; padding: .65rem; border: 1px solid #dfe7f1; border-radius: 10px; background: #fff; }
+  .payment-methods-table td { padding: .15rem 0; border: 0; }
+  .payment-methods-table td::before { content: attr(data-label); display: block; margin-bottom: .08rem; color: #718096; font-size: .58rem; font-weight: 800; text-transform: uppercase; }
+  .payment-methods-table td:last-child { padding-top: .45rem; }
+  .actions { justify-content: flex-end; }
+}
 

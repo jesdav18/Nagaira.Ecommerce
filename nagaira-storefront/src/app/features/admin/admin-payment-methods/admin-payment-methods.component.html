@@ -1,10 +1,19 @@
 <div class="admin-payment-methods">
   <div class="page-header">
-    <h1>Gestión de Medios de Pago</h1>
-    <button class="btn btn-primary" routerLink="/admin/payment-methods/new">+ Nuevo Medio de Pago</button>
+    <div class="page-heading">
+      <h1>Medios de pago</h1>
+      <span class="results-count">{{ filteredPaymentMethods().length }} registros</span>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn btn-secondary" (click)="filtersOpen.set(!filtersOpen())" [attr.aria-expanded]="filtersOpen()" aria-controls="payment-method-filters">
+        <i class="fa-solid fa-sliders" aria-hidden="true"></i><span>Filtros</span>
+      </button>
+      <button class="btn btn-primary" routerLink="/admin/payment-methods/new"><span aria-hidden="true">+</span> Nuevo medio</button>
+    </div>
   </div>
 
-  <div class="filters">
+  @if (filtersOpen()) {
+  <div id="payment-method-filters" class="filters">
     <div class="search-box">
       <input 
         type="text" 
@@ -13,7 +22,7 @@
         (ngModelChange)="searchTerm.set($event)"
         (keyup.enter)="onSearch()"
       >
-      <button (click)="onSearch()" class="btn btn-secondary">Buscar</button>
+      <button (click)="onSearch()" class="btn btn-secondary" aria-label="Buscar medios de pago" title="Buscar"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></button>
     </div>
     
     <div class="filter-group">
@@ -25,6 +34,7 @@
       </select>
     </div>
   </div>
+  }
 
   @if (loading()) {
     <div class="loading">Cargando medios de pago...</div>
@@ -49,36 +59,38 @@
         <tbody>
           @for (pm of filteredPaymentMethods(); track pm.id) {
             <tr>
-              <td>
+              <td data-label="Nombre">
                 <strong>{{ pm.name }}</strong>
                 @if (pm.description) {
                   <br><small>{{ pm.description }}</small>
                 }
               </td>
-              <td>{{ getTypeLabel(pm.type) }}</td>
-              <td>{{ pm.accountNumber }}</td>
-              <td>{{ pm.bankName || pm.walletProvider || '-' }}</td>
-              <td>{{ pm.displayOrder }}</td>
-              <td>
+              <td data-label="Tipo">{{ getTypeLabel(pm.type) }}</td>
+              <td data-label="Número de cuenta">{{ pm.accountNumber || '-' }}</td>
+              <td data-label="Banco/Proveedor">{{ pm.bankName || pm.walletProvider || '-' }}</td>
+              <td data-label="Orden">{{ pm.displayOrder }}</td>
+              <td data-label="Estado">
                 <span [class]="pm.isActive ? 'badge active' : 'badge inactive'">
                   {{ pm.isActive ? 'Activo' : 'Inactivo' }}
                 </span>
               </td>
-              <td>
+              <td data-label="Acciones">
                 <div class="actions">
-                  <button class="btn btn-sm btn-secondary" [routerLink]="['/admin/payment-methods', pm.id]">
-                    Editar
+                  <button class="btn btn-sm btn-secondary icon-action" [routerLink]="['/admin/payment-methods', pm.id]" aria-label="Editar medio de pago" title="Editar medio de pago">
+                    <i class="fa-solid fa-pen" aria-hidden="true"></i>
                   </button>
                   <button 
-                    class="btn btn-sm" 
+                    class="btn btn-sm icon-action"
                     [class.btn-success]="!pm.isActive"
                     [class.btn-warning]="pm.isActive"
                     (click)="togglePaymentMethodStatus(pm)"
+                    [attr.aria-label]="pm.isActive ? 'Desactivar medio de pago' : 'Activar medio de pago'"
+                    [attr.title]="pm.isActive ? 'Desactivar medio de pago' : 'Activar medio de pago'"
                   >
-                    {{ pm.isActive ? 'Desactivar' : 'Activar' }}
+                    <i class="fa-solid" [class.fa-toggle-off]="pm.isActive" [class.fa-toggle-on]="!pm.isActive" aria-hidden="true"></i>
                   </button>
-                  <button class="btn btn-sm btn-danger" (click)="deletePaymentMethod(pm.id)">
-                    Eliminar
+                  <button class="btn btn-sm btn-danger icon-action" (click)="deletePaymentMethod(pm.id)" aria-label="Eliminar medio de pago" title="Eliminar medio de pago">
+                    <i class="fa-solid fa-trash" aria-hidden="true"></i>
                   </button>
                 </div>
               </td>

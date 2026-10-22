@@ -20,6 +20,7 @@ export class AdminPaymentMethodsComponent implements OnInit {
   loading = signal(true);
   searchTerm = signal('');
   isActiveFilter = signal<boolean | null>(null);
+  filtersOpen = signal(false);
   paymentMethodTypes = signal<any[]>([]);
 
   ngOnInit(): void {
@@ -73,7 +74,7 @@ export class AdminPaymentMethodsComponent implements OnInit {
     return this.paymentMethods().filter(pm => 
       pm.name.toLowerCase().includes(term) ||
       pm.description?.toLowerCase().includes(term) ||
-      pm.accountNumber.toLowerCase().includes(term)
+      pm.accountNumber?.toLowerCase().includes(term)
     );
   }
 
