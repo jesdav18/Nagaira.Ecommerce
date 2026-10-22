@@ -733,7 +733,6 @@ app-admin-offers .offers-grid {
 
 :is(
   app-admin-supplier-form,
-  app-admin-banner-form,
   app-admin-offer-form
 ) > :first-child {
   width: 100%;
@@ -744,7 +743,6 @@ app-admin-offers .offers-grid {
 
 :is(
   app-admin-supplier-form,
-  app-admin-banner-form,
   app-admin-offer-form
 ) :is(.form-container, .category-form, .banner-form, .payment-method-form, .offer-form) {
   padding: .8rem !important;
@@ -802,7 +800,6 @@ app-admin-offers .offers-grid {
 
   :is(
     app-admin-supplier-form,
-    app-admin-banner-form,
     app-admin-offer-form
   ) > :first-child {
     padding: 0 !important;
