@@ -2,83 +2,9 @@
     background: #f6f8fb;
 }
 
-.benefits-strip > .container,
 .category-section > .container,
 .home-cta {
     max-width: var(--page-max-width);
-}
-
-.benefits-strip {
-    padding: 1rem 0 0;
-    background: linear-gradient(180deg, #ffffff 0%, #f6f8fb 100%);
-}
-
-.benefits-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 0;
-    overflow: hidden;
-    border: 1px solid rgba(0, 109, 177, 0.12);
-    border-radius: 10px;
-    background: #ffffff;
-    box-shadow: 0 8px 22px rgba(2, 40, 90, 0.08);
-}
-
-.benefit-item {
-    display: flex;
-    align-items: center;
-    gap: 0.7rem;
-    min-height: 78px;
-    padding: 0.95rem 1.15rem;
-    background: transparent;
-    border-right: 1px solid rgba(0, 109, 177, 0.1);
-}
-
-.benefit-item:last-child {
-    border-right: none;
-}
-
-.benefit-icon {
-    width: 40px;
-    height: 40px;
-    flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: #166534;
-}
-
-.benefit-icon i {
-    display: block;
-    font-size: 1.75rem;
-    line-height: 1;
-}
-
-.benefit-icon-wa {
-    border: 0;
-    color: #16a34a;
-}
-
-.benefit-icon-wa i {
-    font-size: 1.95rem;
-}
-
-.benefit-item strong,
-.benefit-item span {
-    display: block;
-}
-
-.benefit-item strong {
-    color: var(--text-primary);
-    font-size: 0.95rem;
-    letter-spacing: 0;
-    line-height: 1.1;
-}
-
-.benefit-item div > span {
-    color: #526173;
-    font-size: 0.82rem;
-    line-height: 1.25;
 }
 
 .section-kicker {
@@ -263,49 +189,12 @@
     .category-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
-
-    .benefit-item:nth-child(2n) {
-        border-right: none;
-    }
 }
 
 @media (max-width: 640px) {
-    .benefits-strip {
-        display: none;
-    }
-
-    .benefits-grid {
-        display: flex;
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        scrollbar-width: none;
-        overscroll-behavior-inline: contain;
-    }
-
-    .benefits-grid::-webkit-scrollbar { display: none; }
-
-    .benefit-item {
-        flex: 0 0 min(82vw, 310px);
-        scroll-snap-align: start;
-    }
-
     .category-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 0.8rem;
-    }
-
-    .benefits-strip {
-        padding: 0.75rem 0 0;
-    }
-
-    .benefit-item {
-        min-height: 76px;
-        border-right: 1px solid rgba(0, 109, 177, 0.1);
-        border-bottom: none;
-    }
-
-    .benefit-item:last-child {
-        border-bottom: none;
     }
 
     .category-section {
@@ -316,5 +205,4 @@
     .category-more .category-card-content {
         min-height: 128px;
     }
-
 }
